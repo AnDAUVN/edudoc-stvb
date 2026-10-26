@@ -39,6 +39,10 @@ def save_json_file(file_path, data):
 def index():
     return render_template("index.html")
 
+@app.route("/teacher")
+def teacher_portal():
+    return render_template("index.html")
+
 @app.route("/api/documents", methods=["GET"])
 def get_documents():
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})

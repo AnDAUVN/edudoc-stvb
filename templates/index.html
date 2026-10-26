@@ -1646,9 +1646,12 @@
       }
     }
 
-    // Tự động tải mã lớp khi mở trang
+    // Tự động tải mã lớp và chuyển Cổng nếu vào qua link /teacher
     window.addEventListener('DOMContentLoaded', () => {
       loadClasses();
+      if (window.location.pathname.includes('/teacher') || window.location.hash === '#teacher' || window.location.search.includes('view=teacher')) {
+        switchTab('teacher');
+      }
     });
   </script>
 
