@@ -547,15 +547,20 @@ class Decree30Validator:
                             default_num = def_m.group(1).strip()
 
                     is_match = False
-                    try:
-                        if (found_num == expected_num) or (int(found_num) == int(expected_num)):
-                            is_match = True
-                    except ValueError:
-                        if found_num == expected_num:
-                            is_match = True
-
-                    if default_num and (found_num == default_num):
+                    if self.doc_type_id == "cong_van_de_nghi":
+                        # Đối với bài tập Công văn đề nghị: Tất cả các mục là tự giả định (không tuân thủ đề),
+                        # cho phép sinh viên tự giả định bất kỳ số ban hành nào hoặc dùng 3 số cuối MSSV / số mặc định.
                         is_match = True
+                    else:
+                        try:
+                            if (found_num == expected_num) or (int(found_num) == int(expected_num)):
+                                is_match = True
+                        except ValueError:
+                            if found_num == expected_num:
+                                is_match = True
+
+                        if default_num and (found_num == default_num):
+                            is_match = True
 
                     if not is_match:
                         errors.append({

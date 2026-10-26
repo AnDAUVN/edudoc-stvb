@@ -24,7 +24,7 @@
     "filename_suffix": "CongVanDeNghi",
     "expected_data": {
       "has_type_name": false,
-      "so_ky_hieu_pattern": "CV-DNTT",
+      "so_ky_hieu_pattern": "DNTT",
       "trich_yeu_prefix": "V/v",
       "has_kinh_gui": true,
       "sign_type": "TRUC_TIEP"

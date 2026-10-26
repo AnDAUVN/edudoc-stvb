@@ -532,7 +532,7 @@
                 Sơ đồ bố trí chuẩn: <span class="text-primary">SƠ ĐỒ CÔNG VĂN (Hình 2)</span>
               </div>
               <div class="small text-secondary mt-1" id="schema-card-desc">
-                Có <strong>Ô 5b (V/v)</strong> trong Bảng đầu trang (Dòng 2, Cột 1 dưới Ô 3); <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 5a Tên loại</span>; Bắt buộc có <strong>Ô 9a (Kính gửi)</strong> trước nội dung.
+                <span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fa-solid fa-circle-check me-1"></i>Tự giả định tất cả các mục</span> Sinh viên tự giả định cơ quan, trích yếu, kính gửi, nội dung, người ký (không tuân thủ đề cố định). Bắt buộc tuân thủ <strong>Sơ đồ 2 (Hình 2 NĐ 30)</strong>: <strong>Ô 5b (V/v)</strong> nằm trong Bảng đầu trang (Dòng 2 Cột 1 dưới Ô 3, cách 6pt); <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 5a Tên loại</span>; Bắt buộc có <strong>Ô 9a (Kính gửi)</strong> trước nội dung; Ô 3 không có chữ 'CV'.
               </div>
             </div>
           </div>
@@ -1158,7 +1158,7 @@
         iconEl.className = 'badge bg-primary p-3 fs-5 rounded-circle';
         iconEl.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i>';
         titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-primary">SƠ ĐỒ CỦA CÔNG VĂN (Hình 2)</span>';
-        descEl.innerHTML = '<strong>Ô 5b (Trích yếu V/v)</strong> nằm TRONG BẢNG đầu trang ngay dưới Ô 3; <span class="text-primary fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước Ô 6; <span class="text-danger fw-bold">KHÔNG CÓ Ô 5a tên loại</span> ở giữa trang.';
+        descEl.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fa-solid fa-circle-check me-1"></i>Tự giả định tất cả các mục</span> Sinh viên tự giả định cơ quan, trích yếu, kính gửi, nội dung, người ký (không tuân thủ đề cố định). Bắt buộc tuân thủ <strong>Sơ đồ 2 (Hình 2 NĐ 30)</strong>: <strong>Ô 5b (Trích yếu V/v)</strong> nằm TRONG BẢNG đầu trang ngay dưới Ô 3 (cách 6pt); <span class="text-primary fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước Ô 6; <span class="text-danger fw-bold">KHÔNG CÓ Ô 5a tên loại</span> ở giữa trang; Ô 3 không có chữ \'CV\'.';
       } else if (docType.startsWith('to_trinh') || docType === 'bao_cao') {
         iconEl.className = 'badge bg-warning text-dark p-3 fs-5 rounded-circle';
         iconEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i>';

@@ -84,7 +84,11 @@ class TestSessionControl(unittest.TestCase):
         self.assertIn("questions", res_quiz.get_json())
 
     def test_active_doc_type_sync(self):
-        """Giảng viên chọn loại văn bản nào (VD: Bài thu hoạch) thì cổng sinh viên mặc định loại đó"""
+        """Giảng viên chọn loại văn bản nào (VD: Bài thu hoạch, Công văn đề nghị) thì cổng sinh viên mặc định loại đó"""
+        # 0. Kiểm tra mặc định là cong_van_de_nghi (Bài tập chính thức giảng viên giao, tự giả định nội dung)
+        res_default = self.client.get("/api/session-state")
+        self.assertEqual(res_default.get_json().get("active_doc_type"), "cong_van_de_nghi")
+
         # 1. Giảng viên đặt văn bản là bai_thu_hoach
         res = self.client.post("/api/teacher/set-active-doc", json={"doc_type": "bai_thu_hoach"})
         self.assertEqual(res.status_code, 200)
