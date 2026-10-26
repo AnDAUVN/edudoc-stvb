@@ -56,7 +56,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "======================================================================" -ForegroundColor Green
     Write-Host "   CAP NHAT THANH CONG LEN GITHUB & RENDER!" -ForegroundColor Green
     Write-Host "======================================================================" -ForegroundColor Green
-    Write-Host " - Kho GitHub: https://github.com/cttrung1010/edudoc-stvb" -ForegroundColor Cyan
+    Write-Host " - Kho GitHub: https://github.com/AnDAUVN/edudoc-stvb" -ForegroundColor Cyan
     Write-Host " - Render dang tu dong build va deploy ban moi (mat khoang 1 - 2 phut)." -ForegroundColor White
     Write-Host " - He thong se tu dong cap nhat tat ca tinh nang moi nhat tren website." -ForegroundColor White
     Write-Host "======================================================================" -ForegroundColor Green
