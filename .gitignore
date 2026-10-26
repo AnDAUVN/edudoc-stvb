@@ -10,6 +10,7 @@ storage/submitted/*.docx
 storage/uploads/*.docx
 storage/uploads/temp_*
 storage/test_out/
+tests/temp_schema_tests/
 
 # Environment & IDE
 .env

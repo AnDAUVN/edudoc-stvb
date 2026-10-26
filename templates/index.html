@@ -168,8 +168,8 @@
             <label class="form-label fw-semibold">Chọn loại văn bản bài tập</label>
             <select id="sel-doc-type" class="form-select fw-semibold text-primary" onchange="onDocTypeChanged()">
               <option value="bai_thu_hoach">1. Bài thu hoạch</option>
-              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
-              <option value="thong_bao_nhiem_vu" selected>3. Thông báo nhiệm vụ được giao</option>
+              <option value="cong_van_de_nghi" selected>2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
               <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
               <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
               <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
@@ -182,15 +182,15 @@
         <!-- BANNER HƯỚNG DẪN SƠ ĐỒ BỐ TRÍ NGHỊ ĐỊNH 30 THEO TỪNG VĂN BẢN -->
         <div id="schema-guidance-card" class="mt-3 p-3 rounded-3 bg-light border border-2 border-primary-subtle d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
           <div class="d-flex align-items-center gap-3">
-            <span class="badge bg-danger p-3 fs-5 rounded-circle" id="schema-badge-icon">
-              <i class="fa-solid fa-bullhorn"></i>
+            <span class="badge bg-primary p-3 fs-5 rounded-circle" id="schema-badge-icon">
+              <i class="fa-solid fa-envelope-open-text"></i>
             </span>
             <div>
               <div class="fw-bold text-dark fs-6" id="schema-card-title">
-                Sơ đồ bố trí chuẩn: <span class="text-danger">SƠ ĐỒ THÔNG BÁO (Hình 3)</span>
+                Sơ đồ bố trí chuẩn: <span class="text-primary">SƠ ĐỒ CÔNG VĂN (Hình 2)</span>
               </div>
               <div class="small text-secondary mt-1" id="schema-card-desc">
-                Có <strong>Ô 5a (THÔNG BÁO)</strong> ở giữa trang; <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 9a (Kính gửi)</span> trước nội dung; Nơi nhận chỉ trình bày tại Ô 9b ở góc dưới bên trái.
+                Có <strong>Ô 5b (V/v)</strong> trong Bảng đầu trang (Dòng 2, Cột 1 dưới Ô 3); <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 5a Tên loại</span>; Bắt buộc có <strong>Ô 9a (Kính gửi)</strong> trước nội dung.
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@
         
         <div class="row g-3 align-items-center mb-3">
           <div class="col-md-8">
-            <input type="file" id="inp-file-upload" class="form-control form-control-lg" accept=".docx">
+            <input type="file" id="inp-file-upload" class="form-control form-control-lg" accept=".docx" onchange="onStudentFileSelected(this)">
           </div>
           <div class="col-md-4">
             <button class="btn btn-primary btn-lg w-100 fw-bold" id="btn-run-validate" onclick="runValidation()">
@@ -975,12 +975,45 @@
       document.getElementById('section-template').scrollIntoView({ behavior: 'smooth' });
     }
 
+    function onStudentFileSelected(input) {
+      if (!input.files || input.files.length === 0) return;
+      const fn = input.files[0].name.toLowerCase();
+      const selDoc = document.getElementById('sel-doc-type');
+      if (fn.includes('congvan') || fn.includes('cong_van') || fn.includes('_cv_') || fn.includes('cv-')) {
+        selDoc.value = 'cong_van_de_nghi';
+        onDocTypeChanged();
+      } else if (fn.includes('thongbaonhiemvu') || fn.includes('thong_bao_nhiem_vu')) {
+        selDoc.value = 'thong_bao_nhiem_vu';
+        onDocTypeChanged();
+      } else if (fn.includes('thongbaohoatdong') || fn.includes('thong_bao_hoat_dong')) {
+        selDoc.value = 'thong_bao_hoat_dong';
+        onDocTypeChanged();
+      } else if (fn.includes('totrinhxinkinhphi') || fn.includes('kinhphi')) {
+        selDoc.value = 'to_trinh_xin_kinh_phi';
+        onDocTypeChanged();
+      } else if (fn.includes('totrinhnhansu') || fn.includes('nhansu')) {
+        selDoc.value = 'to_trinh_nhan_su';
+        onDocTypeChanged();
+      } else if (fn.includes('totrinhthietbi') || fn.includes('thietbi')) {
+        selDoc.value = 'to_trinh_thiet_bi';
+        onDocTypeChanged();
+      } else if (fn.includes('baocao') || fn.includes('bao_cao')) {
+        selDoc.value = 'bao_cao';
+        onDocTypeChanged();
+      } else if (fn.includes('baithuhoach') || fn.includes('thu_hoach')) {
+        selDoc.value = 'bai_thu_hoach';
+        onDocTypeChanged();
+      }
+    }
+
     async function runValidation() {
       const fileInput = document.getElementById('inp-file-upload');
       if (!fileInput.files || fileInput.files.length === 0) {
         Swal.fire('Chưa chọn file', 'Vui lòng chọn file bài làm (.docx) để kiểm tra!', 'warning');
         return;
       }
+
+      onStudentFileSelected(fileInput);
 
       const classCode = document.getElementById('inp-class-code').value.trim();
       const sbd = document.getElementById('inp-sbd').value.trim();

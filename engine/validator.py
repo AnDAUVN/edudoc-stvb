@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 from docx import Document
@@ -6,7 +7,8 @@ from docx.shared import Pt, Inches
 
 class Decree30Validator:
     def __init__(self, docx_path, doc_type_id, template_info=None):
-        self.doc = Document(docx_path)
+        self.doc_path = str(docx_path) if isinstance(docx_path, str) else ""
+        self.doc = docx_path if hasattr(docx_path, "paragraphs") else Document(docx_path)
         self.doc_type_id = doc_type_id
         self.template_info = template_info or {}
         self.results = {}
@@ -460,7 +462,8 @@ class Decree30Validator:
             after_slash = t.split("/", 1)[1].strip()
             # 1. CÔNG VĂN: Số: .../<Tên viết tắt CQ>-<Đơn vị> (hoặc Số: .../<Tên viết tắt CQ>)
             # QUY TẮC CỐT LÕI: TUYỆT ĐỐI KHÔNG CÓ TÊN LOẠI VĂN BẢN 'CV'
-            if self.doc_type_id == "cong_van_de_nghi":
+            is_cv = (self.doc_type_id == "cong_van_de_nghi") or getattr(self, "is_cong_van", False)
+            if is_cv:
                 if re.search(r"^(CV\b|CV[-–—])", after_slash, re.IGNORECASE) or re.search(r"[-–—]CV\b", after_slash, re.IGNORECASE):
                     errors.append({
                         "issue": "Sai công thức Công văn: Trong số và ký hiệu của Công văn tuyệt đối KHÔNG có tên loại văn bản viết tắt 'CV'.",
@@ -596,68 +599,102 @@ class Decree30Validator:
     # =========================================================================
     # Ô 5a / 5b: TÊN LOẠI & TRÍCH YẾU NỘI DUNG VĂN BẢN
     # =========================================================================
-    def check_box_5_trich_yeu(self, p_type, p_trich_yeu, p_so=None, is_5b_in_table=True, p_trich_yeu_outside_extra=None):
+    def check_box_5_trich_yeu(self, p_type=None, p_trich_yeu=None, p_so=None, is_5b_in_table=True, p_trich_yeu_outside_extra=None, p_5b_table=None, p_trich_yeu_outside=None, outside_header_paras=None):
         errors = []
-        is_cong_van = (self.doc_type_id == "cong_van_de_nghi")
+        is_cong_van = getattr(self, "is_cong_van", False) or (self.doc_type_id == "cong_van_de_nghi")
+
+        # Tương thích ngược các tham số
+        if p_5b_table is None:
+            if is_5b_in_table is True and p_trich_yeu is not None:
+                p_5b_table = p_trich_yeu
+        if p_trich_yeu_outside is None:
+            if is_5b_in_table is False and p_trich_yeu is not None:
+                p_trich_yeu_outside = p_trich_yeu
+            elif p_trich_yeu_outside_extra is not None:
+                p_trich_yeu_outside = p_trich_yeu_outside_extra
+
+        outside_header_paras = outside_header_paras or []
 
         if is_cong_van:
-            # Ô 5b: CÔNG VĂN (KHÔNG CÓ TÊN LOẠI, CHỈ CÓ TRÍCH YẾU 5b NẰM DƯỚI Ô 3 TRONG BẢNG)
-            # 1. KIỂM TRA VI PHẠM SƠ ĐỒ 2: CÔNG VĂN KHÔNG ĐƯỢC CÓ Ô 5a TÊN LOẠI
-            if p_type:
-                t_type = self._clean_text(p_type)
-                errors.append({
-                    "issue": f"Sai sơ đồ bố trí Công văn (Hình 2 Nghị định 30): Công văn là văn bản KHÔNG CÓ TÊN LOẠI (Ô 5a). Bài làm xuất hiện dòng tên loại '{t_type}' ở giữa trang ngoài bảng.",
-                    "fix": f"Xóa bỏ dòng chữ '{t_type}' ở giữa trang. Công văn bắt đầu ngay bằng Ô 9a (Kính gửi) sau Bảng đầu trang."
-                })
+            # =================================================================
+            # CÔNG VĂN (SƠ ĐỒ 2 - HÌNH 2 NGHỊ ĐỊNH 30)
+            # =================================================================
+            # 1. KIỂM TRA VI PHẠM SƠ ĐỒ BỐ TRÍ: CÔNG VĂN KHÔNG CÓ Ô 5a
+            # Quy tắc sư phạm cốt lõi: Đã sai sơ đồ bố trí thì TUYỆT ĐỐI KHÔNG HƯỚNG DẪN
+            # CÁCH CHỈNH SỬA (không bắt in đậm, cỡ chữ, canh lề...), CHỈ YÊU CẦU BỎ (XÓA)
+            # RA KHỎI SƠ ĐỒ VĂN BẢN!
+            illegal_paras = []
+            if p_type and p_type not in illegal_paras:
+                illegal_paras.append(p_type)
+            if p_trich_yeu_outside and p_trich_yeu_outside not in illegal_paras:
+                illegal_paras.append(p_trich_yeu_outside)
+            for p_out in outside_header_paras:
+                if p_out not in illegal_paras:
+                    illegal_paras.append(p_out)
 
-            # 2. KIỂM TRA VI PHẠM SƠ ĐỒ 2: CÔNG VĂN KHÔNG ĐƯỢC CÓ TRÍCH YẾU THỨ HAI Ở NGOÀI BẢNG
-            if p_trich_yeu_outside_extra:
-                t_extra = self._clean_text(p_trich_yeu_outside_extra)
-                errors.append({
-                    "issue": f"Sai sơ đồ bố trí Công văn (Hình 2 Nghị định 30): Công văn không được có dòng trích yếu đặt ở giữa trang ngoài bảng ('{t_extra[:40]}...').",
-                    "fix": "Xóa dòng trích yếu ở giữa trang giấy ngoài bảng. Trích yếu 'V/v ...' của Công văn (Ô 5b) bắt buộc phải nằm trong Bảng đầu trang tại Dòng 2 Cột 1 ngay dưới Ô 3."
-                })
+            for p_ill in illegal_paras:
+                t_ill = self._clean_text(p_ill)
+                if t_ill:
+                    if p_ill == p_type or "CÔNG VĂN" in t_ill.upper():
+                        errors.append({
+                            "issue": f"Sai sơ đồ bố trí theo Nghị định 30 (Sơ đồ 2 - Hình 2): Đối với Công văn thì KHÔNG CÓ TÊN LOẠI (Ô 5a). Bài làm xuất hiện dòng tên loại '{t_ill[:60]}' ở giữa trang ngoài bảng.",
+                            "fix": "Bỏ (xóa) dòng chữ này ra khỏi sơ đồ văn bản. Sau Bảng đầu trang, Công văn bắt đầu ngay bằng Ô 9a (Kính gửi) và phần Nội dung (Ô 6)."
+                        })
+                    else:
+                        errors.append({
+                            "issue": f"Sai sơ đồ bố trí theo Nghị định 30 (Sơ đồ 2 - Hình 2): Đối với Công văn thì không được có dòng trích yếu đặt ở giữa trang ngoài bảng ('{t_ill[:60]}...').",
+                            "fix": "Bỏ (xóa) dòng chữ này ra khỏi sơ đồ văn bản. Trích yếu 'V/v ...' của Công văn (Ô 5b) bắt buộc phải nằm trong Bảng đầu trang tại Dòng 2 Cột 1 ngay dưới Ô 3."
+                        })
 
-            if not p_trich_yeu:
-                return {
-                    "box_id": "5b",
-                    "name": "Ô 5b: Trích yếu nội dung Công văn (V/v)",
-                    "passed": False,
-                    "errors": [{"issue": "Chưa tìm thấy dòng trích yếu bắt đầu bằng 'V/v'.", "fix": "Trình bày 'V/v ...' ngay dưới Số và ký hiệu văn bản trong Bảng đầu trang."}] + errors
-                }
-            if not is_5b_in_table:
+            # 2. KIỂM TRA Ô 5b TRONG BẢNG ĐẦU TRANG (DÒNG 2, CỘT 1 DƯỚI Ô 3)
+            if not p_5b_table:
+                # Báo rõ ràng lỗi "Thiếu Ô 5b"
                 errors.append({
-                    "issue": "Đối với Công văn, trích yếu V/v (Ô 5b) bắt buộc phải nằm trong Bảng đầu trang (Dòng 2, Cột 1 ngay dưới Số ký hiệu).",
-                    "fix": "Đưa dòng trích yếu V/v vào ô Dòng 2 Cột 1 của Bảng đầu trang."
+                    "issue": "Thiếu Ô 5b: Trích yếu nội dung Công văn (V/v).",
+                    "fix": "Trình bày trích yếu nội dung công văn (bắt đầu bằng 'V/v ...') tại Dòng 2, Cột 1 của Bảng đầu trang (ngay dưới Ô 3 Số và ký hiệu văn bản, cách dòng 6pt)."
                 })
+            else:
+                # Chỉ khi Ô 5b ĐÃ CÓ trong bảng mới kiểm tra các tiêu chuẩn định dạng của Ô 5b
+                t_5b = self._clean_text(p_5b_table)
+                if not t_5b.startswith("V/v"):
+                    errors.append({
+                        "issue": "Trích yếu công văn (Ô 5b) phải bắt đầu bằng 'V/v'.",
+                        "fix": "Thêm tiền tố 'V/v ' vào đầu câu trích yếu (Ví dụ: 'V/v đề nghị hỗ trợ kinh phí')."
+                    })
 
-            t = self._clean_text(p_trich_yeu)
-            if not t.startswith("V/v"):
-                errors.append({"issue": "Trích yếu công văn phải bắt đầu bằng 'V/v'.", "fix": "Thêm tiền tố 'V/v ' vào đầu câu trích yếu."})
-            font, size, bold, italic = self._get_dominant_font_and_size(p_trich_yeu)
+                font_5b, size_5b, bold_5b, italic_5b = self._get_dominant_font_and_size(p_5b_table)
+                expected_5b_size = self.get_expected_size("trich_yeu_5b")
+                if size_5b != expected_5b_size:
+                    errors.append({
+                        "issue": f"Tính thống nhất cỡ chữ: Theo quy ước '{'Số trước' if self.font_profile=='SO_TRUOC' else 'Số sau'}', trích yếu công văn (V/v) phải là cỡ {int(expected_5b_size)}pt (Hiện tại: {size_5b}pt).",
+                        "fix": f"Chỉnh cỡ chữ trích yếu V/v về đúng {int(expected_5b_size)}pt."
+                    })
 
-            # Cỡ chữ 5b: 12 if SO_TRUOC, 13 if SO_SAU
-            expected_5b_size = self.get_expected_size("trich_yeu_5b")
-            if size != expected_5b_size:
-                errors.append({
-                    "issue": f"Tính thống nhất cỡ chữ: Theo quy ước '{'Số trước' if self.font_profile=='SO_TRUOC' else 'Số sau'}', trích yếu công văn (V/v) phải là cỡ {int(expected_5b_size)}pt (Hiện tại: {size}pt).",
-                    "fix": f"Chỉnh cỡ chữ trích yếu V/v về đúng {int(expected_5b_size)}pt."
-                })
-            if bold:
-                errors.append({"issue": "Trích yếu công văn (Ô 5b) là chữ in thường đứng, KHÔNG in đậm.", "fix": "Bỏ in đậm (Ctrl + B)."})
-            if italic:
-                errors.append({"issue": "Trích yếu công văn là chữ đứng, KHÔNG in nghiêng.", "fix": "Tắt in nghiêng (Ctrl + I)."})
-            if p_trich_yeu.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
-                errors.append({"issue": "Trích yếu công văn chưa được canh giữa dưới Số và ký hiệu.", "fix": "Nhấn Ctrl + E để canh giữa."})
+                if bold_5b:
+                    errors.append({
+                        "issue": "Trích yếu công văn (Ô 5b) là chữ in thường đứng, KHÔNG in đậm.",
+                        "fix": "Bỏ in đậm (Ctrl + B)."
+                    })
 
-            # Cách dòng 6pt so với Số và ký hiệu
-            sp_before = getattr(p_trich_yeu.paragraph_format.space_before, "pt", 0) or 0
-            sp_after_so = getattr(p_so.paragraph_format.space_after, "pt", 0) if p_so else 0
-            if sp_before < 5 and sp_after_so < 5:
-                errors.append({
-                    "issue": "Trích yếu công văn (V/v) cần cách dòng 6pt so với số và ký hiệu văn bản.",
-                    "fix": "Chọn dòng V/v ➔ Vào Paragraph ➔ Spacing Before: chọn 6pt (hoặc Space After của dòng Số: 6pt)."
-                })
+                if italic_5b:
+                    errors.append({
+                        "issue": "Trích yếu công văn là chữ đứng, KHÔNG in nghiêng.",
+                        "fix": "Tắt in nghiêng (Ctrl + I)."
+                    })
+
+                if p_5b_table.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
+                    errors.append({
+                        "issue": "Trích yếu công văn chưa được canh giữa dưới Số và ký hiệu.",
+                        "fix": "Nhấn Ctrl + E để canh giữa."
+                    })
+
+                sp_before = getattr(p_5b_table.paragraph_format.space_before, "pt", 0) or 0
+                sp_after_so = getattr(p_so.paragraph_format.space_after, "pt", 0) if p_so else 0
+                if sp_before < 5 and sp_after_so < 5:
+                    errors.append({
+                        "issue": "Trích yếu công văn (V/v) cần cách dòng 6pt so với số và ký hiệu văn bản.",
+                        "fix": "Chọn dòng V/v ➔ Vào Paragraph ➔ Spacing Before: chọn 6pt (hoặc Space After của dòng Số: 6pt)."
+                    })
 
             return {
                 "box_id": "5b",
@@ -666,14 +703,21 @@ class Decree30Validator:
                 "errors": errors
             }
         else:
-            # Ô 5a: THÔNG BÁO, TỜ TRÌNH, BÁO CÁO, BÀI THU HOẠCH (NẰM NGOÀI BẢNG ĐẦU TRANG)
-            if is_5b_in_table:
+            # =================================================================
+            # VĂN BẢN CÓ TÊN LOẠI: THÔNG BÁO, TỜ TRÌNH, BÁO CÁO, BÀI THU HOẠCH
+            # (SƠ ĐỒ 1 & 3 - HÌNH 1 & HÌNH 3 NGHỊ ĐỊNH 30)
+            # =================================================================
+            if p_5b_table:
                 errors.append({
-                    "issue": "Sai sơ đồ bố trí theo Nghị định 30: Văn bản có tên loại (Thông báo, Tờ trình, Báo cáo) không trình bày trích yếu trong Bảng đầu trang (Ô 5b). Trích yếu (Ô 5a) bắt buộc phải nằm ngoài bảng, căn giữa trang ngay dưới Tên loại văn bản.",
-                    "fix": "Xóa dòng trích yếu trong Bảng đầu trang và trình bày trích yếu (Ô 5a) ở giữa trang dưới Tên loại văn bản."
+                    "issue": "Sai sơ đồ bố trí theo Nghị định 30 (Sơ đồ 1 & 3): Văn bản có tên loại (Thông báo, Tờ trình, Báo cáo, Bài thu hoạch) không trình bày trích yếu trong Bảng đầu trang (Ô 5b). Trích yếu (Ô 5a) bắt buộc phải nằm ngoài bảng, căn giữa trang ngay dưới Tên loại văn bản.",
+                    "fix": "Bỏ (xóa) dòng trích yếu trong Bảng đầu trang ra khỏi sơ đồ văn bản và trình bày trích yếu (Ô 5a) ở giữa trang dưới Tên loại văn bản."
                 })
+
             if not p_type:
-                errors.append({"issue": "Chưa có Tên loại văn bản (THÔNG BÁO, TỜ TRÌNH, BÁO CÁO hoặc BÀI THU HOẠCH) ở ngoài bảng, giữa trang.", "fix": "Thêm tên loại văn bản viết in hoa, in đậm, căn giữa."})
+                errors.append({
+                    "issue": "Thiếu Tên loại văn bản: Chưa có Tên loại văn bản (THÔNG BÁO, TỜ TRÌNH, BÁO CÁO hoặc BÀI THU HOẠCH) ở ngoài bảng, giữa trang.",
+                    "fix": "Thêm tên loại văn bản viết in hoa, in đậm, căn giữa."
+                })
             else:
                 t_type = self._clean_text(p_type)
                 if t_type != t_type.upper():
@@ -693,13 +737,16 @@ class Decree30Validator:
                 if p_type.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
                     errors.append({"issue": "Tên loại văn bản chưa được canh giữa.", "fix": "Nhấn Ctrl + E để canh giữa."})
 
-            if not p_trich_yeu:
-                errors.append({"issue": "Chưa có dòng Trích yếu nội dung đặt dưới Tên loại văn bản.", "fix": "Thêm dòng trích yếu (ví dụ: Về việc...) dưới Tên loại văn bản."})
+            if not p_trich_yeu_outside:
+                errors.append({
+                    "issue": "Thiếu Trích yếu nội dung văn bản (Ô 5a) đặt dưới Tên loại văn bản.",
+                    "fix": "Thêm dòng trích yếu nội dung (bắt đầu bằng 'Về việc...' hoặc 'Về...') đặt dưới Tên loại văn bản."
+                })
             else:
-                t_y = self._clean_text(p_trich_yeu)
+                t_y = self._clean_text(p_trich_yeu_outside)
                 if t_y == t_y.upper() and len(t_y.split()) > 3:
                     errors.append({"issue": "Trích yếu nội dung văn bản có tên loại phải viết chữ in thường (không viết hoa toàn bộ).", "fix": "Chuyển thành chữ thường in đậm."})
-                font_y, size_y, bold_y, italic_y = self._get_dominant_font_and_size(p_trich_yeu)
+                font_y, size_y, bold_y, italic_y = self._get_dominant_font_and_size(p_trich_yeu_outside)
                 if not bold_y:
                     errors.append({"issue": "Trích yếu nội dung văn bản có tên loại phải IN ĐẬM.", "fix": "Bôi đen trích yếu và nhấn Ctrl + B để in đậm."})
                 if italic_y:
@@ -709,7 +756,7 @@ class Decree30Validator:
                         "issue": f"Cỡ chữ Trích yếu phải thống nhất là {int(expected_5a_size)}pt (Hiện tại: {size_y}pt).",
                         "fix": f"Chỉnh cỡ chữ về đúng {int(expected_5a_size)}pt."
                     })
-                if p_trich_yeu.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
+                if p_trich_yeu_outside.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
                     errors.append({"issue": "Trích yếu nội dung chưa được canh giữa.", "fix": "Nhấn Ctrl + E để canh giữa."})
 
             return {
@@ -1208,7 +1255,8 @@ class Decree30Validator:
     # Ô 9a: NƠI NHẬN TRỰC TIẾP (KÍNH GỬI - CÔNG VĂN, TỜ TRÌNH, BÁO CÁO)
     # =========================================================================
     def check_box_9a_kinh_gui(self, p_kinh_gui, kinh_gui_items):
-        is_required = self.doc_type_id in ["cong_van_de_nghi", "to_trinh_nhan_su", "to_trinh_thiet_bi", "to_trinh_xin_kinh_phi", "bao_cao"]
+        is_cv = (self.doc_type_id == "cong_van_de_nghi") or getattr(self, "is_cong_van", False)
+        is_required = is_cv or (self.doc_type_id in ["to_trinh_nhan_su", "to_trinh_thiet_bi", "to_trinh_xin_kinh_phi", "bao_cao"])
         if not is_required:
             if p_kinh_gui:
                 return {
@@ -1469,7 +1517,7 @@ class Decree30Validator:
                     if not t: continue
                     if not p_so and (re.match(r"^Số\s*:", t, re.IGNORECASE) or t.startswith("SỐ")):
                         p_so = p
-                    elif not p_trich_yeu and t.startswith("V/v"):
+                    elif not p_trich_yeu and (t.startswith("V/v") or t.lower().startswith("v/v") or t.startswith("Về việc") or t.lower().startswith("về việc")):
                         p_trich_yeu = p
                         is_5b_in_table = True
 
@@ -1521,6 +1569,7 @@ class Decree30Validator:
 
         # TẦNG 3: NGOÀI BẢNG (KÍNH GỬI Ô 9a, THÂN BÀI Ô 6, VĂN BẢN CÓ TÊN LOẠI Ô 5a)
         collecting_kinh_gui = False
+        outside_header_paras = []
         for p in all_paragraphs:
             t = self._clean_text(p)
             if not t:
@@ -1563,12 +1612,16 @@ class Decree30Validator:
                 p_dia_danh = p
             elif not p_type and (t in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"] or any(kw in t.upper() for kw in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])):
                 p_type = p
+                if not p_kinh_gui and len(body_paragraphs) == 0:
+                    outside_header_paras.append(p)
             elif (t.startswith("Về việc") or t.startswith("về việc") or t.startswith("V/v") or (p_type is not None and not p_kinh_gui and (t.startswith("Về ") or t.startswith("về ") or t.startswith("Khóa ") or t.startswith("Chuyên đề ") or t.startswith("Học phần ")))):
                 if not p_trich_yeu:
                     p_trich_yeu = p
                     is_5b_in_table = False
                 else:
                     p_trich_yeu_outside_extra = p
+                if not p_kinh_gui and len(body_paragraphs) == 0:
+                    outside_header_paras.append(p)
             elif not p_noi_nhan_title and "Nơi nhận" in t:
                 p_noi_nhan_title = p
             elif p_noi_nhan_title and (t.startswith("-") or "Lưu:" in t):
@@ -1580,6 +1633,28 @@ class Decree30Validator:
             else:
                 if len(t) > 20 and not t.lower().startswith("cơ quan ban hành") and not t.lower().startswith("cơ quan chủ quản"):
                     body_paragraphs.append(p)
+                elif not p_kinh_gui and len(body_paragraphs) == 0 and len(t) > 2:
+                    outside_header_paras.append(p)
+
+        # TỰ ĐỘNG NHẬN DIỆN VĂN BẢN CÔNG VĂN (SƠ ĐỒ 2 - HÌNH 2)
+        is_cong_van = (self.doc_type_id == "cong_van_de_nghi")
+        if not is_cong_van:
+            p_type_text = self._clean_text(p_type).upper() if p_type else ""
+            outside_texts = [self._clean_text(p).upper() for p in outside_header_paras]
+            doc_path_str = getattr(self, "doc_path", "") or ""
+            if "CÔNG VĂN" in p_type_text or any("CÔNG VĂN" in ot for ot in outside_texts):
+                is_cong_van = True
+            elif doc_path_str and re.search(r"cong_?van", os.path.basename(doc_path_str), re.IGNORECASE):
+                is_cong_van = True
+            elif is_5b_in_table and p_kinh_gui is not None:
+                has_named_type = any(
+                    any(kw in ot for kw in ["THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])
+                    for ot in outside_texts
+                )
+                if not has_named_type:
+                    is_cong_van = True
+
+        self.is_cong_van = is_cong_van
 
         # THỰC THI KIỂM ĐỊNH THỂ THỨC & THẨM MỸ
         checklist = []
@@ -1589,7 +1664,16 @@ class Decree30Validator:
         checklist.append(self.check_box_2_co_quan(p_cq_quan_ly, p_cq_ban_hanh))
         checklist.append(self.check_box_3_so_ky_hieu(p_so))
         checklist.append(self.check_box_4_dia_danh(p_dia_danh, same_row=same_row_so_dia_danh))
-        checklist.append(self.check_box_5_trich_yeu(p_type, p_trich_yeu, p_so, is_5b_in_table=is_5b_in_table, p_trich_yeu_outside_extra=p_trich_yeu_outside_extra))
+        checklist.append(self.check_box_5_trich_yeu(
+            p_type=p_type,
+            p_trich_yeu=p_trich_yeu,
+            p_so=p_so,
+            is_5b_in_table=is_5b_in_table,
+            p_trich_yeu_outside_extra=p_trich_yeu_outside_extra,
+            p_5b_table=(p_trich_yeu if is_5b_in_table else None),
+            p_trich_yeu_outside=(p_trich_yeu if not is_5b_in_table else p_trich_yeu_outside_extra),
+            outside_header_paras=outside_header_paras
+        ))
         checklist.append(self.check_box_6_noi_dung(body_paragraphs))
         checklist.append(self.check_box_7_8_chuc_vu_nguoi_ky(p_chuc_vu, p_ho_ten, empty_lines_sign, p_cq_ban_hanh=p_cq_ban_hanh))
 
