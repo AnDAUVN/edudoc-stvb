@@ -1,5 +1,6 @@
 {
   "is_open": false,
+  "enforce_roster": true,
   "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
   "updated_at": "2026-10-26 15:00:00"
 }

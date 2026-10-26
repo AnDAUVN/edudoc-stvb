@@ -23,6 +23,7 @@ TEST_SUITES = [
     "test_schema_layouts.py",
     "test_session_control.py",
     "test_anti_cheat_stages.py",
+    "test_roster_management.py",
     "comprehensive_audit_suite.py"
 ]
 

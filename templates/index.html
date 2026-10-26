@@ -178,7 +178,7 @@
             <label class="form-label fw-semibold text-danger">
               <i class="fa-solid fa-graduation-cap me-1"></i> Mã lớp KN
             </label>
-            <select id="inp-class-code" class="form-select fw-bold text-danger border-danger">
+            <select id="inp-class-code" class="form-select fw-bold text-danger border-danger" onchange="onStudentClassOrMssvChanged()">
               <!-- Nạp động từ /api/classes -->
             </select>
           </div>
@@ -188,7 +188,8 @@
           </div>
           <div class="col-md-2">
             <label class="form-label fw-semibold">Mã số sinh viên (MSSV)</label>
-            <input type="text" id="inp-mssv" class="form-control" placeholder="Ví dụ: 2100001234" value="2100001234">
+            <input type="text" id="inp-mssv" class="form-control font-monospace fw-bold" placeholder="Ví dụ: 2100001234" value="2100001234" oninput="onStudentMssvInput()" onchange="onStudentClassOrMssvChanged()">
+            <div id="student-roster-feedback" class="mt-1 small"></div>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Họ và tên</label>
@@ -475,6 +476,78 @@
               <!-- Render badges of classes with delete button -->
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- QUẢN LÝ DANH SÁCH SINH VIÊN THEO LỚP (BẢO VỆ CHỈ SINH VIÊN TRONG LỚP MỚI ĐƯỢC LÀM BÀI) -->
+      <div class="card card-custom p-4 mb-4 border-start border-success border-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+          <div>
+            <h5 class="fw-bold text-dark mb-0">
+              <i class="fa-solid fa-user-check me-2 text-success"></i> QUẢN LÝ DANH SÁCH SINH VIÊN THEO LỚP (DANH SÁCH ĐƯỢC CẤP QUYỀN)
+            </h5>
+            <small class="text-secondary">Chống chia sẻ link tràn lan & Chặn tuyệt đối người ngoài vào thi hộ</small>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="form-check form-switch fs-5 pb-0 m-0">
+              <input class="form-check-input" type="checkbox" id="teacher-chk-enforce-roster" checked onchange="toggleEnforceRoster()">
+              <label class="form-check-label fw-bold text-dark fs-6" for="teacher-chk-enforce-roster">
+                Khóa ngoài danh sách: <span id="lbl-enforce-roster-status" class="text-success fw-bold">BẬT (Chỉ SV trong DS mới được làm bài)</span>
+              </label>
+            </div>
+            <span class="badge bg-success px-3 py-2 fw-bold" id="lbl-roster-class-count">0 Sinh viên</span>
+          </div>
+        </div>
+        <p class="text-secondary small mb-3">
+          Khi bật chế độ bảo vệ, sinh viên <strong>bắt buộc phải có MSSV trong danh sách lớp</strong> mới có thể Bắt đầu làm trắc nghiệm, Nhận file mẫu và Nộp bài thẩm định. Thầy/Cô có thể <strong>thêm từng sinh viên</strong> hoặc <strong>dán trực tiếp danh sách copy từ Excel / Google Sheets</strong>.
+        </p>
+
+        <div class="row g-3 align-items-center mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold small mb-1">
+              <i class="fa-solid fa-graduation-cap text-success me-1"></i> Chọn lớp để xem danh sách:
+            </label>
+            <select id="teacher-roster-sel-class" class="form-select fw-bold text-success border-success" onchange="loadClassRoster()">
+              <!-- Nạp danh sách lớp động -->
+            </select>
+          </div>
+          <div class="col-md-8 text-md-end pt-md-4">
+            <div class="btn-group shadow-sm">
+              <button class="btn btn-success fw-bold px-3" onclick="openAddStudentModal()">
+                <i class="fa-solid fa-user-plus me-1"></i> Thêm 1 Sinh Viên
+              </button>
+              <button class="btn btn-outline-success fw-bold px-3" onclick="openImportStudentsModal()">
+                <i class="fa-solid fa-file-excel me-1"></i> Dán danh sách từ Excel
+              </button>
+              <button class="btn btn-outline-danger fw-bold px-3" onclick="clearClassRoster()">
+                <i class="fa-solid fa-trash-can me-1"></i> Xóa cả lớp
+              </button>
+              <button class="btn btn-outline-secondary px-2" title="Làm mới danh sách" onclick="loadClassRoster()">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BẢNG DANH SÁCH SINH VIÊN TRONG LỚP -->
+        <div class="table-responsive bg-white rounded border">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 50px;" class="text-center">STT</th>
+                <th style="width: 90px;">SBD</th>
+                <th style="width: 140px;">MSSV</th>
+                <th>Họ và Tên Sinh Viên</th>
+                <th style="width: 150px;" class="text-center">Trạng thái làm bài</th>
+                <th style="width: 80px;" class="text-center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="teacher-roster-tbody">
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">Đang tải danh sách sinh viên...</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -832,6 +905,33 @@
         // 4. Render danh sách huy hiệu lớp có nút xóa
         renderClassBadges();
 
+        // 5. Cập nhật dropdown ở Quản lý Danh sách Sinh viên
+        const selRoster = document.getElementById('teacher-roster-sel-class');
+        const selModalAdd = document.getElementById('modal-student-class');
+        const selModalImport = document.getElementById('modal-import-class');
+        [selRoster, selModalAdd, selModalImport].forEach(sel => {
+          if (sel) {
+            const curVal = sel.value;
+            sel.innerHTML = '';
+            allClassesList.forEach(cls => {
+              const opt = document.createElement('option');
+              opt.value = cls;
+              opt.innerText = `Lớp ${cls}`;
+              sel.appendChild(opt);
+            });
+            if (curVal && allClassesList.includes(curVal)) {
+              sel.value = curVal;
+            }
+          }
+        });
+
+        // 6. Nạp danh sách lớp hoặc xác thực sinh viên
+        if (typeof APP_MODE !== 'undefined' && APP_MODE === 'teacher') {
+          loadClassRoster();
+        } else {
+          onStudentClassOrMssvChanged();
+        }
+
       } catch (e) {
         console.error('Lỗi nạp danh sách mã lớp:', e);
       }
@@ -952,16 +1052,32 @@
         const res = await fetch('/api/quiz/get', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ doc_type: docType })
+          body: JSON.stringify({
+            doc_type: docType,
+            class_code: classCode,
+            mssv: mssv
+          })
         });
         const data = await res.json();
         if (res.status === 403) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
-            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
-            confirmButtonText: 'Đã hiểu'
-          });
+          if (data.not_in_roster) {
+            Swal.fire({
+              icon: 'error',
+              title: 'KHÔNG CÓ TRONG DANH SÁCH LỚP',
+              html: `<div class="text-start">
+                <p>Mã sinh viên <strong>${escapeHtml(mssv)}</strong> không nằm trong danh sách chính thức được cấp quyền làm bài của lớp <strong>${escapeHtml(classCode)}</strong>.</p>
+                <p class="text-secondary small">Vui lòng kiểm tra lại Mã lớp KN và MSSV hoặc báo Giảng viên để được cập nhật vào danh sách lớp.</p>
+              </div>`,
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else {
+            Swal.fire({
+              icon: 'warning',
+              title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+              text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          }
           return;
         }
         currentQuizQuestions = data.questions;
@@ -1107,8 +1223,8 @@
 
       if (res.status === 403) {
         Swal.fire({
-          icon: 'warning',
-          title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+          icon: data.not_in_roster ? 'error' : 'warning',
+          title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
           text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
           confirmButtonText: 'Đã hiểu'
         });
@@ -1200,8 +1316,8 @@
 
         if (res.status === 403) {
           Swal.fire({
-            icon: 'warning',
-            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            icon: data.not_in_roster ? 'error' : 'warning',
+            title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
             text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
             confirmButtonText: 'Đã hiểu'
           });
@@ -1346,8 +1462,8 @@
 
         if (res.status === 403) {
           Swal.fire({
-            icon: 'warning',
-            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            icon: data.not_in_roster ? 'error' : 'warning',
+            title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
             text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
             confirmButtonText: 'Đã hiểu'
           });
@@ -2135,6 +2251,359 @@
       }
     }
 
+    // ==========================================
+    // QUẢN LÝ DANH SÁCH SINH VIÊN (ROSTER) & XÁC THỰC
+    // ==========================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
+      });
+    }
+
+    let studentVerifyTimeout = null;
+    function onStudentMssvInput() {
+      clearTimeout(studentVerifyTimeout);
+      studentVerifyTimeout = setTimeout(onStudentClassOrMssvChanged, 400);
+    }
+
+    async function onStudentClassOrMssvChanged() {
+      const classEl = document.getElementById('inp-class-code');
+      const mssvEl = document.getElementById('inp-mssv');
+      const feedbackEl = document.getElementById('student-roster-feedback');
+      if (!classEl || !mssvEl || !feedbackEl) return;
+
+      const classCode = classEl.value.trim();
+      const mssv = mssvEl.value.trim();
+      if (!classCode || !mssv) {
+        feedbackEl.innerHTML = '';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/student/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode, mssv: mssv })
+        });
+        const data = await res.json();
+        if (data.valid) {
+          if (data.student) {
+            feedbackEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Hợp lệ: ${escapeHtml(data.student.name)} (SBD: ${escapeHtml(data.student.sbd || 'Chưa gán')})</span>`;
+            const nameEl = document.getElementById('inp-name');
+            const sbdEl = document.getElementById('inp-sbd');
+            if (nameEl && data.student.name) nameEl.value = data.student.name;
+            if (sbdEl && data.student.sbd) sbdEl.value = data.student.sbd;
+          } else {
+            feedbackEl.innerHTML = `<span class="text-secondary small"><i class="fa-solid fa-circle-info me-1"></i> Lớp đang ở chế độ mở tự do (không bắt buộc danh sách).</span>`;
+          }
+        } else {
+          feedbackEl.innerHTML = `<span class="text-danger fw-bold"><i class="fa-solid fa-circle-xmark me-1"></i> MSSV [${escapeHtml(mssv)}] chưa có trong danh sách lớp ${escapeHtml(classCode)}!</span>`;
+        }
+      } catch (e) {
+        console.error('Lỗi xác thực sinh viên:', e);
+      }
+    }
+
+    let currentRosterList = [];
+    async function loadClassRoster() {
+      const selClass = document.getElementById('teacher-roster-sel-class');
+      if (!selClass) return;
+      const classCode = selClass.value || (allClassesList.length > 0 ? allClassesList[0] : '');
+      if (!classCode) {
+        const tbody = document.getElementById('teacher-roster-tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Chưa có mã lớp nào. Vui lòng thêm mã lớp trước.</td></tr>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/teacher/students?class_code=${encodeURIComponent(classCode)}`);
+        const data = await res.json();
+        currentRosterList = data.students || [];
+
+        // Cập nhật công tắc enforce_roster
+        const chkEnforce = document.getElementById('teacher-chk-enforce-roster');
+        const lblEnforce = document.getElementById('lbl-enforce-roster-status');
+        if (chkEnforce && typeof data.enforce_roster === 'boolean') {
+          chkEnforce.checked = data.enforce_roster;
+        }
+        if (lblEnforce) {
+          if (data.enforce_roster) {
+            lblEnforce.innerText = 'BẬT (Chỉ SV trong DS mới được làm bài)';
+            lblEnforce.className = 'text-success fw-bold';
+          } else {
+            lblEnforce.innerText = 'TẮT (Mở tự do cho mọi sinh viên)';
+            lblEnforce.className = 'text-secondary fw-semibold';
+          }
+        }
+
+        // Cập nhật số lượng sinh viên trong lớp
+        const lblCount = document.getElementById('lbl-roster-class-count');
+        if (lblCount) {
+          lblCount.innerText = `${currentRosterList.length} Sinh viên (${classCode})`;
+        }
+
+        renderRosterTable(classCode, currentRosterList);
+      } catch (e) {
+        console.error('Lỗi nạp danh sách sinh viên lớp:', e);
+      }
+    }
+
+    function renderRosterTable(classCode, students) {
+      const tbody = document.getElementById('teacher-roster-tbody');
+      if (!tbody) return;
+
+      if (!students || students.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="fa-solid fa-users-slash text-secondary fa-2x mb-2 d-block"></i>
+              Lớp <strong>${escapeHtml(classCode)}</strong> hiện chưa có sinh viên nào trong danh sách được cấp quyền.<br>
+              <span class="small text-secondary">Hãy bấm <strong>"Thêm 1 Sinh Viên"</strong> hoặc <strong>"Dán danh sách từ Excel"</strong> để cấp quyền làm bài cho sinh viên.</span>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      students.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        const sbdDisplay = s.sbd ? `<span class="badge bg-light text-dark border">${escapeHtml(s.sbd)}</span>` : '<span class="text-muted">-</span>';
+        const submitDisplay = s.has_submitted 
+          ? `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Đã nộp (${s.submission_count} bài)</span>`
+          : `<span class="badge bg-secondary opacity-75"><i class="fa-solid fa-clock me-1"></i> Chưa nộp</span>`;
+
+        tr.innerHTML = `
+          <td class="text-center fw-bold text-secondary">${idx + 1}</td>
+          <td>${sbdDisplay}</td>
+          <td><span class="badge bg-primary-subtle text-primary font-monospace fw-bold fs-6">${escapeHtml(s.mssv)}</span></td>
+          <td><strong>${escapeHtml(s.name)}</strong></td>
+          <td class="text-center">${submitDisplay}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger" title="Xóa sinh viên khỏi lớp" onclick="deleteStudentFromRoster('${escapeHtml(classCode)}', '${escapeHtml(s.mssv)}')">
+              <i class="fa-solid fa-user-xmark"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function toggleEnforceRoster() {
+      const chk = document.getElementById('teacher-chk-enforce-roster');
+      const newState = chk.checked;
+      try {
+        const res = await fetch('/api/teacher/roster-toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ enforce_roster: newState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const lblEnforce = document.getElementById('lbl-enforce-roster-status');
+          if (lblEnforce) {
+            if (data.enforce_roster) {
+              lblEnforce.innerText = 'BẬT (Chỉ SV trong DS mới được làm bài)';
+              lblEnforce.className = 'text-success fw-bold';
+            } else {
+              lblEnforce.innerText = 'TẮT (Mở tự do cho mọi sinh viên)';
+              lblEnforce.className = 'text-secondary fw-semibold';
+            }
+          }
+          Swal.fire({
+            icon: 'success',
+            title: data.enforce_roster ? 'ĐÃ BẬT BẢO VỆ DANH SÁCH LỚP!' : 'ĐÃ TẮT BẢO VỆ (MỞ TỰ DO)!',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể thay đổi chế độ: ' + e, 'error');
+        chk.checked = !newState;
+      }
+    }
+
+    function openAddStudentModal() {
+      const selClass = document.getElementById('teacher-roster-sel-class');
+      const currentClass = selClass ? selClass.value : (allClassesList[0] || '');
+      const modalSel = document.getElementById('modal-student-class');
+      if (modalSel) modalSel.value = currentClass;
+      document.getElementById('modal-student-sbd').value = '';
+      document.getElementById('modal-student-mssv').value = '';
+      document.getElementById('modal-student-name').value = '';
+
+      const modalEl = document.getElementById('modal-add-single-student');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+
+    async function saveSingleStudent() {
+      const classCode = document.getElementById('modal-student-class').value.trim();
+      const sbd = document.getElementById('modal-student-sbd').value.trim();
+      const mssv = document.getElementById('modal-student-mssv').value.trim();
+      const name = document.getElementById('modal-student-name').value.trim();
+
+      if (!classCode || !mssv || !name) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng chọn Mã lớp, nhập MSSV và Họ tên sinh viên!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/teacher/students/add', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode, sbd, mssv, name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modal-add-single-student')).hide();
+          const selClass = document.getElementById('teacher-roster-sel-class');
+          if (selClass) selClass.value = classCode;
+          await loadClassRoster();
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ LƯU SINH VIÊN!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể lưu sinh viên!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    function openImportStudentsModal() {
+      const selClass = document.getElementById('teacher-roster-sel-class');
+      const currentClass = selClass ? selClass.value : (allClassesList[0] || '');
+      const modalSel = document.getElementById('modal-import-class');
+      if (modalSel) modalSel.value = currentClass;
+      document.getElementById('modal-import-textarea').value = '';
+
+      const modalEl = document.getElementById('modal-import-students');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+
+    async function saveImportStudents() {
+      const classCode = document.getElementById('modal-import-class').value.trim();
+      const rawText = document.getElementById('modal-import-textarea').value.trim();
+
+      if (!classCode || !rawText) {
+        Swal.fire('Chưa nhập danh sách', 'Vui lòng dán danh sách sinh viên từ Excel hoặc Word!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/teacher/students/import', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode, raw_text: rawText })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modal-import-students')).hide();
+          const selClass = document.getElementById('teacher-roster-sel-class');
+          if (selClass) selClass.value = classCode;
+          await loadClassRoster();
+          Swal.fire({
+            icon: 'success',
+            title: 'NẠP DANH SÁCH THÀNH CÔNG!',
+            html: `<p>${escapeHtml(data.message)}</p><p class="text-secondary small">Tổng số sinh viên hiện tại trong lớp <strong>${escapeHtml(classCode)}</strong>: <strong>${data.total}</strong> sinh viên.</p>`,
+            confirmButtonText: 'Xong'
+          });
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể nạp danh sách!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    async function deleteStudentFromRoster(classCode, mssv) {
+      const result = await Swal.fire({
+        title: `Xóa sinh viên [${mssv}]?`,
+        text: `Sinh viên này sẽ bị xóa khỏi danh sách lớp ${classCode} và không thể đăng nhập làm bài!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/students/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode, mssv: mssv })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadClassRoster();
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ XÓA SINH VIÊN!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể xóa sinh viên!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    async function clearClassRoster() {
+      const selClass = document.getElementById('teacher-roster-sel-class');
+      const classCode = selClass ? selClass.value : '';
+      if (!classCode) return;
+
+      const result = await Swal.fire({
+        title: `LÀM TRỐNG TOÀN BỘ LỚP ${classCode}?`,
+        text: `Hành động này sẽ xóa toàn bộ danh sách sinh viên của lớp ${classCode}! Tất cả sinh viên lớp này sẽ bị chặn làm bài trừ khi được thêm lại.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa toàn bộ',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/students/clear', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadClassRoster();
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ LÀM TRỐNG LỚP!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể xóa danh sách!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
     // Khởi tạo theo chế độ Cổng Sinh viên hoặc Bàn Giảng viên
     const APP_MODE = "{{ mode }}";
     window.addEventListener('DOMContentLoaded', () => {
@@ -2216,6 +2685,99 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
           <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveTeacherQuestion()">
             <i class="fa-solid fa-floppy-disk me-1"></i> Lưu câu hỏi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM 1 SINH VIÊN VÀO DANH SÁCH LỚP -->
+  <div class="modal fade" id="modal-add-single-student" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-user-plus fa-lg"></i>
+            <h5 class="modal-title fw-bold">THÊM SINH VIÊN VÀO DANH SÁCH LỚP</h5>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Chọn Mã lớp KN: <span class="text-danger">*</span></label>
+            <select id="modal-student-class" class="form-select fw-bold text-success border-success">
+              <!-- Render dynamic classes -->
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label fw-semibold">Số báo danh (SBD):</label>
+              <input type="text" id="modal-student-sbd" class="form-control" placeholder="VD: 01">
+            </div>
+            <div class="col-8">
+              <label class="form-label fw-semibold">Mã số sinh viên (MSSV): <span class="text-danger">*</span></label>
+              <input type="text" id="modal-student-mssv" class="form-control font-monospace fw-bold" placeholder="VD: 2100001234">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Họ và tên sinh viên: <span class="text-danger">*</span></label>
+            <input type="text" id="modal-student-name" class="form-control fw-semibold" placeholder="VD: Nguyễn Văn A">
+          </div>
+          <div class="alert alert-info py-2 small mb-0">
+            <i class="fa-solid fa-circle-info me-1"></i> Sinh viên được thêm sẽ lập tức được hệ thống cấp quyền đăng nhập, làm trắc nghiệm, nhận file mẫu và nộp bài.
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-success fw-bold px-4" onclick="saveSingleStudent()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Sinh Viên
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DÁN DANH SÁCH SINH VIÊN HÀNG LOẠT (TỪ EXCEL/SHEETS) -->
+  <div class="modal fade" id="modal-import-students" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-success text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-excel fa-lg"></i>
+            <h5 class="modal-title fw-bold">DÁN DANH SÁCH SINH VIÊN TỪ EXCEL / WORD / SHEETS</h5>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Chọn Mã lớp KN cần nạp sinh viên: <span class="text-danger">*</span></label>
+            <select id="modal-import-class" class="form-select fw-bold text-success border-success">
+              <!-- Render dynamic classes -->
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Dán danh sách sinh viên vào đây: <span class="text-danger">*</span></label>
+            <textarea id="modal-import-textarea" class="form-control font-monospace" rows="9" placeholder="Thầy/Cô copy các cột từ Excel rồi dán trực tiếp vào đây...
+Ví dụ định dạng copy từ Excel (3 cột tab):
+01	2100001234	Nguyễn Văn A
+02	2100001235	Trần Thị B
+03	2100001236	Lê Văn C
+
+Hoặc 2 cột:
+2100001234	Nguyễn Văn A
+2100001235	Trần Thị B
+
+Hoặc gõ phân cách dấu gạch nối (-):
+2100001234 - Nguyễn Văn A"></textarea>
+          </div>
+          <div class="alert alert-success py-2 small mb-0">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> <strong>Tính năng thông minh:</strong> Hệ thống tự động nhận diện cột SBD, MSSV và Họ tên; tự động bỏ qua dòng trống hoặc dòng tiêu đề; nếu sinh viên đã có sẽ tự động cập nhật lại Họ tên và SBD.
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-success fw-bold px-4" onclick="saveImportStudents()">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Nạp Danh Sách Vào Lớp
           </button>
         </div>
       </div>

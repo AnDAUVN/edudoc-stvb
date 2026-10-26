@@ -1,0 +1,60 @@
+{
+  "HC01K157": [
+    {
+      "sbd": "01",
+      "mssv": "2100001234",
+      "name": "Nguyễn Văn A"
+    },
+    {
+      "sbd": "02",
+      "mssv": "2100005555",
+      "name": "Trần Thị B"
+    },
+    {
+      "sbd": "03",
+      "mssv": "2100007777",
+      "name": "Lê Hoàng Nam"
+    }
+  ],
+  "KN01": [
+    {
+      "sbd": "01",
+      "mssv": "2100001234",
+      "name": "Nguyễn Văn A"
+    },
+    {
+      "sbd": "02",
+      "mssv": "2280609999",
+      "name": "Nguyễn Kiểm Tra"
+    },
+    {
+      "sbd": "09",
+      "mssv": "2100007777",
+      "name": "Lê Hoàng Nam"
+    },
+    {
+      "sbd": "88",
+      "mssv": "2100008888",
+      "name": "Trần Văn Tốc Độ"
+    }
+  ],
+  "KN02": [
+    {
+      "sbd": "01",
+      "mssv": "2100001234",
+      "name": "Nguyễn Văn A"
+    },
+    {
+      "sbd": "02",
+      "mssv": "2100005555",
+      "name": "Trần Thị B"
+    }
+  ],
+  "22DTH01": [
+    {
+      "sbd": "01",
+      "mssv": "2100001234",
+      "name": "Nguyễn Văn A"
+    }
+  ]
+}

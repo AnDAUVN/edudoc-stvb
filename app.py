@@ -21,6 +21,7 @@ FRAUD_LOGS_FILE = os.path.join(DATA_DIR, "fraud_logs.json")
 CLASSES_FILE = os.path.join(DATA_DIR, "classes.json")
 SESSION_STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
 STUDENT_SESSIONS_FILE = os.path.join(DATA_DIR, "student_sessions.json")
+STUDENTS_ROSTER_FILE = os.path.join(DATA_DIR, "students_roster.json")
 
 # Đảm bảo các thư mục tồn tại
 for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
@@ -42,16 +43,118 @@ def save_json_file(file_path, data):
 def get_session_state():
     default_state = {
         "is_open": False,
+        "enforce_roster": True,
         "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    return load_json_file(SESSION_STATE_FILE, default_state)
+    state = load_json_file(SESSION_STATE_FILE, default_state)
+    if "enforce_roster" not in state:
+        state["enforce_roster"] = True
+    return state
 
 def is_session_open():
     if app.testing or app.config.get("TESTING", False) or os.environ.get("EDUDOC_TESTING") == "1":
         return True
     state = get_session_state()
     return bool(state.get("is_open", False))
+
+def is_student_in_roster(class_code, mssv):
+    if app.testing or app.config.get("TESTING", False) or os.environ.get("EDUDOC_TESTING") == "1":
+        return True
+    state = get_session_state()
+    if not state.get("enforce_roster", True):
+        return True
+
+    c_code = str(class_code or "").strip().upper()
+    m_clean = str(mssv or "").strip().lower()
+    if not c_code or not m_clean:
+        return True
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    class_students = roster.get(c_code, [])
+    if not class_students:
+        return False
+
+    for s in class_students:
+        if str(s.get("mssv", "")).strip().lower() == m_clean:
+            return True
+    return False
+
+def get_student_from_roster(class_code, mssv):
+    c_code = str(class_code or "").strip().upper()
+    m_clean = str(mssv or "").strip().lower()
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    class_students = roster.get(c_code, [])
+    for s in class_students:
+        if str(s.get("mssv", "")).strip().lower() == m_clean:
+            return s
+    return None
+
+def parse_students_text(raw_text):
+    students = []
+    lines = raw_text.strip().splitlines()
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        parts = [p.strip() for p in re.split(r'[\t,;]+', line) if p.strip()]
+        if len(parts) == 1 and "-" in line:
+            parts = [p.strip() for p in line.split("-", 1) if p.strip()]
+        elif len(parts) == 1 and "|" in line:
+            parts = [p.strip() for p in line.split("|") if p.strip()]
+
+        if not parts:
+            continue
+
+        mssv = None
+        name = None
+        sbd = ""
+
+        if len(parts) == 1:
+            mssv = parts[0]
+            name = f"Sinh viên {mssv}"
+        elif len(parts) == 2:
+            if any(c.isdigit() for c in parts[0]) and not any(c.isdigit() for c in parts[1]):
+                mssv, name = parts[0], parts[1]
+            elif any(c.isdigit() for c in parts[1]) and not any(c.isdigit() for c in parts[0]):
+                name, mssv = parts[0], parts[1]
+            else:
+                mssv, name = parts[0], parts[1]
+        elif len(parts) >= 3:
+            mssv_idx = -1
+            for idx, p in enumerate(parts):
+                if len(p) >= 6 and any(c.isdigit() for c in p):
+                    mssv_idx = idx
+                    break
+            if mssv_idx == -1:
+                for idx, p in enumerate(parts):
+                    if any(c.isdigit() for c in p) and len(p) >= 3:
+                        mssv_idx = idx
+                        break
+
+            if mssv_idx != -1:
+                mssv = parts[mssv_idx]
+                if mssv_idx > 0:
+                    sbd = parts[0]
+                name_parts = parts[mssv_idx + 1:]
+                name = " ".join(name_parts)
+            else:
+                sbd = parts[0]
+                mssv = parts[1]
+                name = " ".join(parts[2:])
+
+        if mssv:
+            mssv = re.sub(r'[^a-zA-Z0-9]', '', mssv).strip().upper()
+            name = re.sub(r'\s+', ' ', name or '').strip()
+            sbd = str(sbd).strip()
+            if mssv:
+                students.append({
+                    "sbd": sbd,
+                    "mssv": mssv,
+                    "name": name or f"Sinh viên {mssv}"
+                })
+    return students
 
 @app.route("/")
 def index():
@@ -72,9 +175,11 @@ def api_set_session_state():
     current = get_session_state()
     new_is_open = bool(data.get("is_open", not current.get("is_open", False)))
     new_message = str(data.get("message", "")).strip() or current.get("message", "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.")
+    enforce_roster = bool(data.get("enforce_roster", current.get("enforce_roster", True)))
     
     updated_state = {
         "is_open": new_is_open,
+        "enforce_roster": enforce_roster,
         "message": new_message,
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -84,6 +189,237 @@ def api_set_session_state():
         "session_state": updated_state,
         "message": "Đã mở quyền làm bài cho sinh viên!" if new_is_open else "Đã khóa hệ thống để sinh viên tập trung nghe giảng!"
     })
+
+@app.route("/api/teacher/roster-toggle", methods=["POST"])
+def toggle_roster_mode():
+    data = request.json or {}
+    state = get_session_state()
+    enforce = bool(data.get("enforce_roster", not state.get("enforce_roster", True)))
+    state["enforce_roster"] = enforce
+    state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    save_json_file(SESSION_STATE_FILE, state)
+    status_text = "BẮT BUỘC (Chỉ sinh viên có tên trong danh sách lớp mới được làm bài)" if enforce else "MỞ TỰ DO (Mọi sinh viên đều được làm bài)"
+    return jsonify({
+        "success": True,
+        "enforce_roster": enforce,
+        "session_state": state,
+        "message": f"Chế độ kiểm soát danh sách lớp: {status_text}!"
+    })
+
+@app.route("/api/student/verify", methods=["POST"])
+def verify_student():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    mssv = str(data.get("mssv", "")).strip()
+
+    if not class_code or not mssv:
+        return jsonify({"valid": False, "error": "Vui lòng chọn Mã lớp và nhập MSSV!"}), 400
+
+    state = get_session_state()
+    enforce = state.get("enforce_roster", True)
+    
+    if not enforce:
+        return jsonify({
+            "valid": True,
+            "enforce_roster": False,
+            "enforce": False,
+            "message": "Chế độ mở tự do"
+        })
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    class_students = roster.get(class_code, [])
+
+    student = None
+    for s in class_students:
+        if str(s.get("mssv", "")).strip().lower() == mssv.lower():
+            student = s
+            break
+
+    if student:
+        return jsonify({
+            "valid": True,
+            "enforce_roster": True,
+            "student": student,
+            "message": f"Xác thực thành công sinh viên {student.get('name', '')} thuộc lớp {class_code}!"
+        })
+
+    if not class_students:
+        return jsonify({
+            "valid": False,
+            "not_in_roster": True,
+            "error": f"Lớp [{class_code}] hiện chưa có danh sách sinh viên được cấp quyền. Vui lòng liên hệ Giảng viên để thêm sinh viên vào danh sách lớp!"
+        }), 403
+
+    return jsonify({
+        "valid": False,
+        "not_in_roster": True,
+        "error": f"Mã sinh viên [{mssv}] KHÔNG CÓ trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép làm bài cho lớp này! Vui lòng liên hệ Giảng viên."
+    }), 403
+
+    return jsonify({
+        "valid": True,
+        "enforce": True,
+        "student": student,
+        "message": f"Xác thực thành công sinh viên {student.get('name', '')} thuộc lớp {class_code}!"
+    })
+
+@app.route("/api/teacher/students", methods=["GET"])
+def get_teacher_students():
+    class_code = str(request.args.get("class_code", "")).strip().upper()
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    submissions = load_json_file(SUBMISSIONS_FILE, [])
+
+    sub_map = {}
+    for sub in submissions:
+        sub_key = f"{sub.get('class_code', '').upper()}_{sub.get('mssv', '').upper()}"
+        sub_map[sub_key] = sub
+
+    if class_code and class_code != "ALL":
+        raw_students = roster.get(class_code, [])
+        students = []
+        for s in raw_students:
+            s_dict = dict(s)
+            s_dict["class_code"] = class_code
+            sub_key = f"{class_code}_{s.get('mssv', '').upper()}"
+            sub = sub_map.get(sub_key)
+            s_dict["has_submitted"] = bool(sub)
+            s_dict["submission"] = sub if sub else None
+            students.append(s_dict)
+        return jsonify({"class_code": class_code, "students": students, "total": len(students)})
+    else:
+        all_students = []
+        for c_code, s_list in roster.items():
+            for s in s_list:
+                s_copy = dict(s)
+                s_copy["class_code"] = c_code
+                sub_key = f"{c_code}_{s.get('mssv', '').upper()}"
+                sub = sub_map.get(sub_key)
+                s_copy["has_submitted"] = bool(sub)
+                s_copy["submission"] = sub if sub else None
+                all_students.append(s_copy)
+        return jsonify({"class_code": "ALL", "students": all_students, "total": len(all_students)})
+
+@app.route("/api/teacher/students/add", methods=["POST"])
+def add_student_to_roster():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    mssv = str(data.get("mssv", "")).strip().upper()
+    name = str(data.get("name", "")).strip()
+    sbd = str(data.get("sbd", "")).strip()
+
+    if not class_code or not mssv or not name:
+        return jsonify({"error": "Vui lòng nhập đầy đủ Mã lớp, MSSV và Họ và tên sinh viên!"}), 400
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    if class_code not in roster:
+        roster[class_code] = []
+
+    existing = False
+    for s in roster[class_code]:
+        if str(s.get("mssv", "")).upper() == mssv:
+            s["name"] = name
+            if sbd:
+                s["sbd"] = sbd
+            existing = True
+            break
+
+    if not existing:
+        if not sbd:
+            sbd = f"{len(roster[class_code]) + 1:02d}"
+        roster[class_code].append({
+            "sbd": sbd,
+            "mssv": mssv,
+            "name": name
+        })
+
+    classes = load_json_file(CLASSES_FILE, [])
+    if class_code not in classes:
+        classes.append(class_code)
+        classes.sort()
+        save_json_file(CLASSES_FILE, classes)
+
+    save_json_file(STUDENTS_ROSTER_FILE, roster)
+    return jsonify({
+        "success": True,
+        "message": f"Đã thêm thành công sinh viên [{mssv} - {name}] vào lớp {class_code}!",
+        "students": roster[class_code]
+    })
+
+@app.route("/api/teacher/students/import", methods=["POST"])
+def import_students_to_roster():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    raw_text = str(data.get("raw_text", "")).strip()
+
+    if not class_code or not raw_text:
+        return jsonify({"error": "Vui lòng chọn Mã lớp và dán danh sách sinh viên!"}), 400
+
+    parsed_students = parse_students_text(raw_text)
+    if not parsed_students:
+        return jsonify({"error": "Không thể nhận diện sinh viên nào từ văn bản đã dán. Vui lòng kiểm tra lại định dạng!"}), 400
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    if class_code not in roster:
+        roster[class_code] = []
+
+    added_count = 0
+    updated_count = 0
+    mssv_map = {str(s.get("mssv", "")).upper(): s for s in roster[class_code]}
+
+    for new_s in parsed_students:
+        m = new_s["mssv"]
+        if m in mssv_map:
+            mssv_map[m]["name"] = new_s["name"]
+            if new_s.get("sbd"):
+                mssv_map[m]["sbd"] = new_s["sbd"]
+            updated_count += 1
+        else:
+            if not new_s.get("sbd"):
+                new_s["sbd"] = f"{len(roster[class_code]) + 1:02d}"
+            roster[class_code].append(new_s)
+            mssv_map[m] = new_s
+            added_count += 1
+
+    classes = load_json_file(CLASSES_FILE, [])
+    if class_code not in classes:
+        classes.append(class_code)
+        classes.sort()
+        save_json_file(CLASSES_FILE, classes)
+
+    save_json_file(STUDENTS_ROSTER_FILE, roster)
+    return jsonify({
+        "success": True,
+        "added_count": added_count,
+        "updated_count": updated_count,
+        "total": len(roster[class_code]),
+        "message": f"Đã nạp thành công {added_count} sinh viên mới (cập nhật {updated_count}) vào lớp {class_code}!",
+        "students": roster[class_code]
+    })
+
+@app.route("/api/teacher/students/delete", methods=["POST"])
+def delete_student_from_roster():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    mssv = str(data.get("mssv", "")).strip().upper()
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    if class_code in roster:
+        roster[class_code] = [s for s in roster[class_code] if str(s.get("mssv", "")).upper() != mssv]
+        save_json_file(STUDENTS_ROSTER_FILE, roster)
+        return jsonify({"success": True, "message": f"Đã xóa sinh viên [{mssv}] khỏi lớp {class_code}!"})
+    return jsonify({"error": "Không tìm thấy dữ liệu lớp!"}), 404
+
+@app.route("/api/teacher/students/clear", methods=["POST"])
+def clear_class_roster():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    if class_code in roster:
+        roster[class_code] = []
+        save_json_file(STUDENTS_ROSTER_FILE, roster)
+        return jsonify({"success": True, "message": f"Đã làm trống toàn bộ danh sách sinh viên của lớp {class_code}!"})
+    return jsonify({"error": "Không tìm thấy dữ liệu lớp!"}), 404
 
 @app.route("/api/documents", methods=["GET"])
 def get_documents():
@@ -128,6 +464,15 @@ def get_quiz():
         }), 403
 
     data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    mssv = str(data.get("mssv", "")).strip()
+
+    if class_code and mssv and not is_student_in_roster(class_code, mssv):
+        return jsonify({
+            "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép làm bài!",
+            "not_in_roster": True
+        }), 403
+
     doc_type = data.get("doc_type")
     all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
     
@@ -226,6 +571,12 @@ def generate_template():
     
     if not (sbd and mssv and name and doc_type):
         return jsonify({"error": "Vui lòng nhập đầy đủ SBD, MSSV, Họ và tên và Chọn loại văn bản!"}), 400
+
+    if not is_student_in_roster(class_code, mssv):
+        return jsonify({
+            "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nhận file mẫu bài tập!",
+            "not_in_roster": True
+        }), 403
         
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     tmpl = templates_data.get(doc_type)
@@ -305,6 +656,12 @@ def validate_student_work():
     
     if not (file.filename and sbd and mssv and name and doc_type):
         return jsonify({"error": "Thiếu thông tin xác thực bài làm!"}), 400
+
+    if not is_student_in_roster(class_code, mssv):
+        return jsonify({
+            "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép thẩm định bài làm!",
+            "not_in_roster": True
+        }), 403
 
     temp_save_path = os.path.join(STORAGE_UPLOADS, f"temp_{mssv}_{file.filename}")
     file.save(temp_save_path)
@@ -400,6 +757,12 @@ def submit_final():
     
     if not (sbd and mssv and name and doc_type and temp_file):
         return jsonify({"error": "Thiếu thông tin nộp bài!"}), 400
+
+    if not is_student_in_roster(class_code, mssv):
+        return jsonify({
+            "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nộp bài!",
+            "not_in_roster": True
+        }), 403
         
     temp_path = os.path.join(STORAGE_UPLOADS, temp_file)
     if not os.path.exists(temp_path):
@@ -469,11 +832,15 @@ def teacher_data():
     fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
     classes = load_json_file(CLASSES_FILE, ["22DTH01", "22DTH02", "KN01", "KN02"])
     session_state = get_session_state()
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+    total_roster_students = sum(len(s_list) for s_list in roster.values())
     return jsonify({
         "submissions": submissions,
         "fraud_logs": fraud_logs,
         "classes": classes,
-        "session_state": session_state
+        "session_state": session_state,
+        "students_roster": roster,
+        "total_roster_students": total_roster_students
     })
 
 @app.route("/api/download/submitted/<filename>")
