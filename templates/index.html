@@ -87,18 +87,20 @@
           <button class="btn btn-warning rounded-pill fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
             <i class="fa-solid fa-book-bookmark me-1"></i> Tra cứu Thể thức NĐ 30
           </button>
-          <ul class="nav nav-pills bg-white rounded-pill p-1 shadow-sm">
-            <li class="nav-item">
-              <button class="nav-link active rounded-pill fw-semibold" id="tab-student" onclick="switchTab('student')">
-                <i class="fa-solid fa-user-graduate me-1"></i> Cổng Sinh viên
-              </button>
-            </li>
-            <li class="nav-item">
-              <button class="nav-link rounded-pill fw-semibold text-dark" id="tab-teacher" onclick="switchTab('teacher')">
-                <i class="fa-solid fa-chalkboard-user me-1"></i> Bàn làm việc Giảng viên
-              </button>
-            </li>
-          </ul>
+          {% if mode == 'teacher' %}
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white text-danger rounded-pill px-3 py-2 fw-bold shadow-sm fs-6">
+              <i class="fa-solid fa-chalkboard-user me-1"></i> Bàn làm việc Giảng viên
+            </span>
+            <a href="/" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
+              <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Sinh viên
+            </a>
+          </div>
+          {% else %}
+          <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold shadow-sm fs-6">
+            <i class="fa-solid fa-user-graduate me-1"></i> Cổng Sinh viên
+          </span>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -106,6 +108,7 @@
 
   <div class="container my-4">
 
+    {% if mode != 'teacher' %}
     <!-- ==================== CỔNG SINH VIÊN ==================== -->
     <div id="student-view">
       
@@ -308,9 +311,9 @@
       </div>
 
     </div>
-
+    {% else %}
     <!-- ==================== CỔNG GIẢNG VIÊN ==================== -->
-    <div id="teacher-view" class="d-none">
+    <div id="teacher-view">
       
       <div class="row g-3 mb-4">
         <div class="col-md-4">
@@ -565,6 +568,7 @@
       </div>
 
     </div>
+    {% endif %}
 
   </div>
 
@@ -607,20 +611,21 @@
     }
 
     function switchTab(tab) {
+      const sView = document.getElementById('student-view');
+      const tView = document.getElementById('teacher-view');
+      const sTab = document.getElementById('tab-student');
+      const tTab = document.getElementById('tab-teacher');
+
       if (tab === 'student') {
-        document.getElementById('student-view').classList.remove('d-none');
-        document.getElementById('teacher-view').classList.add('d-none');
-        document.getElementById('tab-student').classList.add('active', 'text-white');
-        document.getElementById('tab-student').classList.remove('text-dark');
-        document.getElementById('tab-teacher').classList.remove('active', 'text-white');
-        document.getElementById('tab-teacher').classList.add('text-dark');
+        if (sView) sView.classList.remove('d-none');
+        if (tView) tView.classList.add('d-none');
+        if (sTab) { sTab.classList.add('active', 'text-white'); sTab.classList.remove('text-dark'); }
+        if (tTab) { tTab.classList.remove('active', 'text-white'); tTab.classList.add('text-dark'); }
       } else {
-        document.getElementById('student-view').classList.add('d-none');
-        document.getElementById('teacher-view').classList.remove('d-none');
-        document.getElementById('tab-teacher').classList.add('active', 'text-white');
-        document.getElementById('tab-teacher').classList.remove('text-dark');
-        document.getElementById('tab-student').classList.remove('active', 'text-white');
-        document.getElementById('tab-student').classList.add('text-dark');
+        if (sView) sView.classList.add('d-none');
+        if (tView) tView.classList.remove('d-none');
+        if (tTab) { tTab.classList.add('active', 'text-white'); tTab.classList.remove('text-dark'); }
+        if (sTab) { sTab.classList.remove('active', 'text-white'); sTab.classList.add('text-dark'); }
         loadTeacherData();
       }
     }
@@ -1646,11 +1651,12 @@
       }
     }
 
-    // Tự động tải mã lớp và chuyển Cổng nếu vào qua link /teacher
+    // Khởi tạo theo chế độ Cổng Sinh viên hoặc Bàn Giảng viên
+    const APP_MODE = "{{ mode }}";
     window.addEventListener('DOMContentLoaded', () => {
       loadClasses();
-      if (window.location.pathname.includes('/teacher') || window.location.hash === '#teacher' || window.location.search.includes('view=teacher')) {
-        switchTab('teacher');
+      if (APP_MODE === 'teacher') {
+        loadTeacherData();
       }
     });
   </script>

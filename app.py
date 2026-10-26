@@ -37,11 +37,11 @@ def save_json_file(file_path, data):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", mode="student")
 
 @app.route("/teacher")
 def teacher_portal():
-    return render_template("index.html")
+    return render_template("index.html", mode="teacher")
 
 @app.route("/api/documents", methods=["GET"])
 def get_documents():
