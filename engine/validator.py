@@ -596,18 +596,34 @@ class Decree30Validator:
     # =========================================================================
     # Ô 5a / 5b: TÊN LOẠI & TRÍCH YẾU NỘI DUNG VĂN BẢN
     # =========================================================================
-    def check_box_5_trich_yeu(self, p_type, p_trich_yeu, p_so=None, is_5b_in_table=True):
+    def check_box_5_trich_yeu(self, p_type, p_trich_yeu, p_so=None, is_5b_in_table=True, p_trich_yeu_outside_extra=None):
         errors = []
         is_cong_van = (self.doc_type_id == "cong_van_de_nghi")
 
         if is_cong_van:
-            # Ô 5b: CÔNG VĂN (KHÔNG CÓ TÊN LOẠI, CHỈ CÓ TRÍCH YẾU 5b NẰM DƯỚI Ô 3)
+            # Ô 5b: CÔNG VĂN (KHÔNG CÓ TÊN LOẠI, CHỈ CÓ TRÍCH YẾU 5b NẰM DƯỚI Ô 3 TRONG BẢNG)
+            # 1. KIỂM TRA VI PHẠM SƠ ĐỒ 2: CÔNG VĂN KHÔNG ĐƯỢC CÓ Ô 5a TÊN LOẠI
+            if p_type:
+                t_type = self._clean_text(p_type)
+                errors.append({
+                    "issue": f"Sai sơ đồ bố trí Công văn (Hình 2 Nghị định 30): Công văn là văn bản KHÔNG CÓ TÊN LOẠI (Ô 5a). Bài làm xuất hiện dòng tên loại '{t_type}' ở giữa trang ngoài bảng.",
+                    "fix": f"Xóa bỏ dòng chữ '{t_type}' ở giữa trang. Công văn bắt đầu ngay bằng Ô 9a (Kính gửi) sau Bảng đầu trang."
+                })
+
+            # 2. KIỂM TRA VI PHẠM SƠ ĐỒ 2: CÔNG VĂN KHÔNG ĐƯỢC CÓ TRÍCH YẾU THỨ HAI Ở NGOÀI BẢNG
+            if p_trich_yeu_outside_extra:
+                t_extra = self._clean_text(p_trich_yeu_outside_extra)
+                errors.append({
+                    "issue": f"Sai sơ đồ bố trí Công văn (Hình 2 Nghị định 30): Công văn không được có dòng trích yếu đặt ở giữa trang ngoài bảng ('{t_extra[:40]}...').",
+                    "fix": "Xóa dòng trích yếu ở giữa trang giấy ngoài bảng. Trích yếu 'V/v ...' của Công văn (Ô 5b) bắt buộc phải nằm trong Bảng đầu trang tại Dòng 2 Cột 1 ngay dưới Ô 3."
+                })
+
             if not p_trich_yeu:
                 return {
                     "box_id": "5b",
                     "name": "Ô 5b: Trích yếu nội dung Công văn (V/v)",
                     "passed": False,
-                    "errors": [{"issue": "Chưa tìm thấy dòng trích yếu bắt đầu bằng 'V/v'.", "fix": "Trình bày 'V/v ...' ngay dưới Số và ký hiệu văn bản trong Bảng đầu trang."}]
+                    "errors": [{"issue": "Chưa tìm thấy dòng trích yếu bắt đầu bằng 'V/v'.", "fix": "Trình bày 'V/v ...' ngay dưới Số và ký hiệu văn bản trong Bảng đầu trang."}] + errors
                 }
             if not is_5b_in_table:
                 errors.append({
@@ -651,6 +667,11 @@ class Decree30Validator:
             }
         else:
             # Ô 5a: THÔNG BÁO, TỜ TRÌNH, BÁO CÁO, BÀI THU HOẠCH (NẰM NGOÀI BẢNG ĐẦU TRANG)
+            if is_5b_in_table:
+                errors.append({
+                    "issue": "Sai sơ đồ bố trí theo Nghị định 30: Văn bản có tên loại (Thông báo, Tờ trình, Báo cáo) không trình bày trích yếu trong Bảng đầu trang (Ô 5b). Trích yếu (Ô 5a) bắt buộc phải nằm ngoài bảng, căn giữa trang ngay dưới Tên loại văn bản.",
+                    "fix": "Xóa dòng trích yếu trong Bảng đầu trang và trình bày trích yếu (Ô 5a) ở giữa trang dưới Tên loại văn bản."
+                })
             if not p_type:
                 errors.append({"issue": "Chưa có Tên loại văn bản (THÔNG BÁO, TỜ TRÌNH, BÁO CÁO hoặc BÀI THU HOẠCH) ở ngoài bảng, giữa trang.", "fix": "Thêm tên loại văn bản viết in hoa, in đậm, căn giữa."})
             else:
@@ -1404,6 +1425,7 @@ class Decree30Validator:
         p_dia_danh = None
         p_type = None
         p_trich_yeu = None
+        p_trich_yeu_outside_extra = None
         is_5b_in_table = False
         p_kinh_gui = None
         kinh_gui_items = []
@@ -1539,11 +1561,14 @@ class Decree30Validator:
                 p_so = p
             elif not p_dia_danh and ("ngày" in t.lower() and "tháng" in t.lower() and "năm" in t.lower()):
                 p_dia_danh = p
-            elif not p_type and (t in ["THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"] or any(kw in t.upper() for kw in ["THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])):
+            elif not p_type and (t in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"] or any(kw in t.upper() for kw in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])):
                 p_type = p
-            elif not p_trich_yeu and (t.startswith("Về việc") or t.startswith("về việc") or t.startswith("V/v") or (p_type is not None and not p_kinh_gui and (t.startswith("Về ") or t.startswith("về ") or t.startswith("Khóa ") or t.startswith("Chuyên đề ") or t.startswith("Học phần ")))):
-                p_trich_yeu = p
-                is_5b_in_table = False
+            elif (t.startswith("Về việc") or t.startswith("về việc") or t.startswith("V/v") or (p_type is not None and not p_kinh_gui and (t.startswith("Về ") or t.startswith("về ") or t.startswith("Khóa ") or t.startswith("Chuyên đề ") or t.startswith("Học phần ")))):
+                if not p_trich_yeu:
+                    p_trich_yeu = p
+                    is_5b_in_table = False
+                else:
+                    p_trich_yeu_outside_extra = p
             elif not p_noi_nhan_title and "Nơi nhận" in t:
                 p_noi_nhan_title = p
             elif p_noi_nhan_title and (t.startswith("-") or "Lưu:" in t):
@@ -1564,7 +1589,7 @@ class Decree30Validator:
         checklist.append(self.check_box_2_co_quan(p_cq_quan_ly, p_cq_ban_hanh))
         checklist.append(self.check_box_3_so_ky_hieu(p_so))
         checklist.append(self.check_box_4_dia_danh(p_dia_danh, same_row=same_row_so_dia_danh))
-        checklist.append(self.check_box_5_trich_yeu(p_type, p_trich_yeu, p_so, is_5b_in_table=is_5b_in_table))
+        checklist.append(self.check_box_5_trich_yeu(p_type, p_trich_yeu, p_so, is_5b_in_table=is_5b_in_table, p_trich_yeu_outside_extra=p_trich_yeu_outside_extra))
         checklist.append(self.check_box_6_noi_dung(body_paragraphs))
         checklist.append(self.check_box_7_8_chuc_vu_nguoi_ky(p_chuc_vu, p_ho_ten, empty_lines_sign, p_cq_ban_hanh=p_cq_ban_hanh))
 
