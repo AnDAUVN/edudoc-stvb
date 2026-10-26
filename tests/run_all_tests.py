@@ -19,6 +19,7 @@ TEST_SUITES = [
     "test_fraud_management.py",
     "test_cong_ty_pho_giam_doc.py",
     "test_all_8_docs.py",
+    "test_schema_layouts.py",
     "comprehensive_audit_suite.py"
 ]
 

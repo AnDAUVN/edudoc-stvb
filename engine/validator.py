@@ -1189,6 +1189,16 @@ class Decree30Validator:
     def check_box_9a_kinh_gui(self, p_kinh_gui, kinh_gui_items):
         is_required = self.doc_type_id in ["cong_van_de_nghi", "to_trinh_nhan_su", "to_trinh_thiet_bi", "to_trinh_xin_kinh_phi", "bao_cao"]
         if not is_required:
+            if p_kinh_gui:
+                return {
+                    "box_id": "9a",
+                    "name": "Ô 9a: Nơi nhận trực tiếp (Kính gửi)",
+                    "passed": False,
+                    "errors": [{
+                        "issue": "Sai sơ đồ bố trí theo Nghị định 30: Thông báo và Bài thu hoạch KHÔNG CÓ mục Nơi nhận trực tiếp (Kính gửi / Ô 9a) trước phần Nội dung (Ô 6).",
+                        "fix": "Xóa dòng 'Kính gửi' trong Thông báo. Nơi nhận của Thông báo chỉ trình bày tại Ô 9b ở góc dưới bên trái văn bản."
+                    }]
+                }
             return None
 
         errors = []

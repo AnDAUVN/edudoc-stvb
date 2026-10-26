@@ -166,7 +166,7 @@
           </div>
           <div class="col-md-3">
             <label class="form-label fw-semibold">Chọn loại văn bản bài tập</label>
-            <select id="sel-doc-type" class="form-select fw-semibold text-primary">
+            <select id="sel-doc-type" class="form-select fw-semibold text-primary" onchange="onDocTypeChanged()">
               <option value="bai_thu_hoach">1. Bài thu hoạch</option>
               <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
               <option value="thong_bao_nhiem_vu" selected>3. Thông báo nhiệm vụ được giao</option>
@@ -177,6 +177,26 @@
               <option value="bao_cao">8. Báo cáo</option>
             </select>
           </div>
+        </div>
+
+        <!-- BANNER HƯỚNG DẪN SƠ ĐỒ BỐ TRÍ NGHỊ ĐỊNH 30 THEO TỪNG VĂN BẢN -->
+        <div id="schema-guidance-card" class="mt-3 p-3 rounded-3 bg-light border border-2 border-primary-subtle d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-danger p-3 fs-5 rounded-circle" id="schema-badge-icon">
+              <i class="fa-solid fa-bullhorn"></i>
+            </span>
+            <div>
+              <div class="fw-bold text-dark fs-6" id="schema-card-title">
+                Sơ đồ bố trí chuẩn: <span class="text-danger">SƠ ĐỒ THÔNG BÁO (Hình 3)</span>
+              </div>
+              <div class="small text-secondary mt-1" id="schema-card-desc">
+                Có <strong>Ô 5a (THÔNG BÁO)</strong> ở giữa trang; <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 9a (Kính gửi)</span> trước nội dung; Nơi nhận chỉ trình bày tại Ô 9b ở góc dưới bên trái.
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary fw-bold px-3 py-2 text-nowrap align-self-start align-self-md-center" onclick="viewCurrentSchema()">
+            <i class="fa-solid fa-diagram-project me-1"></i> Xem Sơ đồ Bố trí
+          </button>
         </div>
         <div class="mt-3 text-end">
           <button class="btn btn-primary px-4 fw-bold" onclick="startQuiz()">
@@ -628,6 +648,59 @@
         if (sTab) { sTab.classList.remove('active', 'text-white'); sTab.classList.add('text-dark'); }
         loadTeacherData();
       }
+    }
+
+    // CẬP NHẬT BANNER SƠ ĐỒ BỐ TRÍ NGHỊ ĐỊNH 30 KHI CHỌN LOẠI VĂN BẢN
+    function onDocTypeChanged() {
+      const docType = document.getElementById('sel-doc-type').value;
+      const titleEl = document.getElementById('schema-card-title');
+      const descEl = document.getElementById('schema-card-desc');
+      const iconEl = document.getElementById('schema-badge-icon');
+
+      if (docType === 'cong_van_de_nghi') {
+        iconEl.className = 'badge bg-primary p-3 fs-5 rounded-circle';
+        iconEl.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i>';
+        titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-primary">SƠ ĐỒ CỦA CÔNG VĂN (Hình 2)</span>';
+        descEl.innerHTML = '<strong>Ô 5b (Trích yếu V/v)</strong> nằm TRONG BẢNG đầu trang ngay dưới Ô 3; <span class="text-primary fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước Ô 6; <span class="text-danger fw-bold">KHÔNG CÓ Ô 5a tên loại</span> ở giữa trang.';
+      } else if (docType.startsWith('to_trinh') || docType === 'bao_cao') {
+        iconEl.className = 'badge bg-warning text-dark p-3 fs-5 rounded-circle';
+        iconEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i>';
+        titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-warning-emphasis">SƠ ĐỒ TỜ TRÌNH, BÁO CÁO (Hình 1)</span>';
+        descEl.innerHTML = 'Có <strong>Ô 5a (TÊN LOẠI & Trích yếu)</strong> ở giữa trang; <span class="text-danger fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước khi vào Ô 6; Bảng cuối trang gồm Ô 9b (Nơi nhận) và Ô 7a, 8, 7c, 7b.';
+      } else {
+        // thong_bao_nhiem_vu, thong_bao_hoat_dong, bai_thu_hoach
+        iconEl.className = 'badge bg-danger p-3 fs-5 rounded-circle';
+        iconEl.innerHTML = '<i class="fa-solid fa-bullhorn"></i>';
+        titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-danger">SƠ ĐỒ THÔNG BÁO (Hình 3)</span>';
+        descEl.innerHTML = 'Có <strong>Ô 5a (THÔNG BÁO)</strong> ở giữa trang; <span class="text-danger fw-bold">TUYỆT ĐỐI KHÔNG CÓ Ô 9a (Kính gửi)</span> trước Ô 6; Nơi nhận chỉ ghi ở Ô 9b góc dưới bên trái văn bản.';
+      }
+    }
+
+    function viewCurrentSchema() {
+      const docType = document.getElementById('sel-doc-type').value;
+      const modalEl = document.getElementById('modal-decree30-guide');
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+
+      // Kích hoạt tab Sơ đồ 7
+      const tabBtn = document.getElementById('tab-schemas');
+      if (tabBtn) {
+        bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+      }
+
+      // Kích hoạt subtab tương ứng
+      setTimeout(() => {
+        if (docType === 'cong_van_de_nghi') {
+          const subBtn = document.getElementById('subtab-schema-congvan');
+          if (subBtn) bootstrap.Tab.getOrCreateInstance(subBtn).show();
+        } else if (docType.startsWith('to_trinh') || docType === 'bao_cao') {
+          const subBtn = document.getElementById('subtab-schema-totrinh');
+          if (subBtn) bootstrap.Tab.getOrCreateInstance(subBtn).show();
+        } else {
+          const subBtn = document.getElementById('subtab-schema-thongbao');
+          if (subBtn) bootstrap.Tab.getOrCreateInstance(subBtn).show();
+        }
+      }, 150);
     }
 
     // QUẢN LÝ MÃ LỚP KN
@@ -1778,6 +1851,11 @@
                 <i class="fa-solid fa-graduation-cap me-1"></i> 6. Cấu trúc Ô 6 Thông Báo (Bài 7 & 8)
               </button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small text-primary" id="tab-schemas" data-bs-toggle="pill" data-bs-target="#content-schemas">
+                <i class="fa-solid fa-diagram-project me-1"></i> 7. Sơ đồ Bố trí Chuẩn (3 Nhóm VB NĐ 30)
+              </button>
+            </li>
           </ul>
 
           <!-- TAB CONTENTS -->
@@ -2207,6 +2285,197 @@
                       <div class="alert alert-success py-2 px-3 mb-0 small">
                         <i class="fa-solid fa-circle-check me-1"></i>
                         <strong>Quy tắc viết hoa:</strong> Viết hoa đầu câu, đầu gạch đầu dòng, viết hoa đúng tên cơ quan (Ban Giám đốc, Phòng Hành chính, Tổ Kỹ thuật...).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 7: SƠ ĐỒ BỐ TRÍ THỂ THỨC CHUẨN NGHỊ ĐỊNH 30 -->
+            <div class="tab-pane fade" id="content-schemas">
+              <div class="alert alert-primary d-flex align-items-center mb-4">
+                <i class="fa-solid fa-circle-info fa-2x me-3"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">QUY TẮC BẮT BUỘC VỀ SƠ ĐỒ BỐ TRÍ CÁC THÀNH PHẦN THỂ THỨC (PHỤ LỤC I NĐ 30/2020/NĐ-CP)</h6>
+                  <small>Khi làm bài tập Word, sinh viên phải tuân thủ đúng sơ đồ bố trí của từng nhóm văn bản: vị trí Ô 1 đến Ô 9, sự khác biệt giữa Ô 5a và Ô 5b, và mục Ô 9a (Kính gửi).</small>
+                </div>
+              </div>
+
+              <!-- SUB TABS CHO 3 SƠ ĐỒ -->
+              <ul class="nav nav-tabs mb-3" id="schemaSubTabs" role="tablist">
+                <li class="nav-item">
+                  <button class="nav-link active fw-bold" id="subtab-schema-totrinh" data-bs-toggle="tab" data-bs-target="#subcontent-totrinh">
+                    <i class="fa-solid fa-file-invoice text-warning me-1"></i> Sơ đồ 1: Tờ trình & Báo cáo
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link fw-bold" id="subtab-schema-congvan" data-bs-toggle="tab" data-bs-target="#subcontent-congvan">
+                    <i class="fa-solid fa-envelope-open-text text-primary me-1"></i> Sơ đồ 2: Công văn hành chính
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link fw-bold" id="subtab-schema-thongbao" data-bs-toggle="tab" data-bs-target="#subcontent-thongbao">
+                    <i class="fa-solid fa-bullhorn text-danger me-1"></i> Sơ đồ 3: Thông báo & Bài thu hoạch
+                  </button>
+                </li>
+              </ul>
+
+              <div class="tab-content" id="schemaSubContent">
+                <!-- SƠ ĐỒ 1: TỜ TRÌNH, BÁO CÁO -->
+                <div class="tab-pane fade show active" id="subcontent-totrinh">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_to_trinh_bao_cao.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Tờ trình, Báo cáo" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-warning text-dark mt-2 fs-6">SƠ ĐỒ BỐ TRÍ TỜ TRÌNH, BÁO CÁO</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-warning h-100">
+                        <div class="card-header bg-warning text-dark fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong>5. Tờ trình xin kinh phí</strong></li>
+                            <li><strong>6. Tờ trình xin bổ sung nhân sự</strong></li>
+                            <li><strong>7. Tờ trình xin máy móc thiết bị</strong></li>
+                            <li><strong>8. Báo cáo</strong></li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li>Hàng 2: [Ô 3: Số, ký hiệu] | [Ô 4: Địa danh, ngày tháng năm]</li>
+                              </ul>
+                            </li>
+                            <li><strong>Ô 5a (Tên loại & Trích yếu):</strong> Đặt ở giữa trang giấy ngoài bảng (TÊN LOẠI in hoa đậm, Trích yếu in thường đậm kèm gạch ngang dưới).</li>
+                            <li><strong class="text-danger">Ô 9a (Nơi nhận: Kính gửi):</strong> <strong>BẮT BUỘC CÓ</strong> trước khi vào phần nội dung văn bản.</li>
+                            <li><strong>Ô 6 (Nội dung văn bản):</strong> Thân bài trình bày các căn cứ, lý do, đề xuất kinh phí/nhân sự/thiết bị...</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Như kính gửi; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 (Con dấu) / 7c (Chữ ký), Ô 7b (Họ tên người ký).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-warning py-2 mb-0 small">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            <strong>Lưu ý quan trọng:</strong> Tờ trình và Báo cáo <strong>bắt buộc phải có cả 2 mục nơi nhận</strong>: Ô 9a (Kính gửi) ở phần trên VÀ Ô 9b (Nơi nhận) ở bảng cuối trang.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SƠ ĐỒ 2: CÔNG VĂN -->
+                <div class="tab-pane fade" id="subcontent-congvan">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_cong_van.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Công văn" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-primary mt-2 fs-6">SƠ ĐỒ BỐ TRÍ CỦA CÔNG VĂN</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-primary h-100">
+                        <div class="card-header bg-primary text-white fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong>2. Công văn đề nghị</strong></li>
+                            <li>Các loại công văn hành chính (xin ý kiến, trao đổi, hướng dẫn...)</li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li><strong class="text-danger">Hàng 2 Cột 1:</strong> Chứa cả <strong>Ô 3 (Số ký hiệu)</strong> VÀ <strong class="text-danger">Ô 5b (Trích yếu V/v)</strong> ngay bên dưới Ô 3, cách dòng 6pt!</li>
+                                <li>Hàng 2 Cột 2: [Ô 4: Địa danh, ngày tháng năm].</li>
+                              </ul>
+                            </li>
+                            <li><strong class="text-danger">KHÔNG CÓ Ô 5a:</strong> Công văn không có tên loại in hoa ở giữa trang.</li>
+                            <li><strong class="text-primary">Ô 9a (Nơi nhận: Kính gửi):</strong> Đặt ngay sau Bảng đầu trang, trước Ô 6.</li>
+                            <li><strong>Ô 6 (Nội dung công văn):</strong> Phần nội dung đề nghị, trao đổi...</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Như kính gửi; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 (Con dấu) / 7c (Chữ ký), Ô 7b (Họ tên người ký).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-primary py-2 mb-0 small">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            <strong>Sai lầm sinh viên hay mắc:</strong> Đưa dòng trích yếu V/v ra giữa trang ngoài bảng là sai hoàn toàn! Ô 5b bắt buộc phải nằm ở ô Cột 1 Hàng 2 trong Bảng đầu trang.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SƠ ĐỒ 3: THÔNG BÁO -->
+                <div class="tab-pane fade" id="subcontent-thongbao">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_thong_bao.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Thông báo" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-danger mt-2 fs-6">SƠ ĐỒ BỐ TRÍ THÔNG BÁO</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-danger h-100">
+                        <div class="card-header bg-danger text-white fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong>3. Thông báo nhiệm vụ được giao</strong></li>
+                            <li><strong>4. Thông báo thông tin hoạt động</strong></li>
+                            <li><strong>1. Bài thu hoạch</strong></li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li>Hàng 2: [Ô 3: Số, ký hiệu (Số: .../TB-...)] | [Ô 4: Địa danh, ngày tháng năm]</li>
+                              </ul>
+                            </li>
+                            <li><strong>Ô 5a (Tên loại & Trích yếu):</strong> Đặt ở giữa trang giấy:
+                              <ul>
+                                <li>Dòng 1: <strong>THÔNG BÁO</strong> (IN HOA, đậm, đứng, cỡ 13-14pt).</li>
+                                <li>Dòng 2: Trích yếu (in thường, đậm, đứng, kèm gạch ngang dưới).</li>
+                              </ul>
+                            </li>
+                            <li><strong class="text-danger fs-6">TUYỆT ĐỐI KHÔNG CÓ Ô 9a (KHÔNG CÓ KÍNH GỬI):</strong> Ngay sau Ô 5a là bắt đầu trực tiếp vào <strong>Ô 6 (Nội dung văn bản)</strong>!</li>
+                            <li><strong>Ô 6 (Nội dung thông báo):</strong> Mở đầu ➔ Thân bài ➔ Kết thúc thông báo ("Trân trọng thông báo./.").</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Ban Giám hiệu (để b/c); - Các đơn vị; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 / 7c, Ô 7b (Họ tên).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-danger py-2 mb-0 small">
+                            <i class="fa-solid fa-skull-crossbones me-1"></i>
+                            <strong>Lỗi trừ điểm nặng nhất:</strong> Sinh viên quen tay ghi "Kính gửi: ..." trong Thông báo. Hệ thống chấm sẽ phát hiện và bắt lỗi vi phạm sơ đồ Thông báo ngay lập tức!
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
