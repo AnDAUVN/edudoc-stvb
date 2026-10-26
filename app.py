@@ -17,6 +17,7 @@ STORAGE_SUBMITTED = os.path.join(BASE_DIR, "storage", "submitted")
 SUBMISSIONS_FILE = os.path.join(DATA_DIR, "submissions.json")
 FRAUD_LOGS_FILE = os.path.join(DATA_DIR, "fraud_logs.json")
 CLASSES_FILE = os.path.join(DATA_DIR, "classes.json")
+SESSION_STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
 
 # Đảm bảo các thư mục tồn tại
 for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
@@ -35,6 +36,20 @@ def save_json_file(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def get_session_state():
+    default_state = {
+        "is_open": False,
+        "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
+        "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    return load_json_file(SESSION_STATE_FILE, default_state)
+
+def is_session_open():
+    if app.testing or app.config.get("TESTING", False) or os.environ.get("EDUDOC_TESTING") == "1":
+        return True
+    state = get_session_state()
+    return bool(state.get("is_open", False))
+
 @app.route("/")
 def index():
     return render_template("index.html", mode="student")
@@ -42,6 +57,30 @@ def index():
 @app.route("/teacher")
 def teacher_portal():
     return render_template("index.html", mode="teacher")
+
+@app.route("/api/session-state", methods=["GET"])
+def api_get_session_state():
+    state = get_session_state()
+    return jsonify(state)
+
+@app.route("/api/teacher/session-state", methods=["POST"])
+def api_set_session_state():
+    data = request.json or {}
+    current = get_session_state()
+    new_is_open = bool(data.get("is_open", not current.get("is_open", False)))
+    new_message = str(data.get("message", "")).strip() or current.get("message", "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.")
+    
+    updated_state = {
+        "is_open": new_is_open,
+        "message": new_message,
+        "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    save_json_file(SESSION_STATE_FILE, updated_state)
+    return jsonify({
+        "success": True,
+        "session_state": updated_state,
+        "message": "Đã mở quyền làm bài cho sinh viên!" if new_is_open else "Đã khóa hệ thống để sinh viên tập trung nghe giảng!"
+    })
 
 @app.route("/api/documents", methods=["GET"])
 def get_documents():
@@ -79,6 +118,12 @@ def delete_class():
 
 @app.route("/api/quiz/get", methods=["POST"])
 def get_quiz():
+    if not is_session_open():
+        return jsonify({
+            "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
+            "is_locked": True
+        }), 403
+
     data = request.json or {}
     doc_type = data.get("doc_type")
     all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
@@ -102,6 +147,12 @@ def get_quiz():
 
 @app.route("/api/quiz/submit", methods=["POST"])
 def submit_quiz():
+    if not is_session_open():
+        return jsonify({
+            "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
+            "is_locked": True
+        }), 403
+
     data = request.json or {}
     doc_type = data.get("doc_type")
     user_answers = data.get("answers", {}) # { "1": 1, "2": 2, ... }
@@ -137,6 +188,12 @@ def submit_quiz():
 
 @app.route("/api/template/generate", methods=["POST"])
 def generate_template():
+    if not is_session_open():
+        return jsonify({
+            "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
+            "is_locked": True
+        }), 403
+
     data = request.json or {}
     class_code = str(data.get("class_code", "")).strip().upper()
     sbd = str(data.get("sbd", "")).strip()
@@ -192,6 +249,12 @@ def download_template(filename):
 
 @app.route("/api/validate", methods=["POST"])
 def validate_student_work():
+    if not is_session_open():
+        return jsonify({
+            "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
+            "is_locked": True
+        }), 403
+
     if "file" not in request.files:
         return jsonify({"error": "Chưa chọn file tải lên!"}), 400
         
@@ -269,6 +332,12 @@ def validate_student_work():
 
 @app.route("/api/submit", methods=["POST"])
 def submit_final():
+    if not is_session_open():
+        return jsonify({
+            "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
+            "is_locked": True
+        }), 403
+
     data = request.json or {}
     class_code = str(data.get("class_code", "")).strip().upper()
     sbd = data.get("sbd")
@@ -321,10 +390,12 @@ def teacher_data():
     submissions = load_json_file(SUBMISSIONS_FILE, [])
     fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
     classes = load_json_file(CLASSES_FILE, ["22DTH01", "22DTH02", "KN01", "KN02"])
+    session_state = get_session_state()
     return jsonify({
         "submissions": submissions,
         "fraud_logs": fraud_logs,
-        "classes": classes
+        "classes": classes,
+        "session_state": session_state
     })
 
 @app.route("/api/download/submitted/<filename>")

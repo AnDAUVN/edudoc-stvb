@@ -112,6 +112,36 @@
     <!-- ==================== CỔNG SINH VIÊN ==================== -->
     <div id="student-view">
       
+      <!-- THÔNG BÁO TẬP TRUNG NGHE GIẢNG LÝ THUYẾT (KHI GIẢNG VIÊN CHƯA MỞ KHÓA BÀI TẬP) -->
+      <div id="student-lecture-overlay" class="card card-custom p-4 mb-4 border-2 border-warning bg-warning bg-opacity-10 shadow-sm d-none">
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+          <div class="bg-warning text-dark p-3 rounded-circle fs-1 text-center align-self-start align-self-md-center shadow-sm" style="width: 70px; height: 70px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+              <h5 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-lock text-danger me-2"></i> ĐANG TRONG THỜI GIAN NGHE GIẢNG LÝ THUYẾT
+              </h5>
+              <span class="badge bg-danger px-3 py-2 fw-semibold animate__animated animate__pulse animate__infinite">
+                <i class="fa-solid fa-clock me-1"></i> Tạm khóa làm bài
+              </span>
+            </div>
+            <p class="mb-2 text-dark small">
+              Thầy/Cô đang giảng bài lý thuyết tại lớp. Hệ thống làm bài tập (Trắc nghiệm, Nhận file mẫu, Thẩm định & Nộp bài) <strong>đang tạm khóa</strong> để các bạn tập trung tiếp thu kiến thức thể thức văn bản.
+            </p>
+            <div class="d-flex flex-wrap gap-2 align-items-center small">
+              <button type="button" class="btn btn-sm btn-outline-dark fw-bold" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
+                <i class="fa-solid fa-book-bookmark text-warning me-1"></i> Mở Sổ tay Tra cứu Thể thức NĐ 30 theo dõi bài giảng
+              </button>
+              <span class="text-danger fw-semibold">
+                <i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Hệ thống tự động mở khóa ngay khi Thầy/Cô phát lệnh cho phép làm bài... (Không cần F5)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- THANH TIẾN TRÌNH 4 BƯỚC -->
       <div class="card card-custom p-3 mb-4 bg-white">
         <div class="row text-center g-2">
@@ -199,7 +229,7 @@
           </button>
         </div>
         <div class="mt-3 text-end">
-          <button class="btn btn-primary px-4 fw-bold" onclick="startQuiz()">
+          <button class="btn btn-primary px-4 fw-bold" id="btn-start-quiz" onclick="startQuiz()">
             <i class="fa-solid fa-play me-2"></i> Bắt đầu Phần 1: Kiểm tra Trắc nghiệm
           </button>
         </div>
@@ -334,6 +364,30 @@
     {% else %}
     <!-- ==================== CỔNG GIẢNG VIÊN ==================== -->
     <div id="teacher-view">
+      
+      <!-- BỘ ĐIỀU KHIỂN PHÒNG HỌC: GIẢNG LÝ THUYẾT / CHO PHÉP LÀM BÀI -->
+      <div class="card card-custom p-4 mb-4 shadow-sm border-2" id="teacher-session-card">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            <span class="p-3 rounded-circle fs-2 shadow-sm text-center" id="session-status-icon-bg" style="width:68px;height:68px;display:flex;align-items:center;justify-content:center;">
+              <i class="fa-solid fa-chalkboard-user" id="session-status-icon"></i>
+            </span>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge fs-6 px-3 py-2 fw-bold" id="session-status-badge">ĐANG TẢI...</span>
+                <span class="text-muted small" id="session-status-time"></span>
+              </div>
+              <h5 class="fw-bold mb-1 text-dark" id="session-status-title">Trạng thái Phòng học</h5>
+              <div class="text-secondary small" id="session-status-desc">Hệ thống đang đồng bộ...</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-lg px-4 py-3 fw-bold shadow" id="btn-toggle-session" onclick="toggleExamSession()">
+              <i class="fa-solid fa-play me-2"></i> CHO PHÉP BẮT ĐẦU LÀM BÀI
+            </button>
+          </div>
+        </div>
+      </div>
       
       <div class="row g-3 mb-4">
         <div class="col-md-4">
@@ -847,6 +901,16 @@
 
     // BƯỚC 1: Bắt đầu lấy trắc nghiệm
     async function startQuiz() {
+      if (studentSessionIsOpen === false) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ĐANG TRONG GIỜ NGHE GIẢNG LÝ THUYẾT',
+          html: 'Thầy/Cô đang giảng bài lý thuyết tại lớp.<br>Hệ thống làm bài tập <strong>đang tạm khóa</strong> để cả lớp tập trung nghe giảng.<br><br><span class="text-danger fw-bold"><i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Hệ thống sẽ tự động mở khóa ngay khi Thầy/Cô phát lệnh!</span>',
+          confirmButtonText: 'Đã hiểu'
+        });
+        return;
+      }
+
       const classCode = document.getElementById('inp-class-code').value.trim();
       const sbd = document.getElementById('inp-sbd').value.trim();
       const mssv = document.getElementById('inp-mssv').value.trim();
@@ -865,6 +929,15 @@
           body: JSON.stringify({ doc_type: docType })
         });
         const data = await res.json();
+        if (res.status === 403) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+            confirmButtonText: 'Đã hiểu'
+          });
+          return;
+        }
         currentQuizQuestions = data.questions;
         if (document.getElementById('lbl-quiz-total-q')) {
           document.getElementById('lbl-quiz-total-q').innerText = data.total;
@@ -965,6 +1038,16 @@
       });
       const data = await res.json();
 
+      if (res.status === 403) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+          text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+          confirmButtonText: 'Đã hiểu'
+        });
+        return;
+      }
+
       currentGeneratedFile = data.filename;
       document.getElementById('lbl-generated-filename').innerText = data.filename;
       document.getElementById('lnk-download-template').href = data.download_url;
@@ -1040,6 +1123,16 @@
         const res = await fetch('/api/validate', { method: 'POST', body: formData });
         const data = await res.json();
         Swal.close();
+
+        if (res.status === 403) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+            confirmButtonText: 'Đã hiểu'
+          });
+          return;
+        }
 
         updateStepIndicator(4);
         document.getElementById('validation-result-area').classList.remove('d-none');
@@ -1162,6 +1255,16 @@
           })
         });
         const data = await res.json();
+
+        if (res.status === 403) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+            confirmButtonText: 'Đã hiểu'
+          });
+          return;
+        }
         if (data.success) {
           Swal.fire({
             icon: 'success',
@@ -1186,6 +1289,11 @@
         allFraudLogsList = data.fraud_logs || [];
         document.getElementById('stat-total-submissions').innerText = allSubmissionsList.length;
         document.getElementById('stat-total-frauds').innerText = allFraudLogsList.length;
+
+        // Cập nhật trạng thái phòng học (Giảng lý thuyết / Cho phép làm bài)
+        if (data.session_state) {
+          updateTeacherSessionUI(data.session_state);
+        }
 
         // Cập nhật danh sách lớp nếu có
         if (data.classes) {
@@ -1757,12 +1865,188 @@
       }
     }
 
+    // =========================================================================
+    // QUẢN LÝ PHÒNG HỌC: CHẾ ĐỘ GIẢNG LÝ THUYẾT & MỞ KHÓA BÀI TẬP
+    // =========================================================================
+    let currentSessionState = { is_open: false };
+    let studentSessionIsOpen = null; // null: chưa nạp lần đầu, true: mở, false: khóa
+
+    function playChimeSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.45);
+      } catch (e) {
+        // Bỏ qua an toàn nếu trình duyệt chưa kích hoạt audio
+      }
+    }
+
+    // 1. Phía Giảng viên: Cập nhật giao diện điều khiển
+    function updateTeacherSessionUI(state) {
+      if (!state) return;
+      currentSessionState = state;
+      const card = document.getElementById('teacher-session-card');
+      const iconBg = document.getElementById('session-status-icon-bg');
+      const icon = document.getElementById('session-status-icon');
+      const badge = document.getElementById('session-status-badge');
+      const time = document.getElementById('session-status-time');
+      const title = document.getElementById('session-status-title');
+      const desc = document.getElementById('session-status-desc');
+      const btn = document.getElementById('btn-toggle-session');
+
+      if (!card || !btn) return;
+
+      if (state.is_open) {
+        card.className = 'card card-custom p-4 mb-4 shadow-sm border-2 border-success bg-success bg-opacity-10';
+        iconBg.className = 'p-3 rounded-circle fs-2 shadow-sm bg-success text-white text-center';
+        icon.className = 'fa-solid fa-door-open';
+        badge.className = 'badge bg-success fs-6 px-3 py-2 fw-bold';
+        badge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> ĐANG MỞ PHÒNG LÀM BÀI';
+        title.innerHTML = 'Sinh viên toàn lớp đang được phép làm bài tập & nộp bài';
+        title.className = 'fw-bold mb-1 text-success';
+        desc.innerText = 'Cổng sinh viên đã mở khóa. Khi Thầy/Cô cần cả lớp tập trung nghe giảng tiếp, hãy bấm nút "Tạm khóa".';
+        time.innerText = state.updated_at ? `(Cập nhật: ${state.updated_at})` : '';
+        btn.className = 'btn btn-warning text-dark btn-lg px-4 py-3 fw-bold shadow';
+        btn.innerHTML = '<i class="fa-solid fa-pause me-2"></i> TẠM KHÓA ĐỂ GIẢNG BÀI TIẾP';
+      } else {
+        card.className = 'card card-custom p-4 mb-4 shadow-sm border-2 border-warning bg-warning bg-opacity-10';
+        iconBg.className = 'p-3 rounded-circle fs-2 shadow-sm bg-warning text-dark text-center';
+        icon.className = 'fa-solid fa-chalkboard-user';
+        badge.className = 'badge bg-danger fs-6 px-3 py-2 fw-bold';
+        badge.innerHTML = '<i class="fa-solid fa-lock me-1"></i> ĐANG KHÓA (SINH VIÊN ĐANG NGHE GIẢNG)';
+        title.innerHTML = 'Học viên chỉ xem tra cứu thể thức, CHƯA ĐƯỢC PHÉP làm bài tập';
+        title.className = 'fw-bold mb-1 text-danger';
+        desc.innerText = 'Hệ thống đang tạm khóa cổng sinh viên để cả lớp tập trung nghe Thầy/Cô giảng bài lý thuyết.';
+        time.innerText = state.updated_at ? `(Cập nhật: ${state.updated_at})` : '';
+        btn.className = 'btn btn-success btn-lg px-4 py-3 fw-bold shadow';
+        btn.innerHTML = '<i class="fa-solid fa-play me-2"></i> CHO PHÉP BẮT ĐẦU LÀM BÀI';
+      }
+    }
+
+    async function toggleExamSession(forceState = null) {
+      const nextState = (forceState !== null) ? forceState : !currentSessionState.is_open;
+      const confirmText = nextState 
+        ? "Mở phòng làm bài để sinh viên bắt đầu làm trắc nghiệm, tải đề và nộp bài?" 
+        : "Tạm khóa cổng sinh viên để cả lớp tập trung nghe giảng lý thuyết?";
+      
+      const result = await Swal.fire({
+        title: nextState ? "MỞ PHÒNG LÀM BÀI?" : "TẠM KHÓA ĐỂ GIẢNG BÀI?",
+        text: confirmText,
+        icon: nextState ? "question" : "warning",
+        showCancelButton: true,
+        confirmButtonColor: nextState ? "#198754" : "#ffc107",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: nextState ? "Mở phòng ngay" : "Khóa ngay",
+        cancelButtonText: "Hủy bỏ"
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/session-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_open: nextState })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateTeacherSessionUI(data.session_state);
+          Swal.fire({
+            icon: 'success',
+            title: nextState ? 'ĐÃ MỞ PHÒNG LÀM BÀI!' : 'ĐÃ TẠM KHÓA PHÒNG!',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể thay đổi trạng thái phòng học: ' + err, 'error');
+      }
+    }
+
+    // 2. Phía Sinh viên: Cập nhật giao diện khi khóa / mở
+    function updateStudentSessionUI(state) {
+      if (!state) return;
+      const isFirstLoad = (studentSessionIsOpen === null);
+      const stateChanged = (!isFirstLoad && studentSessionIsOpen !== state.is_open);
+      studentSessionIsOpen = state.is_open;
+
+      const overlay = document.getElementById('student-lecture-overlay');
+      const btnStart = document.getElementById('btn-start-quiz');
+
+      if (state.is_open) {
+        // ĐANG MỞ LÀM BÀI
+        if (overlay) overlay.classList.add('d-none');
+        if (btnStart) {
+          btnStart.removeAttribute('disabled');
+          btnStart.className = 'btn btn-primary px-4 fw-bold';
+          btnStart.innerHTML = '<i class="fa-solid fa-play me-2"></i> Bắt đầu Phần 1: Kiểm tra Trắc nghiệm';
+        }
+
+        if (stateChanged) {
+          playChimeSound();
+          Swal.fire({
+            icon: 'success',
+            title: '🎉 THẦY/CÔ ĐÃ CHO PHÉP BẮT ĐẦU LÀM BÀI!',
+            html: 'Phòng bài tập thực hành đã mở khóa.<br>Chúc các bạn hoàn thành bài tập xuất sắc!',
+            timer: 4000,
+            confirmButtonText: 'Bắt đầu làm bài ngay'
+          });
+        }
+      } else {
+        // ĐANG KHÓA (GIẢNG LÝ THUYẾT)
+        if (overlay) overlay.classList.remove('d-none');
+        if (btnStart) {
+          btnStart.setAttribute('disabled', 'true');
+          btnStart.className = 'btn btn-secondary px-4 fw-bold opacity-75';
+          btnStart.innerHTML = '<i class="fa-solid fa-lock me-2"></i> Đang nghe giảng - Chờ Thầy/Cô cho phép bắt đầu...';
+        }
+
+        if (stateChanged) {
+          Swal.fire({
+            icon: 'info',
+            title: '⏸️ THẦY/CÔ TẠM KHÓA PHÒNG ĐỂ GIẢNG BÀI',
+            text: 'Các bạn vui lòng tạm dừng thao tác và chú ý nghe Thầy/Cô giảng tiếp lý thuyết nhé!',
+            confirmButtonText: 'Đã hiểu'
+          });
+          resetToStep1();
+        }
+      }
+    }
+
+    async function checkStudentSessionState() {
+      try {
+        const res = await fetch('/api/session-state');
+        if (res.ok) {
+          const state = await res.json();
+          updateStudentSessionUI(state);
+        }
+      } catch (err) {
+        // Bỏ qua lỗi kết nối tạm thời
+      }
+    }
+
     // Khởi tạo theo chế độ Cổng Sinh viên hoặc Bàn Giảng viên
     const APP_MODE = "{{ mode }}";
     window.addEventListener('DOMContentLoaded', () => {
       loadClasses();
       if (APP_MODE === 'teacher') {
         loadTeacherData();
+        setInterval(loadTeacherData, 5000);
+      } else {
+        checkStudentSessionState();
+        setInterval(checkStudentSessionState, 3000);
       }
     });
   </script>

@@ -8,6 +8,7 @@ import socket
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT_DIR)
 sys.path.insert(0, ROOT_DIR)
+os.environ["EDUDOC_TESTING"] = "1"
 
 TEST_SUITES = [
     "test_system.py",
@@ -20,6 +21,7 @@ TEST_SUITES = [
     "test_cong_ty_pho_giam_doc.py",
     "test_all_8_docs.py",
     "test_schema_layouts.py",
+    "test_session_control.py",
     "comprehensive_audit_suite.py"
 ]
 
