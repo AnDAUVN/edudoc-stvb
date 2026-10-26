@@ -49,13 +49,14 @@ if (-not $remotes) {
     exit 0
 }
 
-git push origin main
+git push -u origin main
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Green
     Write-Host "   CAP NHAT THANH CONG LEN GITHUB & RENDER!" -ForegroundColor Green
     Write-Host "======================================================================" -ForegroundColor Green
+    Write-Host " - Kho GitHub: https://github.com/cttrung1010/edudoc-stvb" -ForegroundColor Cyan
     Write-Host " - Render dang tu dong build va deploy ban moi (mat khoang 1 - 2 phut)." -ForegroundColor White
     Write-Host " - He thong se tu dong cap nhat tat ca tinh nang moi nhat tren website." -ForegroundColor White
     Write-Host "======================================================================" -ForegroundColor Green
@@ -63,6 +64,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Red
     Write-Host " [!] Can xac thuc quyen day code len GitHub." -ForegroundColor Red
-    Write-Host " Neu co cua so dang nhap GitHub hien ra, ban vui long bam Dang nhap." -ForegroundColor Yellow
+    Write-Host " Neu co cua so/tab trinh duyet Chrome mo ra, Thầy/Cô chi can bam 'Authorize' de xac nhan." -ForegroundColor Yellow
     Write-Host "======================================================================" -ForegroundColor Red
 }
