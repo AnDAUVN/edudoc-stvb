@@ -1,4 +1,6 @@
 import os
+import re
+import time
 import json
 import datetime
 from flask import Flask, request, jsonify, send_file, render_template
@@ -18,6 +20,7 @@ SUBMISSIONS_FILE = os.path.join(DATA_DIR, "submissions.json")
 FRAUD_LOGS_FILE = os.path.join(DATA_DIR, "fraud_logs.json")
 CLASSES_FILE = os.path.join(DATA_DIR, "classes.json")
 SESSION_STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
+STUDENT_SESSIONS_FILE = os.path.join(DATA_DIR, "student_sessions.json")
 
 # Đảm bảo các thư mục tồn tại
 for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
@@ -128,21 +131,33 @@ def get_quiz():
     doc_type = data.get("doc_type")
     all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
     
-    questions = all_questions.get(doc_type, [])
-    # Ẩn đáp án đúng khi gửi về client
+    raw_questions = all_questions.get(doc_type, [])
+    if not raw_questions:
+        return jsonify({"questions": [], "total": 0, "pass_score": 0, "time_limit_seconds": 300})
+
+    import random
+    # Chọn ngẫu nhiên tối đa 5 câu từ ngân hàng câu hỏi
+    sample_size = min(len(raw_questions), 5)
+    selected_questions = random.sample(raw_questions, sample_size)
+
+    # Ẩn đáp án đúng và xáo trộn các phương án trả lời nhưng giữ ID gốc
     safe_questions = []
-    for q in questions:
+    for q in selected_questions:
+        options_with_id = [{"opt_id": idx, "text": opt} for idx, opt in enumerate(q["options"])]
+        random.shuffle(options_with_id)
         safe_questions.append({
             "id": q["id"],
             "question": q["question"],
-            "options": q["options"]
+            "options": options_with_id
         })
+
     import math
-    pass_score = max(1, math.ceil(len(questions) * 0.8)) if questions else 0
+    pass_score = max(1, math.ceil(len(safe_questions) * 0.8))
     return jsonify({
         "questions": safe_questions,
-        "total": len(questions),
-        "pass_score": pass_score
+        "total": len(safe_questions),
+        "pass_score": pass_score,
+        "time_limit_seconds": 300
     })
 
 @app.route("/api/quiz/submit", methods=["POST"])
@@ -155,17 +170,24 @@ def submit_quiz():
 
     data = request.json or {}
     doc_type = data.get("doc_type")
-    user_answers = data.get("answers", {}) # { "1": 1, "2": 2, ... }
+    user_answers = data.get("answers", {}) # { "1": opt_id, "2": opt_id, ... }
     
     all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
-    questions = all_questions.get(doc_type, [])
+    questions_list = all_questions.get(doc_type, [])
+    q_map = {str(q["id"]): q for q in questions_list}
     
     correct_count = 0
     feedback = []
-    for q in questions:
-        q_id = str(q["id"])
-        selected = user_answers.get(q_id)
-        is_correct = (selected == q["correct"])
+    for q_id_str, selected_opt in user_answers.items():
+        q = q_map.get(str(q_id_str))
+        if not q:
+            continue
+        try:
+            selected_int = int(selected_opt)
+        except (ValueError, TypeError):
+            selected_int = -1
+
+        is_correct = (selected_int == q["correct"])
         if is_correct:
             correct_count += 1
         feedback.append({
@@ -176,11 +198,12 @@ def submit_quiz():
         })
         
     import math
-    pass_score = max(1, math.ceil(len(questions) * 0.8)) if questions else 0
+    total_q = len(user_answers) if user_answers else len(questions_list)
+    pass_score = max(1, math.ceil(total_q * 0.8)) if total_q else 0
     passed = (correct_count >= pass_score)
     return jsonify({
         "score": correct_count,
-        "total": len(questions),
+        "total": total_q,
         "pass_score": pass_score,
         "passed": passed,
         "feedback": feedback
@@ -224,6 +247,11 @@ def generate_template():
     header = tmpl.get("header_part", "")
     footer = tmpl.get("footer_part", "")
     full_text = f"{header}\n\n{body_content}\n\n{footer}" if (header or footer) else tmpl.get("raw_text", "")
+
+    # Cá nhân hóa Số ký hiệu văn bản gắn với 3 số cuối MSSV
+    if len(mssv) >= 3:
+        last3 = mssv[-3:]
+        full_text = re.sub(r'(Số\s*:\s*)\d+(/)', rf'\g<1>{last3}\2', full_text, flags=re.IGNORECASE)
     
     create_student_raw_template(
         sbd=sbd,
@@ -233,6 +261,16 @@ def generate_template():
         raw_text=full_text,
         output_path=output_path
     )
+
+    # Ghi nhận Telemetry: Thời điểm sinh phôi bài làm & khởi tạo phiên
+    sessions = load_json_file(STUDENT_SESSIONS_FILE, {})
+    sess_key = f"{mssv}_{doc_type}"
+    sessions[sess_key] = {
+        "started_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": time.time(),
+        "preview_count": 0
+    }
+    save_json_file(STUDENT_SESSIONS_FILE, sessions)
     
     return jsonify({
         "filename": filename,
@@ -316,15 +354,29 @@ def validate_student_work():
                 "fraud_info": fraud_check
             })
 
+        # Ghi nhận số lần kiểm tra thử (Preview Count Telemetry)
+        sessions = load_json_file(STUDENT_SESSIONS_FILE, {})
+        sess_key = f"{mssv}_{doc_type}"
+        current_sess = sessions.get(sess_key, {
+            "started_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "timestamp": time.time(),
+            "preview_count": 0
+        })
+        current_sess["preview_count"] = current_sess.get("preview_count", 0) + 1
+        sessions[sess_key] = current_sess
+        save_json_file(STUDENT_SESSIONS_FILE, sessions)
+
         # 2. BƯỚC 2: KIỂM TRA THỂ THỨC NGHỊ ĐỊNH 30 (Ô 1 - Ô 9)
         templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
         tmpl_info = templates_data.get(doc_type, {})
         
-        validator = Decree30Validator(temp_save_path, doc_type, tmpl_info)
+        validator = Decree30Validator(temp_save_path, doc_type, tmpl_info, mssv=mssv)
         result = validator.validate_document()
         
         result["status"] = "SUCCESS"
         result["temp_file"] = os.path.basename(temp_save_path)
+        result["preview_count"] = current_sess["preview_count"]
+        result["max_previews"] = 3
         return jsonify(result)
         
     except Exception as e:
@@ -364,7 +416,29 @@ def submit_final():
     import shutil
     shutil.copy2(temp_path, final_path)
     
-    # Ghi nhận kết quả
+    # Ghi nhận kết quả và Telemetry thời gian làm bài
+    sessions = load_json_file(STUDENT_SESSIONS_FILE, {})
+    sess_key = f"{mssv}_{doc_type}"
+    sess = sessions.get(sess_key, {})
+    start_ts = sess.get("timestamp")
+    
+    elapsed_str = "N/A"
+    is_suspicious_speed = False
+    flags = []
+    
+    if start_ts:
+        elapsed_seconds = max(0, int(time.time() - start_ts))
+        mins = elapsed_seconds // 60
+        secs = elapsed_seconds % 60
+        elapsed_str = f"{mins} phút {secs:02d} giây" if mins > 0 else f"{secs} giây"
+        
+        # Cảnh báo nộp bài quá nhanh (< 2 phút = 120 giây), ngoại trừ môi trường test
+        if elapsed_seconds < 120 and not (app.testing or os.environ.get("EDUDOC_TESTING") == "1"):
+            is_suspicious_speed = True
+            flags.append(f"🚩 Nộp bài quá nhanh ({elapsed_str} < 2 phút)")
+            
+    preview_count = sess.get("preview_count", 0)
+
     submissions = load_json_file(SUBMISSIONS_FILE, [])
     # Xóa bản ghi cũ nếu sinh viên nộp lại
     submissions = [s for s in submissions if not (s["mssv"] == mssv and s["doc_type"] == doc_type)]
@@ -378,6 +452,10 @@ def submit_final():
         "doc_name": tmpl.get("name", doc_type),
         "filename": final_filename,
         "submitted_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "elapsed_time": elapsed_str,
+        "is_suspicious_speed": is_suspicious_speed,
+        "preview_count": preview_count,
+        "flags": flags,
         "status": "Hoàn thành 100% Nghị định 30"
     }
     submissions.append(new_sub)
@@ -421,9 +499,13 @@ def export_csv():
     # Thêm UTF-8 BOM để Excel trên Windows hiển thị đúng tiếng Việt có dấu
     output.write('\ufeff')
     writer = csv.writer(output)
-    writer.writerow(["STT", "Mã lớp KN", "Số báo danh (SBD)", "Mã số sinh viên (MSSV)", "Họ và tên", "Loại văn bản bài tập", "Tên file nộp", "Thời gian nộp", "Kết quả thẩm định", "Điểm số quy đổi"])
+    writer.writerow([
+        "STT", "Mã lớp KN", "Số báo danh (SBD)", "Mã số sinh viên (MSSV)", "Họ và tên",
+        "Loại văn bản bài tập", "Tên file nộp", "Thời gian nộp", "Thời gian làm bài", "Số lần kiểm tra thử", "Cảnh báo gian lận / đối phó", "Kết quả thẩm định", "Điểm số quy đổi"
+    ])
     
     for idx, s in enumerate(submissions):
+        flag_text = ", ".join(s.get("flags", [])) if s.get("flags") else ("🚩 Nộp quá nhanh (< 2p)" if s.get("is_suspicious_speed") else "Bình thường")
         writer.writerow([
             idx + 1,
             s.get("class_code", "Chung"),
@@ -433,6 +515,9 @@ def export_csv():
             s.get("doc_name", s.get("doc_type", "")),
             s.get("filename", ""),
             s.get("submitted_at", ""),
+            s.get("elapsed_time", "N/A"),
+            s.get("preview_count", 0),
+            flag_text,
             s.get("status", "Hoàn thành 100% Nghị định 30"),
             "10.0 / 10"
         ])

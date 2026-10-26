@@ -59,6 +59,42 @@
       ],
       "correct": 0,
       "explanation": "Dòng 'Nơi nhận:' kiểu chữ in thường, nghiêng, đậm, cỡ chữ 12, sau có dấu (:). Danh sách các nơi nhận cụ thể (ví dụ: - Ban Giảng huấn; - Lưu: Hồ sơ) in thường, đứng, cỡ chữ 11."
+    },
+    {
+      "id": 6,
+      "question": "Quy định định dạng lề trang giấy (Page Margins) chuẩn của văn bản theo Nghị định 30/2020/NĐ-CP là gì?",
+      "options": [
+        "Lề trên: 20-25mm, Lề dưới: 20-25mm, Lề trái: 30-35mm, Lề phải: 15-20mm",
+        "Tất cả 4 lề đều bằng 20mm (2cm)",
+        "Lề trên: 15mm, Lề dưới: 15mm, Lề trái: 20mm, Lề phải: 20mm",
+        "Lề trái: 25mm, Lề phải: 25mm, Lề trên: 30mm, Lề dưới: 30mm"
+      ],
+      "correct": 0,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, căn lề chuẩn trang văn bản khổ A4 (210 x 297 mm) gồm: Lề trên 20-25 mm, lề dưới 20-25 mm, lề trái 30-35 mm, lề phải 15-20 mm."
+    },
+    {
+      "id": 7,
+      "question": "Phông chữ (Font) duy nhất bắt buộc áp dụng cho toàn bộ văn bản hành chính theo Nghị định 30/2020/NĐ-CP là gì?",
+      "options": [
+        "Phông chữ Arial, bộ mã Unicode",
+        "Phông chữ Times New Roman, bộ mã ký tự Unicode theo TCVN 6909:2001",
+        "Phông chữ Calibri hoặc Tahoma",
+        "Tùy chọn phông chữ theo thẩm mỹ của đơn vị soạn thảo"
+      ],
+      "correct": 1,
+      "explanation": "Theo Mục II Phụ lục I Nghị định 30/2020/NĐ-CP, phông chữ sử dụng trình bày văn bản là phông chữ tiếng Việt Times New Roman, bộ mã ký tự Unicode (TCVN 6909:2001)."
+    },
+    {
+      "id": 8,
+      "question": "Quy tắc giãn dòng (Line Spacing) và khoảng cách đoạn (Paragraph Spacing) trong nội dung văn bản (Ô 6) được quy định như thế nào?",
+      "options": [
+        "Giãn dòng Double, giãn đoạn Before 12pt",
+        "Giãn dòng tối thiểu cách dòng đơn (Single) hoặc từ 1.0 đến 1.15 lines; Spacing After tối thiểu 6pt giữa các đoạn văn",
+        "Giãn dòng Exactly 20pt, không giãn đoạn",
+        "Không có quy định cụ thể, chỉ cần dễ đọc"
+      ],
+      "correct": 1,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, khoảng cách giữa các đoạn văn tối thiểu là 6pt; khoảng cách giữa các dòng tối thiểu là cách dòng đơn, tối đa là 1.5 dòng."
     }
   ],
   "cong_van_de_nghi": [
@@ -121,6 +157,42 @@
       ],
       "correct": 1,
       "explanation": "Nội dung văn bản trình bày bằng chữ in thường, đứng, size 13-14, dàn đều 2 lề (Ctrl+J), dòng đầu lùi vào 1-1.27cm (1 phím tab), khoảng cách đoạn tối thiểu 6pt."
+    },
+    {
+      "id": 6,
+      "question": "Trong Công văn hành chính, phần Trích yếu nội dung (Ô 5b) bắt buộc phải bố trí tại vị trí nào?",
+      "options": [
+        "Ở giữa trang giấy, ngay trên phần Kính gửi",
+        "Đặt canh giữa ngay dưới Số và ký hiệu văn bản (tại Ô 3) trong Bảng đầu trang",
+        "Ở góc trên bên phải, cùng dòng với Tiêu ngữ",
+        "Nằm ở cuối trang, ngay trên phần Nơi nhận"
+      ],
+      "correct": 1,
+      "explanation": "Theo Sơ đồ bố trí Công văn (Hình 2 Phụ lục I Nghị định 30), trích yếu nội dung công văn (Ô 5b) bắt đầu bằng V/v đặt canh giữa dưới số và ký hiệu văn bản."
+    },
+    {
+      "id": 7,
+      "question": "Khi Công văn gửi cho nhiều cơ quan/đơn vị tại phần 'Kính gửi:' (Ô 9a), quy cách trình bày các cơ quan tiếp theo là gì?",
+      "options": [
+        "Viết trên cùng 1 hàng ngang cách nhau bằng dấu phẩy",
+        "Mỗi cơ quan xuống 1 dòng riêng, có gạch đầu dòng, cuối mỗi dòng có dấu chấm phẩy (;), cơ quan cuối cùng kết thúc bằng dấu chấm (.)",
+        "Viết in hoa toàn bộ tên tất cả cơ quan",
+        "Đặt trong bảng 2 cột"
+      ],
+      "correct": 1,
+      "explanation": "Trường hợp văn bản gửi nhiều nơi tại mục Kính gửi: mỗi nơi nhận xuống dòng, gạch đầu dòng, cuối dòng chấm phẩy (;), dòng cuối chấm (.)."
+    },
+    {
+      "id": 8,
+      "question": "Theo Nghị định 30/2020/NĐ-CP, dấu của cơ quan, tổ chức (Ô 8) được đóng như thế nào trên chữ ký của người có thẩm quyền?",
+      "options": [
+        "Đóng chính giữa chữ ký",
+        "Đóng trùm lên khoảng 1/3 chữ ký về phía bên trái",
+        "Đóng tách rời sang bên phải chữ ký",
+        "Đóng ở phía dưới họ và tên người ký"
+      ],
+      "correct": 1,
+      "explanation": "Dấu đóng trùm lên khoảng 1/3 chữ ký về phía bên trái, rõ ràng, ngay ngắn, đúng chiều và dùng đúng mực dấu màu đỏ theo quy định."
     }
   ],
   "thong_bao_nhiem_vu": [
@@ -183,6 +255,42 @@
       ],
       "correct": 2,
       "explanation": "Địa danh không viết tắt, sau có dấu phẩy. Chữ in nghiêng, cỡ 13-14. Ngày nhỏ hơn 10 và tháng nhỏ hơn 3 phải thêm số 0 phía trước."
+    },
+    {
+      "id": 6,
+      "question": "Đường kẻ nét liền nằm dưới Tiêu ngữ 'Độc lập - Tự do - Hạnh phúc' (Ô 1) có chiều dài quy định như thế nào?",
+      "options": [
+        "Dài bằng chiều dài của toàn bộ trang giấy",
+        "Có độ dài bằng độ dài của dòng chữ Tiêu ngữ",
+        "Có độ dài bằng 1/3 độ dài của dòng chữ",
+        "Dài từ 8cm đến 10cm cố định"
+      ],
+      "correct": 1,
+      "explanation": "Phía dưới Tiêu ngữ có đường kẻ ngang, nét liền, có độ dài bằng độ dài của dòng chữ Tiêu ngữ."
+    },
+    {
+      "id": 7,
+      "question": "Quyền hạn ký 'TL.' (Thừa lệnh) trong văn bản Thông báo được áp dụng trong trường hợp nào?",
+      "options": [
+        "Khi người đứng đầu đi vắng ủy quyền cho cấp phó",
+        "Khi người đứng đầu cơ quan giao cho cấp phó hoặc người đứng đầu đơn vị trực thuộc ký một số văn bản theo quy chế",
+        "Khi nhân viên tự ký ban hành văn bản",
+        "Chỉ áp dụng trong các cơ quan tư pháp"
+      ],
+      "correct": 1,
+      "explanation": "Ký thừa lệnh (TL.) áp dụng khi người đứng đầu cơ quan giao cho Chánh Văn phòng, Trưởng phòng ký thừa lệnh một số văn bản nhất định theo quy chế làm việc."
+    },
+    {
+      "id": 8,
+      "question": "Tại các đoạn văn thuộc phần Nội dung văn bản (Ô 6), chữ cái đầu đoạn phải lùi đầu dòng bao nhiêu?",
+      "options": [
+        "Từ 1,0 cm đến 1,27 cm (tương đương 1 phím Tab chuẩn)",
+        "Từ 2,0 cm đến 2,5 cm",
+        "Không lùi đầu dòng, căn sát lề trái",
+        "Lùi 0,5 cm"
+      ],
+      "correct": 0,
+      "explanation": "Chữ cái đầu dòng của đoạn văn bản được lùi đầu dòng từ 1,0 cm đến 1,27 cm và nội dung được căn đều hai bên (Justify)."
     }
   ],
   "thong_bao_hoat_dong": [
@@ -245,6 +353,42 @@
       ],
       "correct": 0,
       "explanation": "Chuẩn lề văn bản A4: Lề trên: 20-25mm (2-2.5cm); Lề dưới: 20-25mm (2-2.5cm); Lề trái: 30-35mm (3-3.5cm); Lề phải: 15-20mm (1.5-2cm)."
+    },
+    {
+      "id": 6,
+      "question": "Tên cơ quan chủ quản cấp trên (dòng 1 của Ô 2) được định dạng thế nào so với tên cơ quan ban hành văn bản (dòng 2)?",
+      "options": [
+        "Cơ quan chủ quản in hoa, đứng, không đậm, cỡ 12-13; Cơ quan ban hành in hoa, đứng, ĐẬM, cỡ 12-13",
+        "Cả hai dòng đều in hoa, đứng, đậm như nhau",
+        "Cơ quan chủ quản in nghiêng, cỡ 14; Cơ quan ban hành in đứng cỡ 12",
+        "Cơ quan ban hành viết hoa toàn bộ, cơ quan chủ quản viết thường"
+      ],
+      "correct": 0,
+      "explanation": "Tên cơ quan cấp trên: chữ in hoa, cỡ 12-13, đứng, không đậm. Tên cơ quan ban hành: chữ in hoa, cỡ 12-13, đứng, đậm."
+    },
+    {
+      "id": 7,
+      "question": "Từ 'Số:' tại Ô 3 của văn bản Thông báo được viết hoa như thế nào là ĐÚNG quy chuẩn?",
+      "options": [
+        "Viết in hoa toàn bộ: SỐ:",
+        "Chỉ viết hoa chữ cái 'S', chữ 'ố' viết thường, sau có dấu hai chấm: 'Số:'",
+        "Viết chữ in thường toàn bộ: 'số:'",
+        "Viết tắt: 'S:'"
+      ],
+      "correct": 1,
+      "explanation": "Từ 'Số' được trình bày bằng chữ in thường, chỉ viết hoa chữ cái đầu 'S', cỡ chữ 12-13, sau có dấu hai chấm (:)."
+    },
+    {
+      "id": 8,
+      "question": "Địa danh ghi trên văn bản hành chính (Ô 4) được xác định như thế nào theo Nghị định 30/2020/NĐ-CP?",
+      "options": [
+        "Là tên trụ sở tòa nhà làm việc",
+        "Là tên gọi chính thức của tỉnh, thành phố trực thuộc trung ương (hoặc quận, huyện, thị xã) nơi cơ quan đặt trụ sở",
+        "Là tên quốc gia Việt Nam",
+        "Là tên cơ quan ban hành văn bản"
+      ],
+      "correct": 1,
+      "explanation": "Địa danh ghi trên văn bản là tên gọi chính thức của tỉnh, thành phố trực thuộc trung ương nơi cơ quan, tổ chức đóng trụ sở chính."
     }
   ],
   "to_trinh_xin_kinh_phi": [
@@ -307,6 +451,42 @@
       ],
       "correct": 0,
       "explanation": "Đường kẻ phụ dưới trích yếu của văn bản có tên loại là nét liền, dài từ 1/3 đến 1/2 độ dài dòng chữ và đặt cân đối so với dòng chữ."
+    },
+    {
+      "id": 6,
+      "question": "Các đoạn trích dẫn 'Căn cứ...' trong phần mở đầu của Tờ trình (Ô 6) được trình bày với kiểu chữ nào?",
+      "options": [
+        "Chữ in hoa, kiểu chữ đứng, đậm",
+        "Chữ in thường, kiểu chữ nghiêng, cỡ chữ từ 13 đến 14, cuối mỗi dòng căn cứ kết thúc bằng dấu chấm phẩy (;)",
+        "Chữ in thường, kiểu chữ đứng, cỡ 11",
+        "Chữ in nghiêng, cỡ 10, đặt trong dấu ngoặc kép"
+      ],
+      "correct": 1,
+      "explanation": "Các đoạn căn cứ ban hành văn bản được trình bày bằng chữ in thường, kiểu chữ nghiêng, cỡ chữ 13-14, cuối dòng có dấu chấm phẩy (;), căn cứ cuối có dấu phẩy (,)."
+    },
+    {
+      "id": 7,
+      "question": "Khi lập bảng phụ lục kinh phí chi tiết trong Tờ trình, tiêu đề của các cột trong bảng được căn lề như thế nào?",
+      "options": [
+        "Canh trái toàn bộ",
+        "Canh giữa theo chiều ngang và dọc, in đậm",
+        "Canh phải toàn bộ",
+        "Không cần định dạng riêng"
+      ],
+      "correct": 1,
+      "explanation": "Hàng tiêu đề của bảng số liệu cần canh giữa, in đậm; các cột số tiền cần canh lề phải để thẳng hàng đơn vị."
+    },
+    {
+      "id": 8,
+      "question": "Trong mục 'Nơi nhận:' (Ô 9b) ở chân trang của Tờ trình, dòng cuối cùng bắt buộc phải có nội dung gì?",
+      "options": [
+        "Ký tên đóng dấu",
+        "Nơi lưu văn bản, ví dụ: '- Lưu: VT, ĐTN.' hoặc '- Lưu: VT, ...'",
+        "Ghi chú mật độ văn bản",
+        "Trích yếu nội dung"
+      ],
+      "correct": 1,
+      "explanation": "Mục Nơi nhận ở chân trang văn bản bắt buộc phải có nơi nhận để thực hiện/báo cáo và dòng cuối cùng là nơi lưu: '- Lưu: VT, [Đơn vị soạn thảo].'"
     }
   ],
   "to_trinh_nhan_su": [
@@ -369,6 +549,42 @@
       ],
       "correct": 1,
       "explanation": "Giữa chức vụ và họ tên người ký để trống khoảng 3-4 dòng để có không gian cho chữ ký trực tiếp và đóng dấu cơ quan (Ô 8)."
+    },
+    {
+      "id": 6,
+      "question": "Quyền hạn ký 'TM.' (Thay mặt) được áp dụng đối với cơ quan, tổ chức nào?",
+      "options": [
+        "Cơ quan làm việc theo chế độ thủ trưởng một người",
+        "Cơ quan, tổ chức làm việc theo chế độ tập thể (như Ban Thường vụ, Hội đồng quản trị, Hội đồng trường)",
+        "Cá nhân người lao động",
+        "Tất cả các cơ quan nhà nước"
+      ],
+      "correct": 1,
+      "explanation": "Ký thay mặt (TM.) áp dụng đối với cơ quan, tổ chức làm việc theo chế độ tập thể như Ủy ban nhân dân, Hội đồng trường, Ban Thường vụ Đoàn."
+    },
+    {
+      "id": 7,
+      "question": "Trong Tiêu ngữ 'Độc lập - Tự do - Hạnh phúc', quy cách viết hoa các chữ cái như thế nào là ĐÚNG?",
+      "options": [
+        "Viết hoa chữ cái đầu của các từ kép: 'Độc lập - Tự do - Hạnh phúc'",
+        "Viết hoa toàn bộ: 'ĐỘC LẬP - TỰ DO - HẠNH PHÚC'",
+        "Viết hoa mọi chữ cái: 'Độc Lập - Tự Do - Hạnh Phúc'",
+        "Viết thường toàn bộ: 'độc lập - tự do - hạnh phúc'"
+      ],
+      "correct": 0,
+      "explanation": "Viết hoa các chữ cái đầu của các từ: Độc, Tự, Hạnh. Giữa các cụm từ có dấu gạch nối (-), có khoảng cách chữ ở hai bên."
+    },
+    {
+      "id": 8,
+      "question": "Theo Nghị định 30/2020/NĐ-CP, số trang của văn bản (Ô 14) được đánh tại vị trí nào?",
+      "options": [
+        "Góc dưới cùng bên phải của trang giấy",
+        "Canh giữa theo chiều ngang ở lề trên của văn bản, cỡ chữ 13-14, chữ số Ả Rập, không hiển thị trang thứ nhất",
+        "Góc trên cùng bên phải của trang giấy",
+        "Góc dưới cùng ở giữa trang giấy"
+      ],
+      "correct": 1,
+      "explanation": "Số trang văn bản được đặt canh giữa theo chiều ngang ở phần lề trên của văn bản, phông chữ Times New Roman, chữ số Ả Rập, cỡ 13-14, không hiển thị số trang 1."
     }
   ],
   "to_trinh_thiet_bi": [
@@ -431,6 +647,42 @@
       ],
       "correct": 1,
       "explanation": "Danh sách các thành phần nhận tại Ô 9b (bao gồm Lưu: VT, đơn vị soạn thảo...) được trình bày bằng chữ in thường, kiểu chữ đứng, cỡ chữ 11."
+    },
+    {
+      "id": 6,
+      "question": "Trường hợp ký thay (KT.) người đứng đầu cơ quan, chức vụ nào sau đây được phép ký?",
+      "options": [
+        "Chuyên viên phụ trách thiết bị",
+        "Cấp phó của người đứng đầu cơ quan, tổ chức",
+        "Trưởng phòng văn thư lưu trữ",
+        "Bất kỳ cán bộ nào được ủy quyền miệng"
+      ],
+      "correct": 1,
+      "explanation": "Ký thay (KT.) áp dụng khi cấp phó ký thay cho người đứng đầu cơ quan, tổ chức theo phân công hoặc ủy quyền bằng văn bản."
+    },
+    {
+      "id": 7,
+      "question": "Khoảng cách giữa chức vụ người ký (Ô 7a) và họ tên người ký (Ô 7b) cần để trống bao nhiêu dòng để chừa chỗ ký tên?",
+      "options": [
+        "Không cần để trống dòng nào",
+        "Để trống từ 2 đến 3 dòng (tương đương 30 - 40pt) để ký tên và đóng dấu",
+        "Để trống 6 đến 8 dòng",
+        "Để trống 1 trang riêng"
+      ],
+      "correct": 1,
+      "explanation": "Khoảng cách chừa để ký tên và đóng dấu giữa chức vụ (Ô 7a) và họ tên (Ô 7b) thông thường từ 2 đến 3 dòng trống (tương đương 30-40pt)."
+    },
+    {
+      "id": 8,
+      "question": "Dấu chỉ mức độ 'KHẨN' hoặc 'MẬT' (Ô 10a, 10b) nếu có được bố trí ở vị trí nào trên văn bản?",
+      "options": [
+        "Ở góc dưới bên phải văn bản",
+        "Tại góc trên bên trái, phía dưới Số và ký hiệu hoặc tên cơ quan ban hành",
+        "Tại chính giữa trang văn bản",
+        "Ở lề phải của văn bản"
+      ],
+      "correct": 1,
+      "explanation": "Dấu chỉ mức độ mật hoặc khẩn được khắc dấu hình chữ nhật hoặc trình bày tại góc trên bên trái văn bản theo quy định."
     }
   ],
   "bao_cao": [
@@ -493,6 +745,42 @@
       ],
       "correct": 0,
       "explanation": "Khi văn bản có mục 'Kính gửi:' ở Ô 9a, tại phần nơi nhận Ô 9b dòng đầu tiên của danh sách nơi nhận sẽ ghi '- Như kính gửi;'."
+    },
+    {
+      "id": 6,
+      "question": "Một văn bản Báo cáo hành chính thông thường gồm có kết cấu 3 phần chính nào?",
+      "options": [
+        "Phần Mở đầu, Thân bài và Kết luận chung",
+        "I. Tình hình thực hiện nhiệm vụ; II. Đánh giá ưu điểm, hạn chế và nguyên nhân; III. Phương hướng nhiệm vụ và đề xuất, kiến nghị",
+        "Chỉ cần bảng số liệu thống kê",
+        "Phần Giới thiệu và Danh sách nhân sự"
+      ],
+      "correct": 1,
+      "explanation": "Báo cáo công tác chuẩn gồm 3 phần: I. Tình hình và kết quả thực hiện; II. Đánh giá ưu điểm, hạn chế, nguyên nhân; III. Phương hướng và kiến nghị."
+    },
+    {
+      "id": 7,
+      "question": "Họ và tên người ký (Ô 7b) tại góc cuối bên phải của Báo cáo được định dạng như thế nào?",
+      "options": [
+        "Chữ in hoa toàn bộ, nghiêng đậm, cỡ 14",
+        "Chữ in thường, kiểu chữ đứng, đậm, cỡ chữ từ 13 đến 14, canh giữa so với chức danh ký",
+        "Chữ in thường, nghiêng, cỡ 12",
+        "Chữ in hoa, gạch chân dưới họ tên"
+      ],
+      "correct": 1,
+      "explanation": "Họ và tên người ký (Ô 7b) trình bày bằng chữ in thường, kiểu chữ đứng, đậm, cỡ chữ từ 13 đến 14, canh giữa so với chức vụ người ký."
+    },
+    {
+      "id": 8,
+      "question": "Thứ tự viện dẫn một văn bản quy phạm pháp luật trong phần Căn cứ của Báo cáo như thế nào là CHUẨN xác?",
+      "options": [
+        "Trích yếu nội dung trước, rồi đến tên cơ quan ban hành",
+        "Tên loại văn bản, số, ký hiệu của văn bản, ngày tháng năm ban hành, tên cơ quan ban hành và trích yếu nội dung văn bản",
+        "Chỉ cần ghi số văn bản và năm ban hành",
+        "Tên cơ quan ban hành, năm ban hành và tên người ký"
+      ],
+      "correct": 1,
+      "explanation": "Viện dẫn chuẩn: Tên loại VB, số/ký hiệu, ngày tháng năm ban hành, cơ quan ban hành, trích yếu. Ví dụ: 'Căn cứ Nghị định số 30/2020/NĐ-CP ngày 05/3/2020 của Chính phủ về công tác văn thư;'."
     }
   ]
 }

@@ -239,9 +239,14 @@
       <div class="card card-custom p-4 d-none" id="section-quiz">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-bold text-primary mb-0">
-            <span class="step-badge">2</span> Kiểm tra Kiến thức Thể thức Nghị định 30 (<span id="lbl-quiz-total-q">5</span> câu hỏi)
+            <span class="step-badge">2</span> Kiểm tra Kiến thức Thể thức Nghị định 30 (<span id="lbl-quiz-total-q">5</span> câu hỏi ngẫu nhiên)
           </h5>
-          <span class="badge bg-warning text-dark px-3 py-2 fs-6" id="lbl-quiz-req">Yêu cầu đạt tối thiểu 4/5 câu</span>
+          <div class="d-flex gap-2 align-items-center">
+            <div class="badge bg-danger fs-6 px-3 py-2 shadow-sm" id="quiz-timer-box" title="Đồng hồ đếm ngược trắc nghiệm">
+              <i class="fa-solid fa-stopwatch me-1"></i> <span id="quiz-timer-text">05:00</span>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 fs-6" id="lbl-quiz-req">Yêu cầu đạt tối thiểu 4/5 câu</span>
+          </div>
         </div>
         <div id="quiz-container" class="mt-3">
           <!-- Các câu hỏi render tại đây -->
@@ -258,6 +263,21 @@
         <h5 class="fw-bold text-primary mb-3">
           <span class="step-badge">3</span> Nhận File mẫu bài tập thô (Tự động đổi tên & Nhúng mã bảo mật)
         </h5>
+
+        <!-- HỘP YÊU CẦU CÁ NHÂN HÓA SỐ VĂN BẢN (CHỐNG CHÉP BÀI) -->
+        <div class="alert alert-warning border-0 d-flex gap-3 align-items-center mb-3 shadow-sm" id="alert-personalized-req">
+          <i class="fa-solid fa-bullseye fa-2x text-warning"></i>
+          <div>
+            <strong class="text-dark"><i class="fa-solid fa-shield-halved text-danger me-1"></i> Yêu cầu cá nhân hóa bài tập (Chống sao chép bài nộp hộ):</strong>
+            <p class="mb-0 small text-dark mt-1">
+              Số ban hành tại <strong>Ô 3</strong> bắt buộc phải sử dụng <strong>3 số cuối Mã sinh viên</strong> của bạn: 
+              <span class="badge bg-danger fs-6 font-monospace" id="lbl-personalized-mssv">...</span> 
+              (Ví dụ: <code class="text-dark fw-bold" id="lbl-personalized-example">Số: .../TB-...</code>). 
+              Hệ thống sẽ đối chiếu tự động khi bạn nộp bài để xác thực quyền tác giả chính chủ!
+            </p>
+          </div>
+        </div>
+
         <div class="alert alert-info border-0 d-flex gap-3 align-items-center">
           <i class="fa-solid fa-shield-halved fa-2x text-primary"></i>
           <div>
@@ -303,6 +323,11 @@
             <button class="btn btn-primary btn-lg w-100 fw-bold" id="btn-run-validate" onclick="runValidation()">
               <i class="fa-solid fa-wand-magic-sparkles me-2"></i> KIỂM TRA THỂ THỨC (Ô 1 - 9)
             </button>
+            <div class="mt-1 text-center small text-muted">
+              <span class="badge bg-light text-dark border shadow-sm" id="badge-preview-count">
+                <i class="fa-solid fa-chart-pie me-1 text-primary"></i> Đã kiểm tra: 0/3 lần
+              </span>
+            </div>
           </div>
         </div>
 
@@ -628,6 +653,7 @@
                 <th>Loại văn bản</th>
                 <th>Tên file nộp</th>
                 <th>Thời gian nộp</th>
+                <th>Thời gian làm bài & Cảnh báo</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -945,6 +971,27 @@
         if (document.getElementById('lbl-quiz-req')) {
           document.getElementById('lbl-quiz-req').innerText = `Yêu cầu đạt tối thiểu ${data.pass_score}/${data.total} câu`;
         }
+
+        // Bắt đầu đếm ngược thời gian làm bài trắc nghiệm (300 giây = 5 phút)
+        if (window.quizTimerInterval) clearInterval(window.quizTimerInterval);
+        let timeLeft = data.time_limit_seconds || 300;
+        updateQuizTimerUI(timeLeft);
+        window.quizTimerInterval = setInterval(() => {
+          timeLeft--;
+          updateQuizTimerUI(timeLeft);
+          if (timeLeft <= 0) {
+            clearInterval(window.quizTimerInterval);
+            Swal.fire({
+              icon: 'warning',
+              title: 'HẾT GIỜ LÀM BÀI TRẮC NGHIỆM',
+              text: 'Thời gian 5 phút đã kết thúc! Hệ thống đang tự động nộp câu trả lời của bạn.',
+              timer: 2000,
+              showConfirmButton: false
+            });
+            checkQuizAnswers(true);
+          }
+        }, 1000);
+
         renderQuiz(currentQuizQuestions);
         updateStepIndicator(2);
         document.getElementById('section-quiz').classList.remove('d-none');
@@ -954,17 +1001,35 @@
       }
     }
 
+    function updateQuizTimerUI(seconds) {
+      const timerBox = document.getElementById('quiz-timer-box');
+      const timerText = document.getElementById('quiz-timer-text');
+      if (!timerText) return;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      timerText.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      if (timerBox) {
+        if (seconds <= 60) {
+          timerBox.className = 'badge bg-danger fs-6 px-3 py-2 shadow-sm animate__animated animate__pulse animate__infinite';
+        } else {
+          timerBox.className = 'badge bg-danger fs-6 px-3 py-2 shadow-sm';
+        }
+      }
+    }
+
     function renderQuiz(questions) {
       const container = document.getElementById('quiz-container');
       container.innerHTML = '';
       questions.forEach((q, idx) => {
         let optsHtml = '';
         q.options.forEach((opt, optIdx) => {
+          const optId = (typeof opt === 'object' && opt !== null) ? opt.opt_id : optIdx;
+          const optText = (typeof opt === 'object' && opt !== null) ? opt.text : opt;
           optsHtml += `
             <div class="form-check my-2">
-              <input class="form-check-input" type="radio" name="q_${q.id}" id="q_${q.id}_${optIdx}" value="${optIdx}">
-              <label class="form-check-label" for="q_${q.id}_${optIdx}">
-                ${String.fromCharCode(65 + optIdx)}. ${opt}
+              <input class="form-check-input" type="radio" name="q_${q.id}" id="q_${q.id}_${optId}" value="${optId}">
+              <label class="form-check-label" for="q_${q.id}_${optId}">
+                ${String.fromCharCode(65 + optIdx)}. ${optText}
               </label>
             </div>
           `;
@@ -980,7 +1045,7 @@
       });
     }
 
-    async function checkQuizAnswers() {
+    async function checkQuizAnswers(isTimeout = false) {
       const docType = document.getElementById('sel-doc-type').value;
       const answers = {};
       currentQuizQuestions.forEach(q => {
@@ -988,7 +1053,7 @@
         if (selected) answers[q.id] = parseInt(selected.value);
       });
 
-      if (Object.keys(answers).length < currentQuizQuestions.length) {
+      if (!isTimeout && Object.keys(answers).length < currentQuizQuestions.length) {
         Swal.fire('Chưa hoàn thành', `Vui lòng chọn đáp án cho toàn bộ ${currentQuizQuestions.length} câu hỏi!`, 'info');
         return;
       }
@@ -1004,6 +1069,7 @@
       data.feedback.forEach(f => {
         const expEl = document.getElementById(`explain_q_${f.id}`);
         const cardEl = document.getElementById(`card_q_${f.id}`);
+        if (!expEl || !cardEl) return;
         expEl.classList.remove('d-none');
         if (f.is_correct) {
           cardEl.className = 'card p-3 mb-3 border border-success bg-white';
@@ -1012,11 +1078,12 @@
         } else {
           cardEl.className = 'card p-3 mb-3 border border-danger bg-white';
           expEl.className = 'mt-2 text-danger small fw-semibold';
-          expEl.innerHTML = `<i class="fa-solid fa-xmark me-1"></i> Chưa chính xác. Đáp án đúng là: ${String.fromCharCode(65 + f.correct_option)}. ${f.explanation}`;
+          expEl.innerHTML = `<i class="fa-solid fa-xmark me-1"></i> Chưa chính xác. ${f.explanation}`;
         }
       });
 
       if (data.passed) {
+        if (window.quizTimerInterval) clearInterval(window.quizTimerInterval);
         Swal.fire('Chúc mừng!', `Bạn đạt ${data.score}/${data.total} câu trắc nghiệm! Đủ điều kiện nhận File mẫu thực hành.`, 'success');
         triggerTemplateGeneration();
       } else {
@@ -1051,6 +1118,13 @@
       currentGeneratedFile = data.filename;
       document.getElementById('lbl-generated-filename').innerText = data.filename;
       document.getElementById('lnk-download-template').href = data.download_url;
+
+      // Cập nhật yêu cầu cá nhân hóa MSSV
+      const last3 = (mssv.length >= 3) ? mssv.slice(-3) : mssv;
+      const elMssv = document.getElementById('lbl-personalized-mssv');
+      if (elMssv) elMssv.innerText = last3;
+      const elEx = document.getElementById('lbl-personalized-example');
+      if (elEx) elEx.innerText = `Số: ${last3}/...`;
 
       document.getElementById('section-template').classList.remove('d-none');
       document.getElementById('section-validate').classList.remove('d-none');
@@ -1184,6 +1258,20 @@
     function renderChecklist(data) {
       document.getElementById('lbl-score-percentage').innerText = `${data.percentage}%`;
       document.getElementById('lbl-score-ratio').innerText = `Đạt ${data.passed_count} / ${data.total_count} tiêu chuẩn Nghị định 30`;
+
+      // Cập nhật số lần kiểm tra thử (Telemetry preview quota)
+      if (data.preview_count !== undefined) {
+        const badgeQuota = document.getElementById('badge-preview-count');
+        if (badgeQuota) {
+          const rem = Math.max(0, 3 - data.preview_count);
+          badgeQuota.innerText = `Đã kiểm tra: ${data.preview_count}/3 lần (Còn ${rem} lần)`;
+          if (data.preview_count >= 3) {
+            badgeQuota.className = 'badge bg-danger text-white shadow-sm';
+          } else {
+            badgeQuota.className = 'badge bg-light text-dark border shadow-sm';
+          }
+        }
+      }
 
       const elProfile = document.getElementById('lbl-font-profile');
       if (elProfile && data.font_profile) {
@@ -1494,10 +1582,19 @@
       }
 
       if (filtered.length === 0) {
-        subTbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Không có bài nộp nào phù hợp với bộ lọc tìm kiếm.</td></tr>';
+        subTbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Không có bài nộp nào phù hợp với bộ lọc tìm kiếm.</td></tr>';
       } else {
         subTbody.innerHTML = '';
         filtered.forEach(sub => {
+          let speedBadge = '';
+          if (sub.is_suspicious_speed) {
+            speedBadge = `<span class="badge bg-danger text-white"><i class="fa-solid fa-triangle-exclamation me-1"></i>${sub.elapsed_time || 'Dưới 2p'}</span><br><small class="text-danger fw-bold">🚩 Nộp quá nhanh (&lt; 2p)</small>`;
+          } else if (sub.elapsed_time && sub.elapsed_time !== 'N/A') {
+            speedBadge = `<span class="badge bg-light text-dark border"><i class="fa-regular fa-clock me-1"></i>${sub.elapsed_time}</span><br><small class="text-muted">Thử: ${sub.preview_count || 0} lần</small>`;
+          } else {
+            speedBadge = `<span class="badge bg-light text-muted border">N/A</span>`;
+          }
+
           subTbody.innerHTML += `
             <tr>
               <td><span class="badge bg-danger fw-bold fs-6">${sub.class_code || 'Chung'}</span></td>
@@ -1507,6 +1604,7 @@
               <td><span class="rule-pill">${sub.doc_name}</span></td>
               <td><small class="font-monospace text-truncate d-inline-block" style="max-width:200px;">${sub.filename}</small></td>
               <td><small class="text-muted">${sub.submitted_at}</small></td>
+              <td>${speedBadge}</td>
               <td><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> 100% NĐ 30</span></td>
               <td>
                 <div class="btn-group btn-group-sm">

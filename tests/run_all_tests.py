@@ -22,6 +22,7 @@ TEST_SUITES = [
     "test_all_8_docs.py",
     "test_schema_layouts.py",
     "test_session_control.py",
+    "test_anti_cheat_stages.py",
     "comprehensive_audit_suite.py"
 ]
 
@@ -42,7 +43,9 @@ def main():
     server_process = None
     if not is_server_running():
         print(" [i] Máy chủ 127.0.0.1:5000 chưa chạy. Đang tự động khởi động máy chủ thử nghiệm...")
-        server_process = subprocess.Popen([sys.executable, "app.py"], cwd=ROOT_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        server_env = os.environ.copy()
+        server_env["EDUDOC_TESTING"] = "1"
+        server_process = subprocess.Popen([sys.executable, "app.py"], cwd=ROOT_DIR, env=server_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(20):
             time.sleep(0.5)
             if is_server_running():

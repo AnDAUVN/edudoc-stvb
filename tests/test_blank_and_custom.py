@@ -7,6 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import app
 from engine.security import check_anti_cheat
 
+app.testing = True
+os.environ["EDUDOC_TESTING"] = "1"
+
 def test_blank_body_feature():
     print("=" * 60)
     print("KIỂM THỬ TÍNH NĂNG: ĐỂ TRỐNG PHẦN THÂN HOẶC GIẢNG VIÊN TỰ ĐƯA VÔ")

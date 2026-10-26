@@ -6,11 +6,12 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, Inches
 
 class Decree30Validator:
-    def __init__(self, docx_path, doc_type_id, template_info=None):
+    def __init__(self, docx_path, doc_type_id, template_info=None, mssv=None):
         self.doc_path = str(docx_path) if isinstance(docx_path, str) else ""
         self.doc = docx_path if hasattr(docx_path, "paragraphs") else Document(docx_path)
         self.doc_type_id = doc_type_id
         self.template_info = template_info or {}
+        self.mssv = str(mssv).strip() if mssv else None
         self.results = {}
         # Hồ sơ quy ước cỡ chữ: "SO_TRUOC" (Bộ nhỏ: 12-13) hoặc "SO_SAU" (Bộ lớn: 13-14)
         self.font_profile = "SO_TRUOC"
@@ -256,6 +257,44 @@ class Decree30Validator:
                     "fix": "Chỉnh sửa Bảng cuối trang thành 1 dòng x 2 cột: Cột 1 chứa Ô 9b (Nơi nhận), Cột 2 chứa Ô 7a, 7b (Chức vụ, Chữ ký, Họ tên)."
                 })
 
+        # 3. KIỂM TRA ĐỐI PHÓ: LẠM DỤNG PHÍM SPACE ĐỂ CĂN CHỈNH THAY VÌ DÙNG BẢNG HOẶC TAB
+        space_abuse_found = False
+        for p in self.doc.paragraphs:
+            if re.search(r' {4,}', p.text):
+                space_abuse_found = True
+                break
+        if not space_abuse_found:
+            for t in self.doc.tables:
+                for row in t.rows:
+                    for cell in row.cells:
+                        for p in cell.paragraphs:
+                            if re.search(r' {4,}', p.text):
+                                space_abuse_found = True
+                                break
+
+        if space_abuse_found:
+            errors.append({
+                "issue": "Phát hiện lạm dụng phím Space (từ 4 dấu cách liên tiếp trở lên) để căn chỉnh vị trí chữ.",
+                "fix": "Xóa toàn bộ các khoảng trắng (Space) liên tiếp. Sử dụng Bảng ẩn (Table không viền) hoặc phím Tab chuẩn theo Nghị định 30."
+            })
+
+        # 4. KIỂM TRA ĐỐI PHÓ: LẠM DỤNG PHÍM ENTER LIÊN TIẾP DỒN TRANG
+        consecutive_empty = 0
+        max_consecutive_empty = 0
+        for p in self.doc.paragraphs:
+            if not self._clean_text(p):
+                consecutive_empty += 1
+                if consecutive_empty > max_consecutive_empty:
+                    max_consecutive_empty = consecutive_empty
+            else:
+                consecutive_empty = 0
+
+        if max_consecutive_empty >= 4:
+            errors.append({
+                "issue": f"Lạm dụng phím Enter tạo {max_consecutive_empty} dòng trống liên tiếp ngoài bảng để dồn trang.",
+                "fix": "Xóa các dòng Enter trống thừa. Sử dụng định dạng Spacing Before/After trong Paragraph hoặc ngắt trang Page Break (Ctrl+Enter)."
+            })
+
         return {
             "box_id": "tables",
             "name": "Cấu trúc Bảng đầu trang (2x2) và Bảng cuối trang (1x2)",
@@ -494,6 +533,35 @@ class Decree30Validator:
                         "issue": "Sai công thức Báo cáo: Ký hiệu của văn bản có tên loại (Báo cáo) bắt buộc phải có tên loại viết tắt 'BC-' đứng đầu ký hiệu (Công thức: Số: .../BC-<Tên viết tắt đơn vị/cơ quan>).",
                         "fix": "Thêm tiền tố 'BC-' sau dấu gạch chéo (Ví dụ: 'Số: 18/BC-CNTT')."
                     })
+
+            # 3. KIỂM TRA CÁ NHÂN HÓA THEO MÃ SINH VIÊN (CHỐNG CHÉP BÀI NỘP HỘ)
+            if self.mssv and len(self.mssv) >= 3:
+                expected_num = self.mssv[-3:]
+                num_match = re.search(r"^Số\s*:\s*([0-9A-Za-z]+)/", t, re.IGNORECASE)
+                if num_match:
+                    found_num = num_match.group(1).strip()
+                    default_num = None
+                    if self.template_info and "header_part" in self.template_info:
+                        def_m = re.search(r"Số\s*:\s*([0-9A-Za-z]+)/", self.template_info["header_part"], re.IGNORECASE)
+                        if def_m:
+                            default_num = def_m.group(1).strip()
+
+                    is_match = False
+                    try:
+                        if (found_num == expected_num) or (int(found_num) == int(expected_num)):
+                            is_match = True
+                    except ValueError:
+                        if found_num == expected_num:
+                            is_match = True
+
+                    if default_num and (found_num == default_num):
+                        is_match = True
+
+                    if not is_match:
+                        errors.append({
+                            "issue": f"Yêu cầu cá nhân hóa: Số văn bản ({found_num}) không hợp lệ: Không khớp với 3 số cuối MSSV của bạn ('{expected_num}') hoặc số mặc định của đề bài ('{default_num}').",
+                            "fix": f"Sửa lại số văn bản thành: 'Số: {expected_num}/{after_slash}' theo đúng 3 số cuối Mã sinh viên của bạn."
+                        })
 
         font, size, bold, italic = self._get_dominant_font_and_size(p_so)
         if bold:

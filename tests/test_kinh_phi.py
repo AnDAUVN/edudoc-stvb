@@ -26,7 +26,7 @@ assert fraud.get('is_fraud') == False
 with open('data/questions.json', encoding='utf-8') as f:
     qs = json.load(f)
 assert 'to_trinh_xin_kinh_phi' in qs
-assert len(qs['to_trinh_xin_kinh_phi']) == 5
+assert len(qs['to_trinh_xin_kinh_phi']) >= 5
 print(f"✔ Questions check: {len(qs['to_trinh_xin_kinh_phi'])} questions loaded!")
 
 v = Decree30Validator(out_raw, "to_trinh_xin_kinh_phi", tpl)
