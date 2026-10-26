@@ -1,0 +1,546 @@
+import os
+import json
+import datetime
+from flask import Flask, request, jsonify, send_file, render_template
+
+from engine.security import create_student_raw_template, check_anti_cheat
+from engine.validator import Decree30Validator
+
+app = Flask(__name__, template_folder="templates", static_folder="static")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+STORAGE_TEMPLATES = os.path.join(BASE_DIR, "storage", "templates")
+STORAGE_UPLOADS = os.path.join(BASE_DIR, "storage", "uploads")
+STORAGE_SUBMITTED = os.path.join(BASE_DIR, "storage", "submitted")
+
+SUBMISSIONS_FILE = os.path.join(DATA_DIR, "submissions.json")
+FRAUD_LOGS_FILE = os.path.join(DATA_DIR, "fraud_logs.json")
+CLASSES_FILE = os.path.join(DATA_DIR, "classes.json")
+
+# Đảm bảo các thư mục tồn tại
+for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
+    os.makedirs(path, exist_ok=True)
+
+def load_json_file(file_path, default_val):
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return default_val
+    return default_val
+
+def save_json_file(file_path, data):
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/api/documents", methods=["GET"])
+def get_documents():
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+    docs = [{"id": k, "name": v["name"], "category": v["category"]} for k, v in templates_data.items()]
+    return jsonify(docs)
+
+@app.route("/api/classes", methods=["GET"])
+def get_classes():
+    classes = load_json_file(CLASSES_FILE, ["22DTH01", "22DTH02", "KN01", "KN02"])
+    return jsonify({"classes": classes})
+
+@app.route("/api/classes/add", methods=["POST"])
+def add_class():
+    data = request.json or {}
+    new_class = str(data.get("class_code", "")).strip().upper()
+    if not new_class:
+        return jsonify({"error": "Vui lòng nhập Mã lớp KN!"}), 400
+    classes = load_json_file(CLASSES_FILE, [])
+    if new_class not in classes:
+        classes.append(new_class)
+        classes.sort()
+        save_json_file(CLASSES_FILE, classes)
+    return jsonify({"success": True, "classes": classes, "message": f"Đã thêm Mã lớp '{new_class}' thành công!"})
+
+@app.route("/api/classes/delete", methods=["POST"])
+def delete_class():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    classes = load_json_file(CLASSES_FILE, [])
+    if class_code in classes:
+        classes.remove(class_code)
+        save_json_file(CLASSES_FILE, classes)
+    return jsonify({"success": True, "classes": classes, "message": f"Đã xóa Mã lớp '{class_code}'!"})
+
+@app.route("/api/quiz/get", methods=["POST"])
+def get_quiz():
+    data = request.json or {}
+    doc_type = data.get("doc_type")
+    all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
+    
+    questions = all_questions.get(doc_type, [])
+    # Ẩn đáp án đúng khi gửi về client
+    safe_questions = []
+    for q in questions:
+        safe_questions.append({
+            "id": q["id"],
+            "question": q["question"],
+            "options": q["options"]
+        })
+    import math
+    pass_score = max(1, math.ceil(len(questions) * 0.8)) if questions else 0
+    return jsonify({
+        "questions": safe_questions,
+        "total": len(questions),
+        "pass_score": pass_score
+    })
+
+@app.route("/api/quiz/submit", methods=["POST"])
+def submit_quiz():
+    data = request.json or {}
+    doc_type = data.get("doc_type")
+    user_answers = data.get("answers", {}) # { "1": 1, "2": 2, ... }
+    
+    all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
+    questions = all_questions.get(doc_type, [])
+    
+    correct_count = 0
+    feedback = []
+    for q in questions:
+        q_id = str(q["id"])
+        selected = user_answers.get(q_id)
+        is_correct = (selected == q["correct"])
+        if is_correct:
+            correct_count += 1
+        feedback.append({
+            "id": q["id"],
+            "is_correct": is_correct,
+            "correct_option": q["correct"],
+            "explanation": q["explanation"]
+        })
+        
+    import math
+    pass_score = max(1, math.ceil(len(questions) * 0.8)) if questions else 0
+    passed = (correct_count >= pass_score)
+    return jsonify({
+        "score": correct_count,
+        "total": len(questions),
+        "pass_score": pass_score,
+        "passed": passed,
+        "feedback": feedback
+    })
+
+@app.route("/api/template/generate", methods=["POST"])
+def generate_template():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    sbd = str(data.get("sbd", "")).strip()
+    mssv = str(data.get("mssv", "")).strip()
+    name = str(data.get("name", "")).strip()
+    doc_type = str(data.get("doc_type", "")).strip()
+    
+    if not (sbd and mssv and name and doc_type):
+        return jsonify({"error": "Vui lòng nhập đầy đủ SBD, MSSV, Họ và tên và Chọn loại văn bản!"}), 400
+        
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+    tmpl = templates_data.get(doc_type)
+    if not tmpl:
+        return jsonify({"error": "Không tìm thấy dữ liệu loại văn bản này!"}), 404
+        
+    # Tạo tên file theo quy chuẩn cũ: [SBD]_[MSSV]_[HOVATEN]_[LoaiVB].docx
+    clean_name = "".join(c for c in name if c.isalnum()).upper()
+    file_suffix = tmpl.get("filename_suffix", doc_type)
+    filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
+    output_path = os.path.join(STORAGE_TEMPLATES, filename)
+    
+    # Xử lý nội dung thân bài: Để trống hoặc lấy nội dung Giảng viên thiết lập
+    if tmpl.get("is_body_blank", False):
+        body_content = "[Nội dung văn bản: Sinh viên tự nhập theo nội dung Giảng viên hướng dẫn trực tiếp tại lớp]"
+    else:
+        body_content = tmpl.get("body_part", "")
+        
+    header = tmpl.get("header_part", "")
+    footer = tmpl.get("footer_part", "")
+    full_text = f"{header}\n\n{body_content}\n\n{footer}" if (header or footer) else tmpl.get("raw_text", "")
+    
+    create_student_raw_template(
+        sbd=sbd,
+        mssv=mssv,
+        student_name=name,
+        doc_type_id=doc_type,
+        raw_text=full_text,
+        output_path=output_path
+    )
+    
+    return jsonify({
+        "filename": filename,
+        "download_url": f"/api/template/download/{filename}"
+    })
+
+@app.route("/api/template/download/<filename>")
+def download_template(filename):
+    safe_name = os.path.basename(filename)
+    path = os.path.join(STORAGE_TEMPLATES, safe_name)
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True, download_name=safe_name)
+    return "File không tồn tại", 404
+
+@app.route("/api/validate", methods=["POST"])
+def validate_student_work():
+    if "file" not in request.files:
+        return jsonify({"error": "Chưa chọn file tải lên!"}), 400
+        
+    file = request.files["file"]
+    class_code = str(request.form.get("class_code", "")).strip().upper() or "Chung"
+    sbd = request.form.get("sbd", "").strip()
+    mssv = request.form.get("mssv", "").strip()
+    name = request.form.get("name", "").strip()
+    doc_type = request.form.get("doc_type", "").strip()
+    
+    if not (file.filename and sbd and mssv and name and doc_type):
+        return jsonify({"error": "Thiếu thông tin xác thực bài làm!"}), 400
+
+    temp_save_path = os.path.join(STORAGE_UPLOADS, f"temp_{mssv}_{file.filename}")
+    file.save(temp_save_path)
+    
+    try:
+        # 1. BƯỚC 1: KIỂM TRA GIAN LẬN (CHỐNG CHÉP BÀI)
+        # Nạp dữ liệu các bài đã từng nộp để tra cứu tên người cho chép
+        submissions = load_json_file(SUBMISSIONS_FILE, [])
+        students_db = {s["mssv"]: s for s in submissions}
+        
+        fraud_check = check_anti_cheat(
+            docx_path=temp_save_path,
+            current_sbd=sbd,
+            current_mssv=mssv,
+            current_name=name,
+            students_db=students_db
+        )
+        
+        if fraud_check.get("is_fraud"):
+            # Ghi lại hồ sơ vi phạm vào fraud_logs.json
+            import uuid
+            log_id = str(uuid.uuid4())[:8]
+
+            if "student_a" not in fraud_check:
+                fraud_check["student_a"] = {
+                    "sbd": sbd,
+                    "mssv": mssv,
+                    "name": name,
+                    "class_code": class_code
+                }
+            else:
+                fraud_check["student_a"]["class_code"] = class_code
+
+            fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
+            fraud_entry = {
+                "id": log_id,
+                "class_code": class_code or "Chung",
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "doc_type": doc_type,
+                "fraud_data": fraud_check
+            }
+            fraud_logs.append(fraud_entry)
+            save_json_file(FRAUD_LOGS_FILE, fraud_logs)
+            
+            return jsonify({
+                "status": "FRAUD_DETECTED",
+                "fraud_info": fraud_check
+            })
+
+        # 2. BƯỚC 2: KIỂM TRA THỂ THỨC NGHỊ ĐỊNH 30 (Ô 1 - Ô 9)
+        templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+        tmpl_info = templates_data.get(doc_type, {})
+        
+        validator = Decree30Validator(temp_save_path, doc_type, tmpl_info)
+        result = validator.validate_document()
+        
+        result["status"] = "SUCCESS"
+        result["temp_file"] = os.path.basename(temp_save_path)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({"error": f"Lỗi xử lý file: {str(e)}"}), 500
+
+@app.route("/api/submit", methods=["POST"])
+def submit_final():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    sbd = data.get("sbd")
+    mssv = data.get("mssv")
+    name = data.get("name")
+    doc_type = data.get("doc_type")
+    temp_file = data.get("temp_file")
+    
+    if not (sbd and mssv and name and doc_type and temp_file):
+        return jsonify({"error": "Thiếu thông tin nộp bài!"}), 400
+        
+    temp_path = os.path.join(STORAGE_UPLOADS, temp_file)
+    if not os.path.exists(temp_path):
+        return jsonify({"error": "Không tìm thấy file bài làm tạm thời để nộp!"}), 404
+        
+    # Di chuyển sang thư mục submitted
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+    tmpl = templates_data.get(doc_type, {})
+    clean_name = "".join(c for c in name if c.isalnum()).upper()
+    file_suffix = tmpl.get("filename_suffix", doc_type)
+    final_filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
+    final_path = os.path.join(STORAGE_SUBMITTED, final_filename)
+    
+    import shutil
+    shutil.copy2(temp_path, final_path)
+    
+    # Ghi nhận kết quả
+    submissions = load_json_file(SUBMISSIONS_FILE, [])
+    # Xóa bản ghi cũ nếu sinh viên nộp lại
+    submissions = [s for s in submissions if not (s["mssv"] == mssv and s["doc_type"] == doc_type)]
+    
+    new_sub = {
+        "class_code": class_code or "Chung",
+        "sbd": sbd,
+        "mssv": mssv,
+        "name": name,
+        "doc_type": doc_type,
+        "doc_name": tmpl.get("name", doc_type),
+        "filename": final_filename,
+        "submitted_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "status": "Hoàn thành 100% Nghị định 30"
+    }
+    submissions.append(new_sub)
+    save_json_file(SUBMISSIONS_FILE, submissions)
+    
+    return jsonify({"success": True, "message": "Nộp bài thành công!", "submission": new_sub})
+
+@app.route("/api/teacher/data", methods=["GET"])
+def teacher_data():
+    submissions = load_json_file(SUBMISSIONS_FILE, [])
+    fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
+    classes = load_json_file(CLASSES_FILE, ["22DTH01", "22DTH02", "KN01", "KN02"])
+    return jsonify({
+        "submissions": submissions,
+        "fraud_logs": fraud_logs,
+        "classes": classes
+    })
+
+@app.route("/api/download/submitted/<filename>")
+def download_submitted(filename):
+    safe_name = os.path.basename(filename)
+    path = os.path.join(STORAGE_SUBMITTED, safe_name)
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True, download_name=safe_name)
+    return "File không tồn tại", 404
+
+@app.route("/api/teacher/export-csv", methods=["GET"])
+def export_csv():
+    class_filter = request.args.get("class_code", "ALL")
+    submissions = load_json_file(SUBMISSIONS_FILE, [])
+    if class_filter != "ALL":
+        submissions = [s for s in submissions if s.get("class_code") == class_filter]
+        
+    import io
+    import csv
+    from flask import Response
+    
+    output = io.StringIO()
+    # Thêm UTF-8 BOM để Excel trên Windows hiển thị đúng tiếng Việt có dấu
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    writer.writerow(["STT", "Mã lớp KN", "Số báo danh (SBD)", "Mã số sinh viên (MSSV)", "Họ và tên", "Loại văn bản bài tập", "Tên file nộp", "Thời gian nộp", "Kết quả thẩm định", "Điểm số quy đổi"])
+    
+    for idx, s in enumerate(submissions):
+        writer.writerow([
+            idx + 1,
+            s.get("class_code", "Chung"),
+            s.get("sbd", ""),
+            s.get("mssv", ""),
+            s.get("name", ""),
+            s.get("doc_name", s.get("doc_type", "")),
+            s.get("filename", ""),
+            s.get("submitted_at", ""),
+            s.get("status", "Hoàn thành 100% Nghị định 30"),
+            "10.0 / 10"
+        ])
+        
+    csv_data = output.getvalue()
+    filename = f"Bang_Diem_STVB_{class_filter}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    return Response(
+        csv_data,
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.route("/api/teacher/submissions/delete", methods=["POST"])
+def delete_teacher_submission():
+    data = request.json or {}
+    mssv = str(data.get("mssv", "")).strip()
+    doc_type = str(data.get("doc_type", "")).strip()
+    if not mssv:
+        return jsonify({"error": "Thiếu MSSV cần xóa!"}), 400
+    submissions = load_json_file(SUBMISSIONS_FILE, [])
+    new_sub = [s for s in submissions if not (s.get("mssv") == mssv and (not doc_type or s.get("doc_type") == doc_type))]
+    save_json_file(SUBMISSIONS_FILE, new_sub)
+    return jsonify({"success": True, "message": f"Đã xóa bài nộp của MSSV {mssv}!"})
+
+@app.route("/api/teacher/fraud/delete", methods=["POST"])
+def delete_fraud_log():
+    data = request.json or {}
+    log_id = str(data.get("id", "")).strip()
+    if not log_id:
+        return jsonify({"error": "Thiếu mã bản ghi vi phạm cần xóa!"}), 400
+    
+    fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
+    orig_len = len(fraud_logs)
+    fraud_logs = [log for log in fraud_logs if str(log.get("id")) != log_id]
+    
+    if len(fraud_logs) == orig_len:
+        fraud_logs = [log for log in fraud_logs if str(log.get("timestamp")) != log_id]
+        
+    save_json_file(FRAUD_LOGS_FILE, fraud_logs)
+    return jsonify({"success": True, "message": "Đã xóa biên bản vi phạm thành công!"})
+
+@app.route("/api/teacher/fraud/clear", methods=["POST"])
+def clear_fraud_logs():
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip()
+    
+    fraud_logs = load_json_file(FRAUD_LOGS_FILE, [])
+    if class_code and class_code != "ALL":
+        fraud_logs = [log for log in fraud_logs if log.get("class_code") != class_code]
+        msg = f"Đã xóa toàn bộ nhật ký vi phạm của lớp {class_code}!"
+    else:
+        fraud_logs = []
+        msg = "Đã xóa toàn bộ nhật ký vi phạm của hệ thống!"
+        
+    save_json_file(FRAUD_LOGS_FILE, fraud_logs)
+    return jsonify({"success": True, "message": msg})
+
+@app.route("/api/teacher/templates", methods=["GET"])
+def teacher_templates():
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+    return jsonify(templates_data)
+
+@app.route("/api/teacher/templates/save", methods=["POST"])
+def save_teacher_template():
+    data = request.json or {}
+    doc_type = data.get("doc_type")
+    is_body_blank = bool(data.get("is_body_blank", False))
+    header_part = data.get("header_part", "").strip()
+    body_part = data.get("body_part", "").strip()
+    footer_part = data.get("footer_part", "").strip()
+
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+    if doc_type not in templates_data:
+        return jsonify({"error": "Không tìm thấy loại văn bản!"}), 404
+
+    templates_data[doc_type]["is_body_blank"] = is_body_blank
+    if header_part:
+        templates_data[doc_type]["header_part"] = header_part
+    templates_data[doc_type]["body_part"] = body_part
+    if footer_part:
+        templates_data[doc_type]["footer_part"] = footer_part
+
+    # Cập nhật lại raw_text
+    placeholder = "[Nội dung văn bản: Sinh viên tự nhập theo nội dung Giảng viên hướng dẫn trực tiếp tại lớp]"
+    b = placeholder if is_body_blank else body_part
+    templates_data[doc_type]["raw_text"] = f"{header_part}\n\n{b}\n\n{footer_part}"
+
+    save_json_file(os.path.join(DATA_DIR, "document_templates.json"), templates_data)
+    return jsonify({"success": True, "message": "Đã lưu cập nhật nội dung bài tập thành công!"})
+
+@app.route("/api/teacher/quiz/<doc_type>", methods=["GET"])
+def get_teacher_quiz(doc_type):
+    all_questions = load_json_file(os.path.join(DATA_DIR, "questions.json"), {})
+    questions = all_questions.get(doc_type, [])
+    return jsonify({"questions": questions, "doc_type": doc_type, "total": len(questions)})
+
+@app.route("/api/teacher/quiz/save", methods=["POST"])
+def save_teacher_quiz():
+    data = request.json or {}
+    doc_type = data.get("doc_type")
+    q_id = data.get("id")
+    question_text = str(data.get("question", "")).strip()
+    options = data.get("options", [])
+    correct = data.get("correct")
+    explanation = str(data.get("explanation", "")).strip()
+
+    if not doc_type or not question_text or len(options) < 2 or correct is None:
+        return jsonify({"error": "Vui lòng nhập đầy đủ câu hỏi, tối thiểu 2 phương án và chọn đáp án đúng!"}), 400
+
+    try:
+        correct = int(correct)
+    except:
+        return jsonify({"error": "Đáp án đúng không hợp lệ!"}), 400
+
+    questions_path = os.path.join(DATA_DIR, "questions.json")
+    all_questions = load_json_file(questions_path, {})
+    if doc_type not in all_questions:
+        all_questions[doc_type] = []
+
+    q_list = all_questions[doc_type]
+
+    # Kiểm tra xem là SỬA câu hỏi có sẵn hay THÊM MỚI
+    if q_id is not None:
+        try:
+            q_id = int(q_id)
+        except:
+            pass
+        found = False
+        for q in q_list:
+            if q["id"] == q_id:
+                q["question"] = question_text
+                q["options"] = [str(opt).strip() for opt in options]
+                q["correct"] = correct
+                q["explanation"] = explanation
+                found = True
+                break
+        if not found:
+            new_id = max([q["id"] for q in q_list], default=0) + 1
+            q_list.append({
+                "id": new_id,
+                "question": question_text,
+                "options": [str(opt).strip() for opt in options],
+                "correct": correct,
+                "explanation": explanation
+            })
+    else:
+        new_id = max([q["id"] for q in q_list], default=0) + 1
+        q_list.append({
+            "id": new_id,
+            "question": question_text,
+            "options": [str(opt).strip() for opt in options],
+            "correct": correct,
+            "explanation": explanation
+        })
+
+    all_questions[doc_type] = q_list
+    save_json_file(questions_path, all_questions)
+    return jsonify({"success": True, "message": "Đã lưu câu hỏi trắc nghiệm thành công!", "questions": q_list})
+
+@app.route("/api/teacher/quiz/delete", methods=["POST"])
+def delete_teacher_quiz():
+    data = request.json or {}
+    doc_type = data.get("doc_type")
+    q_id = data.get("id")
+
+    if not doc_type or q_id is None:
+        return jsonify({"error": "Thiếu thông tin câu hỏi cần xóa!"}), 400
+
+    try:
+        q_id = int(q_id)
+    except:
+        pass
+
+    questions_path = os.path.join(DATA_DIR, "questions.json")
+    all_questions = load_json_file(questions_path, {})
+    if doc_type in all_questions:
+        all_questions[doc_type] = [q for q in all_questions[doc_type] if q["id"] != q_id]
+        save_json_file(questions_path, all_questions)
+        return jsonify({"success": True, "message": "Đã xóa câu hỏi!", "questions": all_questions[doc_type]})
+
+    return jsonify({"error": "Không tìm thấy loại văn bản này!"}), 404
+
+if __name__ == "__main__":
+    print("Khởi động Máy chủ Phần mềm Huấn luyện STVB Nghị định 30...")
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)

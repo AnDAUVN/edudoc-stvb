@@ -1,0 +1,146 @@
+{
+  "bai_thu_hoach": {
+    "id": "bai_thu_hoach",
+    "name": "1. Bài thu hoạch",
+    "category": "Bài thu hoạch",
+    "filename_suffix": "BaiThuHoach",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "BÀI THU HOẠCH",
+      "so_ky_hieu_pattern": "BTH",
+      "has_kinh_gui": false,
+      "sign_type": "TRUC_TIEP"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/BTH-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÀI THU HOẠCH\ntrích yếu: Về kết quả học tập chuyên đề kỹ năng soạn thảo văn bản hành chính",
+    "body_part": "",
+    "footer_part": "Nơi nhận:\n- Ban Giảng huấn (để báo cáo);\n- Lưu: Hồ sơ cá nhân.\n\nNGƯỜI THU HOẠCH\n\n\n\nNguyễn Văn A",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/BTH-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÀI THU HOẠCH\ntrích yếu: Về kết quả học tập chuyên đề kỹ năng soạn thảo văn bản hành chính\n\n\n\nNơi nhận:\n- Ban Giảng huấn (để báo cáo);\n- Lưu: Hồ sơ cá nhân.\n\nNGƯỜI THU HOẠCH\n\n\n\nNguyễn Văn A"
+  },
+  "cong_van_de_nghi": {
+    "id": "cong_van_de_nghi",
+    "name": "2. Công văn đề nghị",
+    "category": "Công văn hành chính",
+    "filename_suffix": "CongVanDeNghi",
+    "expected_data": {
+      "has_type_name": false,
+      "so_ky_hieu_pattern": "CV-DNTT",
+      "trich_yeu_prefix": "V/v",
+      "has_kinh_gui": true,
+      "sign_type": "TRUC_TIEP"
+    },
+    "is_body_blank": true,
+    "header_part": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 12/CV-DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.",
+    "body_part": "",
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm",
+    "raw_text": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 12/CV-DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.\n\n[Nội dung văn bản: Sinh viên tự nhập theo nội dung Giảng viên hướng dẫn trực tiếp tại lớp]\n\nNơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm"
+  },
+  "thong_bao_nhiem_vu": {
+    "id": "thong_bao_nhiem_vu",
+    "name": "3. Thông báo nhiệm vụ được giao",
+    "category": "Thông báo",
+    "filename_suffix": "ThongBaoNhiemVu",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "THÔNG BÁO",
+      "so_ky_hieu_pattern": "TB-ĐT",
+      "has_kinh_gui": false,
+      "sign_type": "THUA_LENH"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: PHÒNG ĐÀO TẠO\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 45/TB-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 02 tháng 02 năm 2026\ntên loại văn bản: THÔNG BÁO\ntrích yếu: Về việc phân công nhiệm vụ cán bộ coi thi kết thúc học phần học kỳ 1 năm học 2025 - 2026",
+    "body_part": "Thực hiện Kế hoạch tổ chức kỳ thi kết thúc học phần học kỳ 1 năm học 2025 - 2026 đã được Ban Giám hiệu phê duyệt;\nPhòng Đào tạo thông báo đến toàn thể giảng viên, cán bộ quản lý và nhân viên trong Nhà trường về việc thực hiện nhiệm vụ coi thi học kỳ cụ thể như sau:\n1. Toàn bộ cán bộ, giảng viên có tên trong danh sách điều động phải có mặt tại Văn phòng Hội đồng thi trước giờ thi 30 phút để nhận đề và thẻ phân công nhiệm vụ.\n2. Nghiêm túc chấp hành quy chế thi hành chính, tuyệt đối không sử dụng điện thoại di động và các thiết bị thu phát sóng trong suốt thời gian làm nhiệm vụ tại phòng thi.\n3. Bàn giao bài thi, danh sách ký nộp bài và biên bản phòng thi đầy đủ về Ban Thư ký Hội đồng ngay sau khi kết thúc ca thi.\nĐề nghị các đơn vị và cá nhân có liên quan nghiêm túc triển khai thực hiện thông báo này.",
+    "footer_part": "Nơi nhận:\n- Ban Giám hiệu (để báo cáo);\n- Các Khoa, Viện đào tạo (để phối hợp);\n- Cán bộ coi thi (để thực hiện);\n- Lưu: VT, ĐT.\n\nTL. HIỆU TRƯỞNG\nTRƯỞNG PHÒNG ĐÀO TẠO\n\n\n\nNguyễn Văn An",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: PHÒNG ĐÀO TẠO\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 45/TB-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 02 tháng 02 năm 2026\ntên loại văn bản: THÔNG BÁO\ntrích yếu: Về việc phân công nhiệm vụ cán bộ coi thi kết thúc học phần học kỳ 1 năm học 2025 - 2026\n\nThực hiện Kế hoạch tổ chức kỳ thi kết thúc học phần học kỳ 1 năm học 2025 - 2026 đã được Ban Giám hiệu phê duyệt;\nPhòng Đào tạo thông báo đến toàn thể giảng viên, cán bộ quản lý và nhân viên trong Nhà trường về việc thực hiện nhiệm vụ coi thi học kỳ cụ thể như sau:\n1. Toàn bộ cán bộ, giảng viên có tên trong danh sách điều động phải có mặt tại Văn phòng Hội đồng thi trước giờ thi 30 phút để nhận đề và thẻ phân công nhiệm vụ.\n2. Nghiêm túc chấp hành quy chế thi hành chính, tuyệt đối không sử dụng điện thoại di động và các thiết bị thu phát sóng trong suốt thời gian làm nhiệm vụ tại phòng thi.\n3. Bàn giao bài thi, danh sách ký nộp bài và biên bản phòng thi đầy đủ về Ban Thư ký Hội đồng ngay sau khi kết thúc ca thi.\nĐề nghị các đơn vị và cá nhân có liên quan nghiêm túc triển khai thực hiện thông báo này.\n\nNơi nhận:\n- Ban Giám hiệu (để báo cáo);\n- Các Khoa, Viện đào tạo (để phối hợp);\n- Cán bộ coi thi (để thực hiện);\n- Lưu: VT, ĐT.\n\nTL. HIỆU TRƯỞNG\nTRƯỞNG PHÒNG ĐÀO TẠO\n\n\n\nNguyễn Văn An"
+  },
+  "thong_bao_hoat_dong": {
+    "id": "thong_bao_hoat_dong",
+    "name": "4. Thông báo thông tin hoạt động",
+    "category": "Thông báo",
+    "filename_suffix": "ThongBaoHoatDong",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "THÔNG BÁO",
+      "so_ky_hieu_pattern": "TB-ĐTN",
+      "has_kinh_gui": false,
+      "sign_type": "TRUC_TIEP"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: ĐOÀN THANH NIÊN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 08/TB-ĐTN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 08 tháng 03 năm 2026\ntên loại văn bản: THÔNG BÁO\ntrích yếu: Về việc tổ chức chiến dịch tình nguyện Mùa hè xanh năm 2026",
+    "body_part": "Nhằm phát huy tinh thần xung kích, tình nguyện của tuổi trẻ sinh viên Nhà trường vì sự phát triển của cộng đồng xã hội;\nĐoàn Thanh niên Trường Đại học Nguyễn Tất Thành thông báo về việc phát động và tuyển quân Chiến dịch tình nguyện Mùa hè xanh năm 2026 với các nội dung sau:\n1. Thời gian đăng ký: Từ ngày 10 tháng 4 năm 2026 đến hết ngày 30 tháng 4 năm 2026 tại Văn phòng Đoàn Thanh niên.\n2. Địa bàn hoạt động tình nguyện: Tỉnh Bến Tre và các xã nông thôn mới ngoại thành Thành phố Hồ Chí Minh.\n3. Đối tượng tham gia: Toàn thể đoàn viên, thanh niên, sinh viên hệ chính quy đang theo học tại các khoa, viện trong toàn trường.\nThông tin chi tiết về hồ sơ và thủ tục đăng ký xem tại bảng tin Đoàn trường hoặc cổng thông tin điện tử sinh viên.",
+    "footer_part": "Nơi nhận:\n- Đảng ủy, Ban Giám hiệu (để báo cáo);\n- Các Liên chi đoàn, Chi đoàn sinh viên;\n- Lưu: VT, ĐTN.\n\nBÍ THƯ ĐOÀN TRƯỜNG\n\n\n\nLê Văn Bình",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: ĐOÀN THANH NIÊN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 08/TB-ĐTN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 08 tháng 03 năm 2026\ntên loại văn bản: THÔNG BÁO\ntrích yếu: Về việc tổ chức chiến dịch tình nguyện Mùa hè xanh năm 2026\n\nNhằm phát huy tinh thần xung kích, tình nguyện của tuổi trẻ sinh viên Nhà trường vì sự phát triển của cộng đồng xã hội;\nĐoàn Thanh niên Trường Đại học Nguyễn Tất Thành thông báo về việc phát động và tuyển quân Chiến dịch tình nguyện Mùa hè xanh năm 2026 với các nội dung sau:\n1. Thời gian đăng ký: Từ ngày 10 tháng 4 năm 2026 đến hết ngày 30 tháng 4 năm 2026 tại Văn phòng Đoàn Thanh niên.\n2. Địa bàn hoạt động tình nguyện: Tỉnh Bến Tre và các xã nông thôn mới ngoại thành Thành phố Hồ Chí Minh.\n3. Đối tượng tham gia: Toàn thể đoàn viên, thanh niên, sinh viên hệ chính quy đang theo học tại các khoa, viện trong toàn trường.\nThông tin chi tiết về hồ sơ và thủ tục đăng ký xem tại bảng tin Đoàn trường hoặc cổng thông tin điện tử sinh viên.\n\nNơi nhận:\n- Đảng ủy, Ban Giám hiệu (để báo cáo);\n- Các Liên chi đoàn, Chi đoàn sinh viên;\n- Lưu: VT, ĐTN.\n\nBÍ THƯ ĐOÀN TRƯỜNG\n\n\n\nLê Văn Bình"
+  },
+  "to_trinh_xin_kinh_phi": {
+    "id": "to_trinh_xin_kinh_phi",
+    "name": "5. Tờ trình xin kinh phí",
+    "category": "Tờ trình",
+    "filename_suffix": "ToTrinhXinKinhPhi",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "TỜ TRÌNH",
+      "so_ky_hieu_pattern": "TTr-ĐTN",
+      "has_kinh_gui": true,
+      "sign_type": "KY_TRUC_TIEP"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: ĐOÀN THANH NIÊN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 35/TTr-ĐTN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 10 tháng 11 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin cấp kinh phí tổ chức Hội thi Sáng tạo sinh viên NTTU năm 2026\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.",
+    "body_part": "Căn cứ Kế hoạch công tác Đoàn và phong trào thanh niên năm học 2025 - 2026 của Ban Thường vụ Đoàn trường đã được phê duyệt;\nNhằm thúc đẩy phong trào nghiên cứu khoa học, đổi mới sáng tạo và khởi nghiệp trong đoàn viên, sinh viên toàn trường, Ban Thường vụ Đoàn trường xây dựng kế hoạch tổ chức \"Hội thi Sáng tạo sinh viên NTTU năm 2026\";\nĐể công tác chuẩn bị và tổ chức hội thi diễn ra thành công tốt đẹp, Ban Thường vụ Đoàn trường kính trình Ban Giám hiệu xem xét, phê duyệt hỗ trợ kinh phí tổ chức, chi tiết như sau:\n- Chi phí truyền thông, in ấn băng rôn, phướn, tài liệu hội thi: 15.000.000 đồng;\n- Chi phí bồi dưỡng Ban Giám khảo chấm thi vòng sơ khảo và chung kết: 20.000.000 đồng;\n- Chi phí giải thưởng cho các đội thi đạt giải (01 giải Nhất, 02 giải Nhì, 03 giải Ba, 05 giải Khuyến khích): 45.000.000 đồng;\n- Chi phí tổ chức lễ trao giải và tổng kết hội thi: 10.000.000 đồng.\nTổng kinh phí đề nghị cấp: 90.000.000 đồng (Chín mươi triệu đồng chẵn).\nKính trình Ban Giám hiệu xem xét, phê duyệt để Đoàn trường triển khai thực hiện đúng tiến độ.",
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Phòng Tài chính - Kế toán;\n- Lưu: VT, ĐTN.\n\nBÍ THƯ ĐOÀN TRƯỜNG\n\n\n\nNguyễn Hoàng Long",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: ĐOÀN THANH NIÊN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 35/TTr-ĐTN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 10 tháng 11 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin cấp kinh phí tổ chức Hội thi Sáng tạo sinh viên NTTU năm 2026\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.\n\nCăn cứ Kế hoạch công tác Đoàn và phong trào thanh niên năm học 2025 - 2026 của Ban Thường vụ Đoàn trường đã được phê duyệt;\nNhằm thúc đẩy phong trào nghiên cứu khoa học, đổi mới sáng tạo và khởi nghiệp trong đoàn viên, sinh viên toàn trường, Ban Thường vụ Đoàn trường xây dựng kế hoạch tổ chức \"Hội thi Sáng tạo sinh viên NTTU năm 2026\";\nĐể công tác chuẩn bị và tổ chức hội thi diễn ra thành công tốt đẹp, Ban Thường vụ Đoàn trường kính trình Ban Giám hiệu xem xét, phê duyệt hỗ trợ kinh phí tổ chức, chi tiết như sau:\n- Chi phí truyền thông, in ấn băng rôn, phướn, tài liệu hội thi: 15.000.000 đồng;\n- Chi phí bồi dưỡng Ban Giám khảo chấm thi vòng sơ khảo và chung kết: 20.000.000 đồng;\n- Chi phí giải thưởng cho các đội thi đạt giải (01 giải Nhất, 02 giải Nhì, 03 giải Ba, 05 giải Khuyến khích): 45.000.000 đồng;\n- Chi phí tổ chức lễ trao giải và tổng kết hội thi: 10.000.000 đồng.\nTổng kinh phí đề nghị cấp: 90.000.000 đồng (Chín mươi triệu đồng chẵn).\nKính trình Ban Giám hiệu xem xét, phê duyệt để Đoàn trường triển khai thực hiện đúng tiến độ.\n\nNơi nhận:\n- Như kính gửi;\n- Phòng Tài chính - Kế toán;\n- Lưu: VT, ĐTN.\n\nBÍ THƯ ĐOÀN TRƯỜNG\n\n\n\nNguyễn Hoàng Long"
+  },
+  "to_trinh_nhan_su": {
+    "id": "to_trinh_nhan_su",
+    "name": "6. Tờ trình xin bổ sung nhân sự",
+    "category": "Tờ trình",
+    "filename_suffix": "ToTrinhNhanSu",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "TỜ TRÌNH",
+      "so_ky_hieu_pattern": "TTr-CNTT",
+      "has_kinh_gui": true,
+      "sign_type": "TRUC_TIEP"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 15/TTr-CNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 18 tháng 09 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin bổ sung nhân sự giảng viên cơ hữu Bộ môn Kỹ thuật phần mềm\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.",
+    "body_part": "Căn cứ quy mô phát triển số lượng sinh viên ngành Công nghệ thông tin trong năm học 2026 - 2027;\nCăn cứ vào khối lượng giờ giảng thực tế và định mức giảng dạy quy định của giảng viên cơ hữu thuộc Bộ môn Kỹ thuật phần mềm;\nHiện nay, số lượng giảng viên cơ hữu của Bộ môn chưa đáp ứng đủ tỷ lệ giảng dạy theo yêu cầu chuẩn kiểm định chất lượng giáo dục đại học.\nĐể đảm bảo tiến độ và chất lượng giảng dạy, Khoa Công nghệ thông tin kính trình Ban Giám hiệu xem xét, phê duyệt chủ trương tuyển dụng bổ sung nhân sự như sau:\n1. Số lượng cần tuyển: 03 giảng viên cơ hữu.\n2. Yêu cầu trình độ: Thạc sĩ trở lên chuyên ngành Công nghệ thông tin, Khoa học máy tính hoặc Kỹ thuật phần mềm; ưu tiên ứng viên có chứng chỉ bồi dưỡng nghiệp vụ sư phạm và khả năng giảng dạy chuyên ngành bằng tiếng Anh.\nKính trình Ban Giám hiệu xem xét và quyết định.",
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Phòng Tổ chức - Nhân sự;\n- Lưu: VT, Khoa CNTT.\n\nTRƯỞNG KHOA\n\n\n\nHoàng Minh Trí",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 15/TTr-CNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 18 tháng 09 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin bổ sung nhân sự giảng viên cơ hữu Bộ môn Kỹ thuật phần mềm\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.\n\nCăn cứ quy mô phát triển số lượng sinh viên ngành Công nghệ thông tin trong năm học 2026 - 2027;\nCăn cứ vào khối lượng giờ giảng thực tế và định mức giảng dạy quy định của giảng viên cơ hữu thuộc Bộ môn Kỹ thuật phần mềm;\nHiện nay, số lượng giảng viên cơ hữu của Bộ môn chưa đáp ứng đủ tỷ lệ giảng dạy theo yêu cầu chuẩn kiểm định chất lượng giáo dục đại học.\nĐể đảm bảo tiến độ và chất lượng giảng dạy, Khoa Công nghệ thông tin kính trình Ban Giám hiệu xem xét, phê duyệt chủ trương tuyển dụng bổ sung nhân sự như sau:\n1. Số lượng cần tuyển: 03 giảng viên cơ hữu.\n2. Yêu cầu trình độ: Thạc sĩ trở lên chuyên ngành Công nghệ thông tin, Khoa học máy tính hoặc Kỹ thuật phần mềm; ưu tiên ứng viên có chứng chỉ bồi dưỡng nghiệp vụ sư phạm và khả năng giảng dạy chuyên ngành bằng tiếng Anh.\nKính trình Ban Giám hiệu xem xét và quyết định.\n\nNơi nhận:\n- Như kính gửi;\n- Phòng Tổ chức - Nhân sự;\n- Lưu: VT, Khoa CNTT.\n\nTRƯỞNG KHOA\n\n\n\nHoàng Minh Trí"
+  },
+  "to_trinh_thiet_bi": {
+    "id": "to_trinh_thiet_bi",
+    "name": "7. Tờ trình xin máy móc thiết bị",
+    "category": "Tờ trình",
+    "filename_suffix": "ToTrinhThietBi",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "TỜ TRÌNH",
+      "so_ky_hieu_pattern": "TTr-KNN",
+      "has_kinh_gui": true,
+      "sign_type": "KY_THAY"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: TRUNG TÂM ĐÀO TẠO KỸ NĂNG NGHỀ\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 22/TTr-KNN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 24 tháng 10 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin trang bị bổ sung máy chiếu và dàn máy vi tính phòng thực hành\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.",
+    "body_part": "Căn cứ vào nhu cầu thực tế phục vụ kỳ thi đánh giá kỹ năng nghề bậc 3 cho sinh viên khóa tốt nghiệp năm 2026;\nQua rà soát hiện trạng cơ sở vật chất tại Khu thực hành công nghệ cơ sở An Phú Đông, hiện có 05 máy chiếu đã mờ bóng đèn và 20 bộ máy vi tính cấu hình cũ không còn đáp ứng việc chạy các phần mềm đồ họa và giả lập chuyên ngành;\nĐể phục vụ tốt công tác giảng dạy và thi cử cho sinh viên, Trung tâm kính đề nghị Ban Giám hiệu xem xét, phê duyệt kinh phí mua sắm trang thiết bị bổ sung:\n- 05 máy chiếu đa năng công suất lớn phục vụ các phòng học lý thuyết;\n- 20 bộ máy vi tính để bàn cấu hình Core i5, RAM 16GB phục vụ phòng thi thực hành.\nDự toán tổng kinh phí dự kiến: 350.000.000 đồng (Ba trăm năm mươi triệu đồng chẵn).\nKính trình Ban Giám hiệu xem xét, phê duyệt để đơn vị kịp thời triển khai mua sắm.",
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Phòng Quản trị thiết bị;\n- Phòng Tài chính - Kế toán;\n- Lưu: VT, TT KNN.\n\nKT. GIÁM ĐỐC\nPHÓ GIÁM ĐỐC\n\n\n\nVõ Thị Kim Anh",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: TRUNG TÂM ĐÀO TẠO KỸ NĂNG NGHỀ\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 22/TTr-KNN\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 24 tháng 10 năm 2026\ntên loại văn bản: TỜ TRÌNH\ntrích yếu: Về việc xin trang bị bổ sung máy chiếu và dàn máy vi tính phòng thực hành\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.\n\nCăn cứ vào nhu cầu thực tế phục vụ kỳ thi đánh giá kỹ năng nghề bậc 3 cho sinh viên khóa tốt nghiệp năm 2026;\nQua rà soát hiện trạng cơ sở vật chất tại Khu thực hành công nghệ cơ sở An Phú Đông, hiện có 05 máy chiếu đã mờ bóng đèn và 20 bộ máy vi tính cấu hình cũ không còn đáp ứng việc chạy các phần mềm đồ họa và giả lập chuyên ngành;\nĐể phục vụ tốt công tác giảng dạy và thi cử cho sinh viên, Trung tâm kính đề nghị Ban Giám hiệu xem xét, phê duyệt kinh phí mua sắm trang thiết bị bổ sung:\n- 05 máy chiếu đa năng công suất lớn phục vụ các phòng học lý thuyết;\n- 20 bộ máy vi tính để bàn cấu hình Core i5, RAM 16GB phục vụ phòng thi thực hành.\nDự toán tổng kinh phí dự kiến: 350.000.000 đồng (Ba trăm năm mươi triệu đồng chẵn).\nKính trình Ban Giám hiệu xem xét, phê duyệt để đơn vị kịp thời triển khai mua sắm.\n\nNơi nhận:\n- Như kính gửi;\n- Phòng Quản trị thiết bị;\n- Phòng Tài chính - Kế toán;\n- Lưu: VT, TT KNN.\n\nKT. GIÁM ĐỐC\nPHÓ GIÁM ĐỐC\n\n\n\nVõ Thị Kim Anh"
+  },
+  "bao_cao": {
+    "id": "bao_cao",
+    "name": "8. Báo cáo",
+    "category": "Báo cáo",
+    "filename_suffix": "BaoCao",
+    "expected_data": {
+      "has_type_name": true,
+      "type_name": "BÁO CÁO",
+      "so_ky_hieu_pattern": "BC-CNTT",
+      "has_kinh_gui": true,
+      "sign_type": "TRUC_TIEP"
+    },
+    "is_body_blank": false,
+    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 18/BC-CNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÁO CÁO\ntrích yếu: Về tình hình thực hiện công tác đào tạo và nghiên cứu khoa học học kỳ 1 năm học 2025 - 2026\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.",
+    "body_part": "Thực hiện Kế hoạch năm học 2025 - 2026 của Nhà trường, Khoa Công nghệ thông tin kính báo cáo tình hình thực hiện nhiệm vụ công tác đào tạo và nghiên cứu khoa học học kỳ 1 với các kết quả cụ thể như sau:\n1. Về công tác đào tạo và quản lý sinh viên: Hoàn thành 100% khối lượng giờ giảng đúng tiến độ đề ra; tổ chức kỳ thi kết thúc học phần nghiêm túc, đúng quy chế; tỷ lệ sinh viên đạt kết quả học tập loại Khá, Giỏi đạt trên 75%.\n2. Về hoạt động nghiên cứu khoa học: Đơn vị đã tổ chức thành công 02 hội thảo học thuật chuyên ngành, nghiệm thu đúng hạn 05 đề tài nghiên cứu khoa học cấp cơ sở và triển khai chương trình liên kết thực tập với 10 doanh nghiệp công nghệ đối tác.\n3. Phương hướng nhiệm vụ trọng tâm học kỳ 2: Tiếp tục chuẩn hóa học liệu số, đổi mới phương pháp giảng dạy lấy người học làm trung tâm và hoàn thiện hồ sơ phục vụ công tác kiểm định chất lượng chương trình đào tạo.\nKhoa Công nghệ thông tin kính báo cáo Ban Giám hiệu xem xét và chỉ đạo.",
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Phòng Đào tạo;\n- Phòng Khoa học Công nghệ;\n- Lưu: VT, Khoa CNTT.\n\nTRƯỞNG KHOA\n\n\n\nHoàng Minh Trí",
+    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 18/BC-CNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÁO CÁO\ntrích yếu: Về tình hình thực hiện công tác đào tạo và nghiên cứu khoa học học kỳ 1 năm học 2025 - 2026\n\nKính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành.\n\nThực hiện Kế hoạch năm học 2025 - 2026 của Nhà trường, Khoa Công nghệ thông tin kính báo cáo tình hình thực hiện nhiệm vụ công tác đào tạo và nghiên cứu khoa học học kỳ 1 với các kết quả cụ thể như sau:\n1. Về công tác đào tạo và quản lý sinh viên: Hoàn thành 100% khối lượng giờ giảng đúng tiến độ đề ra; tổ chức kỳ thi kết thúc học phần nghiêm túc, đúng quy chế; tỷ lệ sinh viên đạt kết quả học tập loại Khá, Giỏi đạt trên 75%.\n2. Về hoạt động nghiên cứu khoa học: Đơn vị đã tổ chức thành công 02 hội thảo học thuật chuyên ngành, nghiệm thu đúng hạn 05 đề tài nghiên cứu khoa học cấp cơ sở và triển khai chương trình liên kết thực tập với 10 doanh nghiệp công nghệ đối tác.\n3. Phương hướng nhiệm vụ trọng tâm học kỳ 2: Tiếp tục chuẩn hóa học liệu số, đổi mới phương pháp giảng dạy lấy người học làm trung tâm và hoàn thiện hồ sơ phục vụ công tác kiểm định chất lượng chương trình đào tạo.\nKhoa Công nghệ thông tin kính báo cáo Ban Giám hiệu xem xét và chỉ đạo.\n\nNơi nhận:\n- Như kính gửi;\n- Phòng Đào tạo;\n- Phòng Khoa học Công nghệ;\n- Lưu: VT, Khoa CNTT.\n\nTRƯỞNG KHOA\n\n\n\nHoàng Minh Trí"
+  }
+}

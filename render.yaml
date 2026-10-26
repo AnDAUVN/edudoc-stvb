@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: edudoc-stvb
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PORT
+        value: 10000

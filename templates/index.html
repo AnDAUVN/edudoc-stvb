@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduDoc - Hệ thống Huấn luyện & Chấm bài STVB theo Nghị định 30</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --primary-color: #0d6efd;
+      --nttu-blue: #003399;
+      --nttu-gold: #ffcc00;
+    }
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .header-banner {
+      background: linear-gradient(135deg, #002266, #0044cc);
+      color: white;
+      padding: 1.5rem 0;
+      border-bottom: 4px solid var(--nttu-gold);
+    }
+    .card-custom {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+      margin-bottom: 1.5rem;
+    }
+    .step-badge {
+      width: 32px;
+      height: 32px;
+      background-color: var(--nttu-blue);
+      color: white;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .box-card {
+      transition: all 0.2s ease;
+      border-left: 5px solid #ccc;
+    }
+    .box-card.passed {
+      border-left-color: #198754;
+      background-color: #f8fff9;
+    }
+    .box-card.failed {
+      border-left-color: #dc3545;
+      background-color: #fff9f9;
+    }
+    .cheat-alert-box {
+      background: #fff5f5;
+      border: 2px dashed #dc3545;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .rule-pill {
+      font-size: 0.82rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #eef2ff;
+      color: #003399;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header-banner shadow-sm">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <i class="fa-solid fa-file-signature fa-2x text-warning"></i>
+        <div>
+          <h4 class="mb-0 fw-bold">EDUDOC - HỆ THỐNG HUẤN LUYỆN & CHẤM BÀI STVB</h4>
+          <small class="text-light opacity-75">Thực hành & Khảo thí Thể thức Văn bản Hành chính theo Nghị định 30/2020/NĐ-CP</small>
+        </div>
+      </div>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-warning rounded-pill fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
+            <i class="fa-solid fa-book-bookmark me-1"></i> Tra cứu Thể thức NĐ 30
+          </button>
+          <ul class="nav nav-pills bg-white rounded-pill p-1 shadow-sm">
+            <li class="nav-item">
+              <button class="nav-link active rounded-pill fw-semibold" id="tab-student" onclick="switchTab('student')">
+                <i class="fa-solid fa-user-graduate me-1"></i> Cổng Sinh viên
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link rounded-pill fw-semibold text-dark" id="tab-teacher" onclick="switchTab('teacher')">
+                <i class="fa-solid fa-chalkboard-user me-1"></i> Bàn làm việc Giảng viên
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container my-4">
+
+    <!-- ==================== CỔNG SINH VIÊN ==================== -->
+    <div id="student-view">
+      
+      <!-- THANH TIẾN TRÌNH 4 BƯỚC -->
+      <div class="card card-custom p-3 mb-4 bg-white">
+        <div class="row text-center g-2">
+          <div class="col-md-3 col-6">
+            <div id="step-nav-1" class="p-2 rounded bg-primary text-white fw-bold small shadow-sm">
+              <i class="fa-solid fa-user-check me-1"></i> Bước 1: Khai báo Đề bài
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div id="step-nav-2" class="p-2 rounded bg-light text-secondary fw-semibold small">
+              <i class="fa-solid fa-clipboard-question me-1"></i> Bước 2: Trắc nghiệm NĐ 30
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div id="step-nav-3" class="p-2 rounded bg-light text-secondary fw-semibold small">
+              <i class="fa-solid fa-file-arrow-down me-1"></i> Bước 3: Nhận File bài tập
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div id="step-nav-4" class="p-2 rounded bg-light text-secondary fw-semibold small">
+              <i class="fa-solid fa-award me-1"></i> Bước 4: Thẩm định & Nộp bài
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- BƯỚC 1: ĐĂNG NHẬP -->
+      <div class="card card-custom p-4">
+        <h5 class="fw-bold text-primary mb-3">
+          <span class="step-badge">1</span> Đăng nhập Khảo thí & Chọn Loại Văn bản làm bài
+        </h5>
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label fw-semibold text-danger">
+              <i class="fa-solid fa-graduation-cap me-1"></i> Mã lớp KN
+            </label>
+            <select id="inp-class-code" class="form-select fw-bold text-danger border-danger">
+              <!-- Nạp động từ /api/classes -->
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Số báo danh (SBD)</label>
+            <input type="text" id="inp-sbd" class="form-control" placeholder="Ví dụ: 01" value="01">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Mã số sinh viên (MSSV)</label>
+            <input type="text" id="inp-mssv" class="form-control" placeholder="Ví dụ: 2100001234" value="2100001234">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Họ và tên</label>
+            <input type="text" id="inp-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" value="Nguyễn Văn A">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Chọn loại văn bản bài tập</label>
+            <select id="sel-doc-type" class="form-select fw-semibold text-primary">
+              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
+              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu" selected>3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao">8. Báo cáo</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-3 text-end">
+          <button class="btn btn-primary px-4 fw-bold" onclick="startQuiz()">
+            <i class="fa-solid fa-play me-2"></i> Bắt đầu Phần 1: Kiểm tra Trắc nghiệm
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 2: TRẮC NGHIỆM KIẾN THỨC NGHỊ ĐỊNH 30 -->
+      <div class="card card-custom p-4 d-none" id="section-quiz">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-primary mb-0">
+            <span class="step-badge">2</span> Kiểm tra Kiến thức Thể thức Nghị định 30 (<span id="lbl-quiz-total-q">5</span> câu hỏi)
+          </h5>
+          <span class="badge bg-warning text-dark px-3 py-2 fs-6" id="lbl-quiz-req">Yêu cầu đạt tối thiểu 4/5 câu</span>
+        </div>
+        <div id="quiz-container" class="mt-3">
+          <!-- Các câu hỏi render tại đây -->
+        </div>
+        <div class="mt-3 text-end">
+          <button class="btn btn-success px-4 fw-bold" id="btn-submit-quiz" onclick="checkQuizAnswers()">
+            <i class="fa-solid fa-check-circle me-1"></i> Nộp bài trắc nghiệm
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 3: TẢI FILE MẪU CHỐNG GIAN LẬN -->
+      <div class="card card-custom p-4 d-none" id="section-template">
+        <h5 class="fw-bold text-primary mb-3">
+          <span class="step-badge">3</span> Nhận File mẫu bài tập thô (Tự động đổi tên & Nhúng mã bảo mật)
+        </h5>
+        <div class="alert alert-info border-0 d-flex gap-3 align-items-center">
+          <i class="fa-solid fa-shield-halved fa-2x text-primary"></i>
+          <div>
+            <strong>Đặc tính an toàn & Sư phạm của File mẫu:</strong>
+            <ul class="mb-0 small text-secondary">
+              <li>File tải về tự động đổi tên: <strong id="lbl-generated-filename" class="text-danger">...</strong></li>
+              <li>File cố ý <strong>chưa căn lề</strong> và <strong>chưa chỉnh phông chữ</strong> để sinh viên tự vận dụng kiến thức NĐ 30.</li>
+              <li>File được cấy <strong>Chữ ký số & Thủy ấn số vô hình</strong>. Tuyệt đối không nộp file của bạn bè hoặc copy-paste từ bài bạn. Hệ thống sẽ phát hiện ngay tên của cả hai sinh viên vi phạm!</li>
+            </ul>
+          </div>
+        </div>
+        <div class="text-center py-2 d-flex justify-content-center flex-wrap gap-3">
+          <a href="#" id="lnk-download-template" class="btn btn-outline-primary btn-lg px-4 fw-bold shadow-sm">
+            <i class="fa-solid fa-file-word me-2 text-primary"></i> TẢI FILE MẪU VỀ MÁY (.DOCX)
+          </a>
+          <button type="button" class="btn btn-warning btn-lg px-4 fw-bold shadow-sm" onclick="openBox6GuideModal()">
+            <i class="fa-solid fa-graduation-cap me-2"></i> Khung đối chiếu Ô 6 (Thân bài Thông báo)
+          </button>
+        </div>
+      </div>
+
+      <!-- BƯỚC 4: KIỂM TRA THỂ THỨC Ô 1 - Ô 9 & NỘP BÀI -->
+      <div class="card card-custom p-4 d-none" id="section-validate">
+        <h5 class="fw-bold text-primary mb-2">
+          <span class="step-badge">4</span> Tải bài làm lên để Thẩm định Thể thức (Ô 1 ➔ Ô 9)
+        </h5>
+
+        <div class="alert alert-warning py-2 px-3 small d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <i class="fa-solid fa-lightbulb text-warning me-1"></i>
+            <strong>Mẹo đạt 100 điểm:</strong> Đối chiếu kỹ phần Thân bài (Ô 6) theo cấu trúc 3 phần (Mở đầu - Nội dung - Kết thúc) trước khi bấm thẩm định.
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-dark fw-bold" onclick="openBox6GuideModal()">
+            <i class="fa-solid fa-book-open me-1"></i> Xem Khung Mẫu Ô 6 (Bài 7 & 8)
+          </button>
+        </div>
+        
+        <div class="row g-3 align-items-center mb-3">
+          <div class="col-md-8">
+            <input type="file" id="inp-file-upload" class="form-control form-control-lg" accept=".docx">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary btn-lg w-100 fw-bold" id="btn-run-validate" onclick="runValidation()">
+              <i class="fa-solid fa-wand-magic-sparkles me-2"></i> KIỂM TRA THỂ THỨC (Ô 1 - 9)
+            </button>
+          </div>
+        </div>
+
+        <!-- KHUNG KẾT QUẢ KIỂM TRA -->
+        <div id="validation-result-area" class="d-none mt-4">
+          
+          <!-- HỘP CẢNH BÁO GIAN LẬN NẾU PHÁT HIỆN -->
+          <div id="cheat-alert-box" class="cheat-alert-box mb-4 d-none">
+            <div class="d-flex align-items-center gap-3 text-danger mb-2">
+              <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+              <h5 class="fw-bold mb-0">🚨 PHÁT HIỆN HÀNH VI SAO CHÉP BÀI THỰC HÀNH!</h5>
+            </div>
+            <p class="mb-2" id="cheat-summary-text"></p>
+            <div class="card bg-white p-3 border-danger">
+              <div class="row">
+                <div class="col-md-6 border-end">
+                  <h6 class="text-danger fw-bold"><i class="fa-solid fa-user-xmark me-1"></i> Sinh viên sao chép (Người nộp):</h6>
+                  <p class="mb-0" id="cheat-sv-a"></p>
+                </div>
+                <div class="col-md-6">
+                  <h6 class="text-danger fw-bold"><i class="fa-solid fa-user-slash me-1"></i> Sinh viên cho chép (Nguồn bài làm):</h6>
+                  <p class="mb-0" id="cheat-sv-b"></p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 text-danger small">
+              <strong>Hệ quả:</strong> Biên bản vi phạm này đã được gửi trực tiếp đến Giảng viên. Bạn không được phép nộp bài này!
+            </div>
+          </div>
+
+          <!-- BẢNG ĐIỀU KHIỂN KẾT QUẢ THỂ THỨC 9 Ô -->
+          <div id="normal-validation-box">
+            <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-3">
+              <div>
+                <h5 class="fw-bold mb-0">Tiến độ Thể thức: <span id="lbl-score-percentage" class="text-primary">0%</span></h5>
+                <small class="text-muted" id="lbl-score-ratio">Đạt 0 / 0 tiêu chí</small>
+                <div id="lbl-font-profile" class="mt-1 small"></div>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-lg px-3 fw-bold" onclick="resetToStep1()">
+                  <i class="fa-solid fa-rotate-left me-1"></i> Chọn bài khác
+                </button>
+                <button class="btn btn-success btn-lg px-4 fw-bold" id="btn-final-submit" onclick="submitFinalWork()" disabled>
+                  <i class="fa-solid fa-paper-plane me-2"></i> XÁC NHẬN NỘP BÀI
+                </button>
+              </div>
+            </div>
+
+            <div id="checklist-cards-container" class="d-flex flex-column gap-2">
+              <!-- Render danh sách 9 Ô -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ==================== CỔNG GIẢNG VIÊN ==================== -->
+    <div id="teacher-view" class="d-none">
+      
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="card card-custom p-3 bg-white border-start border-primary border-4">
+            <div class="d-flex justify-content-between">
+              <div>
+                <small class="text-muted fw-bold">TỔNG BÀI ĐÃ NỘP HỢP LỆ</small>
+                <h3 class="fw-bold text-primary mb-0" id="stat-total-submissions">0</h3>
+              </div>
+              <i class="fa-solid fa-clipboard-check fa-2x text-primary opacity-50"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card card-custom p-3 bg-white border-start border-danger border-4">
+            <div class="d-flex justify-content-between">
+              <div>
+                <small class="text-muted fw-bold">CẢNH BÁO SAO CHÉP BÀI</small>
+                <h3 class="fw-bold text-danger mb-0" id="stat-total-frauds">0</h3>
+              </div>
+              <i class="fa-solid fa-user-ninja fa-2x text-danger opacity-50"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card card-custom p-3 bg-white border-start border-success border-4">
+            <div class="d-flex justify-content-between">
+              <div>
+                <small class="text-muted fw-bold">TIÊU CHUẨN THỂ THỨC</small>
+                <h5 class="fw-bold text-success mb-0 mt-2">Nghị định 30/2020/NĐ-CP</h5>
+              </div>
+              <i class="fa-solid fa-scale-balanced fa-2x text-success opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUẢN LÝ MÃ LỚP KN (KỸ NĂNG) -->
+      <div class="card card-custom p-4 mb-4 border-start border-danger border-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-graduation-cap me-2 text-danger"></i> QUẢN LÝ MÃ LỚP KN (GIẢNG VIÊN TẠO ĐỂ QUẢN LÝ BÀI TẬP)
+          </h5>
+          <span class="badge bg-danger px-3 py-2 fw-bold" id="lbl-total-classes">0 Lớp</span>
+        </div>
+        <p class="text-secondary small mb-3">
+          Giảng viên tạo các <strong>Mã lớp KN</strong> (ví dụ: <code>22DTH01</code>, <code>23DTH02</code>, <code>KN01</code>...). Sinh viên sẽ chọn đúng Mã lớp của mình khi đăng nhập làm bài để Thầy/Cô dễ dàng lọc và quản lý bài nộp.
+        </p>
+        <div class="row g-3 align-items-center">
+          <div class="col-md-5">
+            <div class="input-group">
+              <input type="text" id="inp-new-class-code" class="form-control text-uppercase fw-bold" placeholder="Nhập mã lớp mới (VD: 22DTH03)">
+              <button class="btn btn-danger fw-bold" onclick="addNewClass()">
+                <i class="fa-solid fa-plus me-1"></i> Thêm Mã Lớp
+              </button>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <div class="d-flex flex-wrap gap-2 align-items-center" id="class-badges-container">
+              <!-- Render badges of classes with delete button -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUẢN LÝ NỘI DUNG FILE MẪU BÀI TẬP (GIẢNG VIÊN TÙY CHỈNH HOẶC ĐỂ TRỐNG) -->
+      <div class="card card-custom p-4 mb-4 border-start border-warning border-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-file-pen me-2 text-warning"></i> QUẢN LÝ NỘI DUNG FILE MẪU BÀI TẬP (GIẢNG VIÊN TỰ ĐƯA VÔ HOẶC ĐỂ TRỐNG)
+          </h5>
+          <span class="badge bg-warning text-dark px-3 py-2 fw-bold">Tùy biến đề bài & Để trống</span>
+        </div>
+        <p class="text-secondary small mb-3">
+          Thầy/Cô có thể <strong>tự gõ/paste nội dung bài tập của mình</strong> vào ô bên dưới, hoặc chọn <strong>"Để trống phần nội dung"</strong> để sinh viên tự gõ theo bài giảng trực tiếp tại lớp.
+        </p>
+        
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Chọn loại văn bản cần sửa đề:</label>
+            <select id="teacher-sel-doc" class="form-select fw-semibold text-primary" onchange="onTeacherDocSelect()">
+              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
+              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao">8. Báo cáo</option>
+            </select>
+          </div>
+          <div class="col-md-7 d-flex align-items-end">
+            <div class="form-check form-switch fs-5 pb-1">
+              <input class="form-check-input" type="checkbox" id="teacher-chk-blank" onchange="onTeacherBlankToggle()">
+              <label class="form-check-label fw-bold text-danger fs-6" for="teacher-chk-blank">
+                Để trống phần thân bài trong file mẫu (Sinh viên tự gõ nội dung theo bài giảng trên lớp)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label fw-semibold">Phần Thân bài / Nội dung văn bản (Giảng viên tự soạn hoặc dán vào đây):</label>
+          <textarea id="teacher-txt-body" class="form-control font-monospace" rows="6" placeholder="Nhập nội dung bài tập thô mà Thầy/Cô muốn đưa vào file mẫu..."></textarea>
+          <div id="teacher-blank-hint" class="alert alert-warning py-2 mt-2 small d-none">
+            <i class="fa-solid fa-info-circle me-1"></i> Chế độ hiện tại: <strong>ĐANG ĐỂ TRỐNG PHẦN THÂN BÀI</strong>. File mẫu sinh ra sẽ để trống phần nội dung để sinh viên tự gõ theo hướng dẫn trên lớp.
+          </div>
+        </div>
+
+        <div class="mt-3 text-end">
+          <button class="btn btn-primary px-4 fw-bold" onclick="saveTeacherTemplateConfig()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu cấu hình Đề bài cho File Mẫu
+          </button>
+        </div>
+      </div>
+
+      <!-- QUẢN LÝ NGÂN HÀNG CÂU HỎI TRẮC NGHIỆM (CHỈNH SỬA & BỔ SUNG CHO TẤT CẢ VĂN BẢN) -->
+      <div class="card card-custom p-4 mb-4 border-start border-info border-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-clipboard-question me-2 text-info"></i> QUẢN LÝ NGÂN HÀNG CÂU HỎI TRẮC NGHIỆM (SỬA & BỔ SUNG CHO TẤT CẢ VĂN BẢN)
+          </h5>
+          <span class="badge bg-info text-dark px-3 py-2 fw-bold" id="lbl-total-quiz-count">0 Câu hỏi</span>
+        </div>
+        <p class="text-secondary small mb-3">
+          Thầy/Cô có thể <strong>xem, chỉnh sửa, xóa hoặc bổ sung thêm các câu hỏi trắc nghiệm</strong> thể thức cho tất cả 8 loại văn bản. Sinh viên phải trả lời đạt tỷ lệ theo yêu cầu mới nhận được file mẫu bài tập.
+        </p>
+        
+        <div class="row g-3 align-items-center mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Chọn loại văn bản để quản lý câu hỏi:</label>
+            <select id="teacher-quiz-sel-doc" class="form-select fw-semibold text-primary" onchange="loadTeacherQuizQuestions()">
+              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
+              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao">8. Báo cáo</option>
+            </select>
+          </div>
+          <div class="col-md-6 text-end d-flex justify-content-md-end align-items-end">
+            <button class="btn btn-success fw-bold px-3 py-2" onclick="openAddQuestionModal()">
+              <i class="fa-solid fa-circle-plus me-1"></i> Bổ Sung Câu Hỏi Mới
+            </button>
+          </div>
+        </div>
+
+        <div id="teacher-quiz-list-container" class="mt-3">
+          <!-- Danh sách câu hỏi render tại đây -->
+        </div>
+      </div>
+
+      <!-- NHẬT KÝ BẮT GIAN LẬN (RED ALERTS) -->
+      <!-- NHẬT KÝ BẮT GIAN LẬN (RED ALERTS) -->
+      <div class="card card-custom p-4 mb-4 border-danger">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div class="d-flex align-items-center gap-3">
+            <h5 class="fw-bold text-danger mb-0">
+              <i class="fa-solid fa-triangle-exclamation me-2"></i> NHẬT KÝ THANH TRA SAO CHÉP BÀI (HỒ SƠ VI PHẠM)
+            </h5>
+            <span class="badge bg-danger text-white px-2 py-1" id="lbl-fraud-badge">0 vi phạm</span>
+            <div class="d-flex align-items-center gap-2 ms-2">
+              <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap"><i class="fa-solid fa-filter text-danger me-1"></i>Lọc Lớp:</label>
+              <select id="sel-filter-fraud-class" class="form-select form-select-sm fw-bold border-danger text-danger" style="width: auto;" onchange="onClassFilterChange(this)">
+                <option value="ALL">-- Tất cả các lớp --</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-danger fw-semibold" onclick="clearAllFraudLogs()">
+              <i class="fa-solid fa-trash me-1"></i> Xóa sạch nhật ký vi phạm
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="loadTeacherData()">
+              <i class="fa-solid fa-rotate-right me-1"></i> Làm mới
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-danger">
+              <tr>
+                <th>Mã lớp KN</th>
+                <th>Thời gian</th>
+                <th>Sinh viên sao chép (Người nộp)</th>
+                <th>Sinh viên cho chép (Nguồn gốc)</th>
+                <th>Hình thức vi phạm</th>
+                <th>Bằng chứng kỹ thuật số</th>
+                <th>Đề xuất xử lý</th>
+                <th class="text-center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-fraud-body">
+              <tr>
+                <td colspan="8" class="text-center text-muted py-3">Chưa phát hiện trường hợp gian lận nào.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DANH SÁCH BÀI ĐÃ NỘP -->
+      <div class="card card-custom p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div class="d-flex align-items-center gap-3">
+            <h5 class="fw-bold text-primary mb-0">
+              <i class="fa-solid fa-list-check me-2"></i> DANH SÁCH BÀI TẬP ĐÃ HOÀN THÀNH ĐÚNG 100% NGHỊ ĐỊNH 30
+            </h5>
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap"><i class="fa-solid fa-filter text-danger me-1"></i>Lọc Mã lớp KN:</label>
+              <select id="sel-filter-class" class="form-select form-select-sm fw-bold border-danger text-danger" style="width: auto;" onchange="onClassFilterChange(this)">
+                <option value="ALL">-- Tất cả các lớp --</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="width: 220px;">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-secondary"></i></span>
+              <input type="text" id="inp-search-submissions" class="form-control" placeholder="Tìm MSSV hoặc Tên..." onkeyup="searchSubmissions()">
+            </div>
+            <button class="btn btn-sm btn-success fw-bold text-nowrap" onclick="exportSubmissionsCSV()">
+              <i class="fa-solid fa-file-excel me-1"></i> Xuất CSV / Excel
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadTeacherData()">
+              <i class="fa-solid fa-rotate-right me-1"></i> Cập nhật
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Mã lớp KN</th>
+                <th>SBD</th>
+                <th>MSSV</th>
+                <th>Họ và tên</th>
+                <th>Loại văn bản</th>
+                <th>Tên file nộp</th>
+                <th>Thời gian nộp</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-submissions-body">
+              <tr>
+                <td colspan="9" class="text-center text-muted py-3">Chưa có bài nộp nào.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let currentQuizQuestions = [];
+    let currentGeneratedFile = null;
+    let currentTempFile = null;
+    let allTeacherTemplates = {};
+    let allClassesList = [];
+    let allSubmissionsList = [];
+    let allFraudLogsList = [];
+
+    function updateStepIndicator(step) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step-nav-${i}`);
+        if (!el) continue;
+        const titles = ['', 'Khai báo Đề bài', 'Trắc nghiệm NĐ 30', 'Nhận File bài tập', 'Thẩm định & Nộp bài'];
+        if (i < step) {
+          el.className = 'p-2 rounded bg-success text-white fw-bold small shadow-sm';
+          el.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Bước ${i}: Xong`;
+        } else if (i === step) {
+          el.className = 'p-2 rounded bg-primary text-white fw-bold small shadow-sm';
+          el.innerHTML = `<i class="fa-solid fa-play me-1"></i> Bước ${i}: ${titles[i]}`;
+        } else {
+          el.className = 'p-2 rounded bg-light text-secondary fw-semibold small';
+          el.innerHTML = `Bước ${i}: ${titles[i]}`;
+        }
+      }
+    }
+
+    function resetToStep1() {
+      document.getElementById('section-quiz').classList.add('d-none');
+      document.getElementById('section-template').classList.add('d-none');
+      document.getElementById('section-validate').classList.add('d-none');
+      document.getElementById('validation-result-area').classList.add('d-none');
+      const fileInput = document.getElementById('inp-file-upload');
+      if (fileInput) fileInput.value = '';
+      updateStepIndicator(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchTab(tab) {
+      if (tab === 'student') {
+        document.getElementById('student-view').classList.remove('d-none');
+        document.getElementById('teacher-view').classList.add('d-none');
+        document.getElementById('tab-student').classList.add('active', 'text-white');
+        document.getElementById('tab-student').classList.remove('text-dark');
+        document.getElementById('tab-teacher').classList.remove('active', 'text-white');
+        document.getElementById('tab-teacher').classList.add('text-dark');
+      } else {
+        document.getElementById('student-view').classList.add('d-none');
+        document.getElementById('teacher-view').classList.remove('d-none');
+        document.getElementById('tab-teacher').classList.add('active', 'text-white');
+        document.getElementById('tab-teacher').classList.remove('text-dark');
+        document.getElementById('tab-student').classList.remove('active', 'text-white');
+        document.getElementById('tab-student').classList.add('text-dark');
+        loadTeacherData();
+      }
+    }
+
+    // QUẢN LÝ MÃ LỚP KN
+    async function loadClasses() {
+      try {
+        const res = await fetch('/api/classes');
+        const data = await res.json();
+        allClassesList = data.classes || [];
+
+        // 1. Cập nhật nhãn tổng số lớp
+        const lblTotal = document.getElementById('lbl-total-classes');
+        if (lblTotal) lblTotal.innerText = `${allClassesList.length} Lớp`;
+
+        // 2. Cập nhật dropdown ở Bước 1 của Sinh viên
+        const inpClass = document.getElementById('inp-class-code');
+        if (inpClass) {
+          const currentVal = inpClass.value;
+          inpClass.innerHTML = '';
+          allClassesList.forEach(cls => {
+            const opt = document.createElement('option');
+            opt.value = cls;
+            opt.innerText = cls;
+            inpClass.appendChild(opt);
+          });
+          if (currentVal && allClassesList.includes(currentVal)) {
+            inpClass.value = currentVal;
+          }
+        }
+
+        // 3. Cập nhật dropdown bộ lọc ở Bảng Giảng viên (cả bảng bài nộp và bảng vi phạm)
+        const selFilter = document.getElementById('sel-filter-class');
+        const selFilterFraud = document.getElementById('sel-filter-fraud-class');
+        [selFilter, selFilterFraud].forEach(sel => {
+          if (sel) {
+            const currentFilter = sel.value || 'ALL';
+            sel.innerHTML = '<option value="ALL">-- Tất cả các lớp --</option>';
+            allClassesList.forEach(cls => {
+              const opt = document.createElement('option');
+              opt.value = cls;
+              opt.innerText = `Lớp ${cls}`;
+              sel.appendChild(opt);
+            });
+            if (currentFilter && (currentFilter === 'ALL' || allClassesList.includes(currentFilter))) {
+              sel.value = currentFilter;
+            }
+          }
+        });
+
+        // 4. Render danh sách huy hiệu lớp có nút xóa
+        renderClassBadges();
+
+      } catch (e) {
+        console.error('Lỗi nạp danh sách mã lớp:', e);
+      }
+    }
+
+    function renderClassBadges() {
+      const container = document.getElementById('class-badges-container');
+      if (!container) return;
+      container.innerHTML = '';
+      if (allClassesList.length === 0) {
+        container.innerHTML = '<span class="text-muted small fst-italic">Chưa có mã lớp nào. Hãy thêm mã lớp mới.</span>';
+        return;
+      }
+      allClassesList.forEach(cls => {
+        const badge = document.createElement('div');
+        badge.className = 'badge bg-danger py-2 px-3 fs-6 d-flex align-items-center gap-2 shadow-sm';
+        badge.innerHTML = `
+          <span><i class="fa-solid fa-users me-1"></i> ${cls}</span>
+          <i class="fa-solid fa-xmark text-white ms-1" style="cursor:pointer;" title="Xóa mã lớp ${cls}" onclick="deleteClass('${cls}')"></i>
+        `;
+        container.appendChild(badge);
+      });
+    }
+
+    async function addNewClass() {
+      const inp = document.getElementById('inp-new-class-code');
+      const val = inp.value.trim().toUpperCase();
+      if (!val) {
+        Swal.fire('Chưa nhập mã lớp', 'Vui lòng nhập tên mã lớp (VD: 22DTH03)!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/classes/add', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: val })
+        });
+        const data = await res.json();
+        if (data.success) {
+          inp.value = '';
+          await loadClasses();
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ THÊM MÃ LỚP!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể thêm mã lớp', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    async function deleteClass(classCode) {
+      const result = await Swal.fire({
+        title: `Xóa mã lớp ${classCode}?`,
+        text: 'Hành động này sẽ xóa mã lớp khỏi danh sách lựa chọn của sinh viên!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/classes/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await loadClasses();
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ XÓA MÃ LỚP!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa mã lớp: ' + e, 'error');
+      }
+    }
+
+    // BƯỚC 1: Bắt đầu lấy trắc nghiệm
+    async function startQuiz() {
+      const classCode = document.getElementById('inp-class-code').value.trim();
+      const sbd = document.getElementById('inp-sbd').value.trim();
+      const mssv = document.getElementById('inp-mssv').value.trim();
+      const name = document.getElementById('inp-name').value.trim();
+      const docType = document.getElementById('sel-doc-type').value;
+
+      if (!classCode || !sbd || !mssv || !name) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng chọn Mã lớp KN, nhập đầy đủ SBD, MSSV và Họ tên!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/quiz/get', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ doc_type: docType })
+        });
+        const data = await res.json();
+        currentQuizQuestions = data.questions;
+        if (document.getElementById('lbl-quiz-total-q')) {
+          document.getElementById('lbl-quiz-total-q').innerText = data.total;
+        }
+        if (document.getElementById('lbl-quiz-req')) {
+          document.getElementById('lbl-quiz-req').innerText = `Yêu cầu đạt tối thiểu ${data.pass_score}/${data.total} câu`;
+        }
+        renderQuiz(currentQuizQuestions);
+        updateStepIndicator(2);
+        document.getElementById('section-quiz').classList.remove('d-none');
+        document.getElementById('section-quiz').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể tải câu hỏi trắc nghiệm: ' + e, 'error');
+      }
+    }
+
+    function renderQuiz(questions) {
+      const container = document.getElementById('quiz-container');
+      container.innerHTML = '';
+      questions.forEach((q, idx) => {
+        let optsHtml = '';
+        q.options.forEach((opt, optIdx) => {
+          optsHtml += `
+            <div class="form-check my-2">
+              <input class="form-check-input" type="radio" name="q_${q.id}" id="q_${q.id}_${optIdx}" value="${optIdx}">
+              <label class="form-check-label" for="q_${q.id}_${optIdx}">
+                ${String.fromCharCode(65 + optIdx)}. ${opt}
+              </label>
+            </div>
+          `;
+        });
+
+        container.innerHTML += `
+          <div class="card p-3 mb-3 bg-light border-0" id="card_q_${q.id}">
+            <div class="fw-bold mb-2">Câu ${idx + 1}: ${q.question}</div>
+            <div class="ps-2">${optsHtml}</div>
+            <div class="mt-2 text-danger small d-none" id="explain_q_${q.id}"></div>
+          </div>
+        `;
+      });
+    }
+
+    async function checkQuizAnswers() {
+      const docType = document.getElementById('sel-doc-type').value;
+      const answers = {};
+      currentQuizQuestions.forEach(q => {
+        const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+        if (selected) answers[q.id] = parseInt(selected.value);
+      });
+
+      if (Object.keys(answers).length < currentQuizQuestions.length) {
+        Swal.fire('Chưa hoàn thành', `Vui lòng chọn đáp án cho toàn bộ ${currentQuizQuestions.length} câu hỏi!`, 'info');
+        return;
+      }
+
+      const res = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ doc_type: docType, answers: answers })
+      });
+      const data = await res.json();
+
+      // Hiển thị giải thích
+      data.feedback.forEach(f => {
+        const expEl = document.getElementById(`explain_q_${f.id}`);
+        const cardEl = document.getElementById(`card_q_${f.id}`);
+        expEl.classList.remove('d-none');
+        if (f.is_correct) {
+          cardEl.className = 'card p-3 mb-3 border border-success bg-white';
+          expEl.className = 'mt-2 text-success small fw-semibold';
+          expEl.innerHTML = `<i class="fa-solid fa-check me-1"></i> Đúng! ${f.explanation}`;
+        } else {
+          cardEl.className = 'card p-3 mb-3 border border-danger bg-white';
+          expEl.className = 'mt-2 text-danger small fw-semibold';
+          expEl.innerHTML = `<i class="fa-solid fa-xmark me-1"></i> Chưa chính xác. Đáp án đúng là: ${String.fromCharCode(65 + f.correct_option)}. ${f.explanation}`;
+        }
+      });
+
+      if (data.passed) {
+        Swal.fire('Chúc mừng!', `Bạn đạt ${data.score}/${data.total} câu trắc nghiệm! Đủ điều kiện nhận File mẫu thực hành.`, 'success');
+        triggerTemplateGeneration();
+      } else {
+        Swal.fire('Chưa đạt yêu cầu', `Bạn đạt ${data.score}/${data.total} câu. Vui lòng xem lại giải thích và làm lại để đạt tối thiểu ${data.pass_score}/${data.total} câu.`, 'warning');
+      }
+    }
+
+    async function triggerTemplateGeneration() {
+      const classCode = document.getElementById('inp-class-code').value.trim();
+      const sbd = document.getElementById('inp-sbd').value.trim();
+      const mssv = document.getElementById('inp-mssv').value.trim();
+      const name = document.getElementById('inp-name').value.trim();
+      const docType = document.getElementById('sel-doc-type').value;
+
+      const res = await fetch('/api/template/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ class_code: classCode, sbd, mssv, name, doc_type: docType })
+      });
+      const data = await res.json();
+
+      currentGeneratedFile = data.filename;
+      document.getElementById('lbl-generated-filename').innerText = data.filename;
+      document.getElementById('lnk-download-template').href = data.download_url;
+
+      document.getElementById('section-template').classList.remove('d-none');
+      document.getElementById('section-validate').classList.remove('d-none');
+      updateStepIndicator(3);
+      document.getElementById('section-template').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function runValidation() {
+      const fileInput = document.getElementById('inp-file-upload');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        Swal.fire('Chưa chọn file', 'Vui lòng chọn file bài làm (.docx) để kiểm tra!', 'warning');
+        return;
+      }
+
+      const classCode = document.getElementById('inp-class-code').value.trim();
+      const sbd = document.getElementById('inp-sbd').value.trim();
+      const mssv = document.getElementById('inp-mssv').value.trim();
+      const name = document.getElementById('inp-name').value.trim();
+      const docType = document.getElementById('sel-doc-type').value;
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('class_code', classCode);
+      formData.append('sbd', sbd);
+      formData.append('mssv', mssv);
+      formData.append('name', name);
+      formData.append('doc_type', docType);
+
+      Swal.fire({
+        title: 'Đang thẩm định thể thức...',
+        text: 'Hệ thống đang quét chữ ký số và phân tích các Ô 1 - 9 theo Nghị định 30',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      try {
+        const res = await fetch('/api/validate', { method: 'POST', body: formData });
+        const data = await res.json();
+        Swal.close();
+
+        updateStepIndicator(4);
+        document.getElementById('validation-result-area').classList.remove('d-none');
+
+        // TRƯỜNG HỢP 1: BẮT ĐƯỢC GIAN LẬN
+        if (data.status === 'FRAUD_DETECTED') {
+          const fraud = data.fraud_info;
+          document.getElementById('cheat-alert-box').classList.remove('d-none');
+          document.getElementById('normal-validation-box').classList.add('d-none');
+
+          document.getElementById('cheat-summary-text').innerHTML = `
+            <strong>Loại vi phạm:</strong> <span class="badge bg-danger fs-6">${fraud.fraud_type}</span><br>
+            <strong>Chứng cứ:</strong> ${fraud.evidence || fraud.message}
+          `;
+
+          if (fraud.student_a) {
+            document.getElementById('cheat-sv-a').innerHTML = `
+              <strong>Họ tên:</strong> ${fraud.student_a.name}<br>
+              <strong>MSSV:</strong> ${fraud.student_a.mssv} | <strong>SBD:</strong> ${fraud.student_a.sbd}
+            `;
+          }
+          if (fraud.student_b) {
+            document.getElementById('cheat-sv-b').innerHTML = `
+              <strong>Họ tên:</strong> ${fraud.student_b.name}<br>
+              <strong>MSSV:</strong> ${fraud.student_b.mssv} ${fraud.student_b.sbd ? '| SBD: ' + fraud.student_b.sbd : ''}
+            `;
+          }
+
+          Swal.fire({
+            icon: 'error',
+            title: '🚨 PHÁT HIỆN SAO CHÉP BÀI!',
+            html: `Hệ thống ghi nhận bạn đã sao chép bài của sinh viên <strong>${fraud.student_b ? fraud.student_b.name : 'khác'}</strong>!<br>Biên bản vi phạm đã được lập và gửi đến Giảng viên.`
+          });
+          return;
+        }
+
+        // TRƯỜNG HỢP 2: BÀI LÀM HỢP LỆ -> HIỂN THỊ KẾT QUẢ CHẤM Ô 1 - 9
+        document.getElementById('cheat-alert-box').classList.add('d-none');
+        document.getElementById('normal-validation-box').classList.remove('d-none');
+
+        currentTempFile = data.temp_file;
+        renderChecklist(data);
+
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ kiểm tra: ' + e, 'error');
+      }
+    }
+
+    function renderChecklist(data) {
+      document.getElementById('lbl-score-percentage').innerText = `${data.percentage}%`;
+      document.getElementById('lbl-score-ratio').innerText = `Đạt ${data.passed_count} / ${data.total_count} tiêu chuẩn Nghị định 30`;
+
+      const elProfile = document.getElementById('lbl-font-profile');
+      if (elProfile && data.font_profile) {
+        const isSau = (data.font_profile === 'SO_SAU');
+        const badgeColor = isSau ? 'bg-primary' : 'bg-info text-dark';
+        const labelText = isSau ? 'Số sau (Bộ lớn 13-14)' : 'Số trước (Bộ nhỏ 12-13)';
+        elProfile.innerHTML = `<span class="badge ${badgeColor}"><i class="fa-solid fa-text-height me-1"></i> Quy ước Thống nhất: <strong>${labelText}</strong></span> <span class="text-muted ms-1" style="font-size:0.8rem;">(Nhận diện từ Ô 1 & yêu cầu đồng bộ toàn bài)</span>`;
+      }
+
+      const btnSubmit = document.getElementById('btn-final-submit');
+      if (data.can_submit) {
+        btnSubmit.removeAttribute('disabled');
+        btnSubmit.classList.add('animate__animated', 'animate__pulse');
+        Swal.fire('Tuyệt vời!', 'Bài làm của bạn đã đạt chuẩn 100% Nghị định 30! Bạn có thể bấm nút "XÁC NHẬN NỘP BÀI".', 'success');
+      } else {
+        btnSubmit.setAttribute('disabled', 'true');
+      }
+
+      const container = document.getElementById('checklist-cards-container');
+      container.innerHTML = '';
+
+      data.checklist.forEach(item => {
+        let errsHtml = '';
+        if (!item.passed) {
+          errsHtml = '<div class="mt-2 ps-2 border-start border-danger border-2">';
+          item.errors.forEach(err => {
+            errsHtml += `
+              <div class="mb-1 text-danger small">
+                <strong><i class="fa-solid fa-circle-xmark me-1"></i> Lỗi:</strong> ${err.issue}<br>
+                <span class="text-dark"><strong><i class="fa-solid fa-wrench text-warning me-1"></i> Cách sửa:</strong> ${err.fix}</span>
+              </div>
+            `;
+          });
+          errsHtml += '</div>';
+        }
+
+        const iconClass = item.passed ? 'fa-solid fa-check-circle text-success fs-5' : 'fa-solid fa-circle-exclamation text-danger fs-5';
+        const cardClass = item.passed ? 'box-card passed p-3 rounded' : 'box-card failed p-3 rounded';
+
+        container.innerHTML += `
+          <div class="${cardClass}">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold fs-6">
+                <i class="${iconClass} me-2"></i> ${item.name}
+              </span>
+              <span class="badge ${item.passed ? 'bg-success' : 'bg-danger'}">
+                ${item.passed ? 'ĐẠT CHUẨN' : 'CẦN CHỈNH SỬA'}
+              </span>
+            </div>
+            ${errsHtml}
+          </div>
+        `;
+      });
+    }
+
+    async function submitFinalWork() {
+      const classCode = document.getElementById('inp-class-code').value.trim();
+      const sbd = document.getElementById('inp-sbd').value.trim();
+      const mssv = document.getElementById('inp-mssv').value.trim();
+      const name = document.getElementById('inp-name').value.trim();
+      const docType = document.getElementById('sel-doc-type').value;
+
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            class_code: classCode, sbd, mssv, name, doc_type: docType, temp_file: currentTempFile
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'NỘP BÀI THÀNH CÔNG!',
+            text: `Bài làm đã được lưu vào hệ thống khảo thí với tên file: ${data.submission.filename}`,
+            confirmButtonText: 'Xem bảng điểm Giảng viên'
+          }).then(() => {
+            switchTab('teacher');
+          });
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể nộp bài: ' + e, 'error');
+      }
+    }
+
+    async function loadTeacherData() {
+      try {
+        const res = await fetch('/api/teacher/data');
+        const data = await res.json();
+
+        allSubmissionsList = data.submissions || [];
+        allFraudLogsList = data.fraud_logs || [];
+        document.getElementById('stat-total-submissions').innerText = allSubmissionsList.length;
+        document.getElementById('stat-total-frauds').innerText = allFraudLogsList.length;
+
+        // Cập nhật danh sách lớp nếu có
+        if (data.classes) {
+          allClassesList = data.classes;
+          renderClassBadges();
+          const lblTotal = document.getElementById('lbl-total-classes');
+          if (lblTotal) lblTotal.innerText = `${allClassesList.length} Lớp`;
+        }
+
+        // Tải danh sách cấu hình đề bài mẫu
+        const tmplRes = await fetch('/api/teacher/templates');
+        allTeacherTemplates = await tmplRes.json();
+        onTeacherDocSelect();
+
+        // Render bảng gian lận & bảng nộp bài
+        renderFilteredFraudLogs();
+        renderFilteredSubmissions();
+
+        // Nạp danh sách câu hỏi trắc nghiệm của loại văn bản đang chọn
+        loadTeacherQuizQuestions();
+
+      } catch (e) {
+        console.error('Lỗi tải dữ liệu giảng viên:', e);
+      }
+    }
+
+    function onClassFilterChange(elem) {
+      const selectedVal = elem ? elem.value : 'ALL';
+      const selSub = document.getElementById('sel-filter-class');
+      const selFraud = document.getElementById('sel-filter-fraud-class');
+      if (selSub && selSub !== elem) selSub.value = selectedVal;
+      if (selFraud && selFraud !== elem) selFraud.value = selectedVal;
+
+      renderFilteredSubmissions();
+      renderFilteredFraudLogs();
+    }
+
+    function renderFilteredFraudLogs() {
+      const filterVal = document.getElementById('sel-filter-fraud-class') 
+        ? document.getElementById('sel-filter-fraud-class').value 
+        : (document.getElementById('sel-filter-class') ? document.getElementById('sel-filter-class').value : 'ALL');
+      const fraudTbody = document.getElementById('tbl-fraud-body');
+      if (!fraudTbody) return;
+
+      let filtered = (filterVal === 'ALL')
+        ? allFraudLogsList
+        : allFraudLogsList.filter(l => (l.class_code || 'Chung') === filterVal);
+
+      // Cập nhật số đếm vi phạm trên badge & stat card
+      const badge = document.getElementById('lbl-fraud-badge');
+      if (badge) badge.innerText = `${filtered.length} vi phạm`;
+      const statTotal = document.getElementById('stat-total-frauds');
+      if (statTotal) statTotal.innerText = filtered.length;
+
+      if (filtered.length === 0) {
+        const msg = (filterVal && filterVal !== 'ALL')
+          ? `Chưa phát hiện trường hợp gian lận nào trong lớp ${filterVal}.`
+          : 'Chưa phát hiện trường hợp gian lận nào.';
+        fraudTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3"><i class="fa-solid fa-shield-halved text-success me-1"></i> ${msg}</td></tr>`;
+        return;
+      }
+
+      fraudTbody.innerHTML = '';
+      filtered.forEach(log => {
+        const f = log.fraud_data || {};
+        const logId = log.id || log.timestamp;
+        const studentA = f.student_a || {};
+        const studentB = f.student_b || null;
+        const bName = studentB ? studentB.name : (f.fraud_type === 'FILE_KHONG_HOP_LE' ? 'Không có (File ngoài)' : 'Chưa rõ');
+        const bMssv = studentB ? `MSSV: ${studentB.mssv}` : '';
+
+        fraudTbody.innerHTML += `
+          <tr class="table-danger">
+            <td><span class="badge bg-danger fw-bold">${log.class_code || 'Chung'}</span></td>
+            <td><small>${log.timestamp || ''}</small></td>
+            <td>
+              <strong>${studentA.name || 'Chưa rõ'}</strong><br>
+              <small class="text-muted">MSSV: ${studentA.mssv || ''} | SBD: ${studentA.sbd || ''}</small>
+            </td>
+            <td>
+              <strong>${bName}</strong><br>
+              <small class="text-muted">${bMssv}</small>
+            </td>
+            <td><span class="badge bg-danger">${f.fraud_type || 'VI PHẠM'}</span></td>
+            <td><small class="text-secondary">${f.evidence || f.message || ''}</small></td>
+            <td>
+              <span class="badge bg-dark">0 ĐIỂM CẢ HAI</span>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-danger" title="Xóa biên bản này" onclick="deleteFraudLog('${logId}')">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function deleteFraudLog(logId) {
+      if (!logId) return;
+      const result = await Swal.fire({
+        title: 'Xóa biên bản vi phạm?',
+        text: 'Thầy/Cô có chắc chắn muốn xóa bản ghi vi phạm này khỏi hệ thống?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/fraud/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: logId })
+        });
+        const d = await res.json();
+        if (d.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ XÓA BIÊN BẢN!',
+            text: d.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể xóa!', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + err, 'error');
+      }
+    }
+
+    async function clearAllFraudLogs() {
+      const filterVal = document.getElementById('sel-filter-fraud-class') 
+        ? document.getElementById('sel-filter-fraud-class').value 
+        : (document.getElementById('sel-filter-class') ? document.getElementById('sel-filter-class').value : 'ALL');
+      const scopeText = (filterVal && filterVal !== 'ALL') ? `của lớp ${filterVal}` : 'toàn bộ hệ thống';
+
+      const result = await Swal.fire({
+        title: 'Xóa sạch biên bản vi phạm?',
+        text: `Thao tác này sẽ xóa tất cả hồ sơ vi phạm gian lận ${scopeText}! Thao tác này không thể hoàn tác.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Xác nhận xóa sạch',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/fraud/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: filterVal })
+        });
+        const d = await res.json();
+        if (d.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ LÀM SẠCH NHẬT KÝ!',
+            text: d.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể xóa!', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + err, 'error');
+      }
+    }
+
+    function renderFilteredSubmissions() {
+      const filterVal = document.getElementById('sel-filter-class') ? document.getElementById('sel-filter-class').value : 'ALL';
+      const searchVal = document.getElementById('inp-search-submissions') ? document.getElementById('inp-search-submissions').value.trim().toLowerCase() : '';
+      const subTbody = document.getElementById('tbl-submissions-body');
+      if (!subTbody) return;
+
+      let filtered = (filterVal === 'ALL')
+        ? allSubmissionsList
+        : allSubmissionsList.filter(s => (s.class_code || 'Chung') === filterVal);
+
+      if (searchVal) {
+        filtered = filtered.filter(s => 
+          (s.name && s.name.toLowerCase().includes(searchVal)) ||
+          (s.mssv && s.mssv.toLowerCase().includes(searchVal)) ||
+          (s.sbd && s.sbd.toLowerCase().includes(searchVal)) ||
+          (s.filename && s.filename.toLowerCase().includes(searchVal))
+        );
+      }
+
+      if (filtered.length === 0) {
+        subTbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Không có bài nộp nào phù hợp với bộ lọc tìm kiếm.</td></tr>';
+      } else {
+        subTbody.innerHTML = '';
+        filtered.forEach(sub => {
+          subTbody.innerHTML += `
+            <tr>
+              <td><span class="badge bg-danger fw-bold fs-6">${sub.class_code || 'Chung'}</span></td>
+              <td><span class="badge bg-light text-dark border">${sub.sbd}</span></td>
+              <td class="fw-bold text-primary">${sub.mssv}</td>
+              <td><strong>${sub.name}</strong></td>
+              <td><span class="rule-pill">${sub.doc_name}</span></td>
+              <td><small class="font-monospace text-truncate d-inline-block" style="max-width:200px;">${sub.filename}</small></td>
+              <td><small class="text-muted">${sub.submitted_at}</small></td>
+              <td><span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> 100% NĐ 30</span></td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <a href="/api/download/submitted/${sub.filename}" class="btn btn-outline-primary" title="Tải file bài làm">
+                    <i class="fa-solid fa-download me-1"></i> Tải bài
+                  </a>
+                  <button class="btn btn-outline-danger" onclick="deleteStudentSubmission('${sub.mssv}', '${sub.doc_type}')" title="Xóa kết quả nộp này">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    function searchSubmissions() {
+      renderFilteredSubmissions();
+    }
+
+    function exportSubmissionsCSV() {
+      const filterVal = document.getElementById('sel-filter-class') ? document.getElementById('sel-filter-class').value : 'ALL';
+      window.location.href = `/api/teacher/export-csv?class_code=${encodeURIComponent(filterVal)}`;
+    }
+
+    async function deleteStudentSubmission(mssv, docType) {
+      const result = await Swal.fire({
+        title: `Xóa kết quả nộp của MSSV ${mssv}?`,
+        text: 'Hành động này sẽ xóa bài làm khỏi danh sách nộp bài của Giảng viên!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/submissions/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ mssv, doc_type: docType })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ XÓA BÀI NỘP!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể xóa bài nộp!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    function onTeacherDocSelect() {
+      const docType = document.getElementById('teacher-sel-doc').value;
+      const tmpl = allTeacherTemplates[docType];
+      if (!tmpl) return;
+
+      const chkBlank = document.getElementById('teacher-chk-blank');
+      const txtBody = document.getElementById('teacher-txt-body');
+      const hintBlank = document.getElementById('teacher-blank-hint');
+
+      chkBlank.checked = Boolean(tmpl.is_body_blank);
+      txtBody.value = tmpl.body_part || '';
+
+      if (chkBlank.checked) {
+        txtBody.setAttribute('disabled', 'true');
+        txtBody.classList.add('bg-light');
+        hintBlank.classList.remove('d-none');
+      } else {
+        txtBody.removeAttribute('disabled');
+        txtBody.classList.remove('bg-light');
+        hintBlank.classList.add('d-none');
+      }
+    }
+
+    function onTeacherBlankToggle() {
+      const chkBlank = document.getElementById('teacher-chk-blank');
+      const txtBody = document.getElementById('teacher-txt-body');
+      const hintBlank = document.getElementById('teacher-blank-hint');
+
+      if (chkBlank.checked) {
+        txtBody.setAttribute('disabled', 'true');
+        txtBody.classList.add('bg-light');
+        hintBlank.classList.remove('d-none');
+      } else {
+        txtBody.removeAttribute('disabled');
+        txtBody.classList.remove('bg-light');
+        hintBlank.classList.add('d-none');
+      }
+    }
+
+    async function saveTeacherTemplateConfig() {
+      const docType = document.getElementById('teacher-sel-doc').value;
+      const isBlank = document.getElementById('teacher-chk-blank').checked;
+      const bodyPart = document.getElementById('teacher-txt-body').value.trim();
+
+      const tmpl = allTeacherTemplates[docType] || {};
+
+      try {
+        const res = await fetch('/api/teacher/templates/save', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            doc_type: docType,
+            is_body_blank: isBlank,
+            header_part: tmpl.header_part || '',
+            body_part: bodyPart,
+            footer_part: tmpl.footer_part || ''
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (!allTeacherTemplates[docType]) allTeacherTemplates[docType] = {};
+          allTeacherTemplates[docType].is_body_blank = isBlank;
+          allTeacherTemplates[docType].body_part = bodyPart;
+          Swal.fire({
+            icon: 'success',
+            title: 'LƯU THÀNH CÔNG!',
+            text: isBlank ? 'Đã kích hoạt chế độ: ĐỂ TRỐNG PHẦN THÂN BÀI trong file mẫu.' : 'Đã lưu nội dung bài tập mới vào file mẫu!'
+          });
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể lưu cấu hình đề bài: ' + e, 'error');
+      }
+    }
+
+    // QUẢN LÝ CÂU HỎI TRẮC NGHIỆM GIẢNG VIÊN
+    let currentTeacherQuizList = [];
+    let quizEditorModal = null;
+
+    async function loadTeacherQuizQuestions() {
+      const selDoc = document.getElementById('teacher-quiz-sel-doc');
+      if (!selDoc) return;
+      const docType = selDoc.value;
+      try {
+        const res = await fetch(`/api/teacher/quiz/${docType}`);
+        const data = await res.json();
+        currentTeacherQuizList = data.questions || [];
+
+        const lblCount = document.getElementById('lbl-total-quiz-count');
+        if (lblCount) lblCount.innerText = `${currentTeacherQuizList.length} Câu hỏi`;
+
+        renderTeacherQuizList();
+      } catch (e) {
+        console.error('Lỗi tải câu hỏi trắc nghiệm:', e);
+      }
+    }
+
+    function renderTeacherQuizList() {
+      const container = document.getElementById('teacher-quiz-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (currentTeacherQuizList.length === 0) {
+        container.innerHTML = '<div class="alert alert-warning text-center py-4">Chưa có câu hỏi trắc nghiệm nào cho loại văn bản này. Bấm <strong>"Bổ Sung Câu Hỏi Mới"</strong> để tạo câu hỏi.</div>';
+        return;
+      }
+
+      currentTeacherQuizList.forEach((q, idx) => {
+        let optsHtml = '';
+        q.options.forEach((opt, optIdx) => {
+          const isCorrect = (optIdx === q.correct);
+          const badge = isCorrect ? '<span class="badge bg-success ms-2"><i class="fa-solid fa-check me-1"></i> ĐÁP ÁN ĐÚNG</span>' : '';
+          const optClass = isCorrect ? 'p-2 rounded bg-success-subtle border border-success fw-semibold text-success' : 'p-2 rounded bg-white border text-dark';
+          optsHtml += `
+            <div class="${optClass} my-1 d-flex justify-content-between align-items-center">
+              <div><strong>${String.fromCharCode(65 + optIdx)}.</strong> ${opt}</div>
+              ${badge}
+            </div>
+          `;
+        });
+
+        const card = document.createElement('div');
+        card.className = 'card p-3 mb-3 border-1 shadow-sm';
+        card.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="fw-bold text-dark mb-0 me-3">
+              <span class="badge bg-primary me-2">Câu ${idx + 1}</span>
+              ${q.question}
+            </h6>
+            <div class="btn-group btn-group-sm text-nowrap">
+              <button class="btn btn-outline-primary" onclick="openEditQuestionModal(${idx})" title="Chỉnh sửa câu hỏi">
+                <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
+              </button>
+              <button class="btn btn-outline-danger" onclick="deleteQuestion(${q.id})" title="Xóa câu hỏi này">
+                <i class="fa-solid fa-trash me-1"></i> Xóa
+              </button>
+            </div>
+          </div>
+          <div class="ps-2 my-2">${optsHtml}</div>
+          <div class="mt-2 p-2 rounded bg-light border-start border-info border-3 small text-secondary">
+            <i class="fa-solid fa-circle-info text-info me-1"></i> <strong>Giải thích chuẩn NĐ 30:</strong> ${q.explanation}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openAddQuestionModal() {
+      document.getElementById('modal-quiz-title').innerHTML = '<i class="fa-solid fa-circle-plus me-2"></i> Bổ sung câu hỏi trắc nghiệm mới';
+      document.getElementById('quiz-edit-id').value = '';
+      document.getElementById('quiz-edit-question').value = '';
+      document.getElementById('quiz-edit-opt-0').value = '';
+      document.getElementById('quiz-edit-opt-1').value = '';
+      document.getElementById('quiz-edit-opt-2').value = '';
+      document.getElementById('quiz-edit-opt-3').value = '';
+      document.getElementById('quiz-edit-correct').value = '0';
+      document.getElementById('quiz-edit-explanation').value = '';
+
+      if (!quizEditorModal) {
+        quizEditorModal = new bootstrap.Modal(document.getElementById('modal-quiz-editor'));
+      }
+      quizEditorModal.show();
+    }
+
+    function openEditQuestionModal(idx) {
+      const q = currentTeacherQuizList[idx];
+      if (!q) return;
+
+      document.getElementById('modal-quiz-title').innerHTML = `<i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi ${idx + 1}`;
+      document.getElementById('quiz-edit-id').value = q.id;
+      document.getElementById('quiz-edit-question').value = q.question;
+      document.getElementById('quiz-edit-opt-0').value = (q.options && q.options[0]) || '';
+      document.getElementById('quiz-edit-opt-1').value = (q.options && q.options[1]) || '';
+      document.getElementById('quiz-edit-opt-2').value = (q.options && q.options[2]) || '';
+      document.getElementById('quiz-edit-opt-3').value = (q.options && q.options[3]) || '';
+      document.getElementById('quiz-edit-correct').value = q.correct;
+      document.getElementById('quiz-edit-explanation').value = q.explanation || '';
+
+      if (!quizEditorModal) {
+        quizEditorModal = new bootstrap.Modal(document.getElementById('modal-quiz-editor'));
+      }
+      quizEditorModal.show();
+    }
+
+    async function saveTeacherQuestion() {
+      const docType = document.getElementById('teacher-quiz-sel-doc').value;
+      const qIdStr = document.getElementById('quiz-edit-id').value;
+      const question = document.getElementById('quiz-edit-question').value.trim();
+      const opt0 = document.getElementById('quiz-edit-opt-0').value.trim();
+      const opt1 = document.getElementById('quiz-edit-opt-1').value.trim();
+      const opt2 = document.getElementById('quiz-edit-opt-2').value.trim();
+      const opt3 = document.getElementById('quiz-edit-opt-3').value.trim();
+      const correct = parseInt(document.getElementById('quiz-edit-correct').value);
+      const explanation = document.getElementById('quiz-edit-explanation').value.trim();
+
+      if (!question) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập nội dung câu hỏi!', 'warning');
+        return;
+      }
+      if (!opt0 || !opt1 || !opt2 || !opt3) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng điền đủ 4 phương án A, B, C, D!', 'warning');
+        return;
+      }
+      if (!explanation) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập phần giải thích chuẩn Nghị định 30!', 'warning');
+        return;
+      }
+
+      const payload = {
+        doc_type: docType,
+        id: qIdStr ? parseInt(qIdStr) : null,
+        question: question,
+        options: [opt0, opt1, opt2, opt3],
+        correct: correct,
+        explanation: explanation
+      };
+
+      try {
+        const res = await fetch('/api/teacher/quiz/save', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (quizEditorModal) quizEditorModal.hide();
+          Swal.fire({
+            icon: 'success',
+            title: 'LƯU THÀNH CÔNG!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          await loadTeacherQuizQuestions();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể lưu câu hỏi!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    async function deleteQuestion(qId) {
+      const docType = document.getElementById('teacher-quiz-sel-doc').value;
+      const result = await Swal.fire({
+        title: 'Xác nhận xóa câu hỏi?',
+        text: 'Câu hỏi này sẽ bị xóa khỏi ngân hàng câu hỏi của sinh viên!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/quiz/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ doc_type: docType, id: qId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ XÓA CÂU HỎI!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          await loadTeacherQuizQuestions();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể xóa câu hỏi!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa: ' + e, 'error');
+      }
+    }
+
+    // Mở modal cẩm nang và tự động chuyển đến Tab 6 (Khung đối chiếu Ô 6)
+    function openBox6GuideModal() {
+      const modalEl = document.getElementById('modal-decree30-guide');
+      if (modalEl) {
+        const tabBtn = document.getElementById('tab-box6-guide');
+        if (tabBtn) {
+          const tab = bootstrap.Tab.getOrCreateInstance(tabBtn);
+          tab.show();
+        }
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      }
+    }
+
+    // Tự động tải mã lớp khi mở trang
+    window.addEventListener('DOMContentLoaded', () => {
+      loadClasses();
+    });
+  </script>
+
+  <!-- MODAL SỬA / BỔ SUNG CÂU HỎI TRẮC NGHIỆM -->
+  <div class="modal fade" id="modal-quiz-editor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold" id="modal-quiz-title">
+            <i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi trắc nghiệm
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="quiz-edit-id">
+          
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nội dung câu hỏi: <span class="text-danger">*</span></label>
+            <textarea id="quiz-edit-question" class="form-control" rows="3" placeholder="Nhập nội dung câu hỏi về thể thức Nghị định 30..."></textarea>
+          </div>
+
+          <label class="form-label fw-semibold">Các phương án lựa chọn: <span class="text-danger">*</span></label>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">A</span>
+                <input type="text" id="quiz-edit-opt-0" class="form-control" placeholder="Nội dung phương án A">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">B</span>
+                <input type="text" id="quiz-edit-opt-1" class="form-control" placeholder="Nội dung phương án B">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">C</span>
+                <input type="text" id="quiz-edit-opt-2" class="form-control" placeholder="Nội dung phương án C">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">D</span>
+                <input type="text" id="quiz-edit-opt-3" class="form-control" placeholder="Nội dung phương án D">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-success">
+              <i class="fa-solid fa-check-circle me-1"></i> Đáp án ĐÚNG là: <span class="text-danger">*</span>
+            </label>
+            <select id="quiz-edit-correct" class="form-select fw-bold border-success text-success">
+              <option value="0">Phương án A</option>
+              <option value="1">Phương án B</option>
+              <option value="2">Phương án C</option>
+              <option value="3">Phương án D</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Giải thích chi tiết chuẩn Nghị định 30: <span class="text-danger">*</span></label>
+            <textarea id="quiz-edit-explanation" class="form-control" rows="3" placeholder="Giải thích lý do đáp án đúng theo quy định Nghị định 30 (hiển thị khi sinh viên nộp bài trắc nghiệm)..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveTeacherQuestion()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu câu hỏi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TRA CỨU NHANH THỂ THỨC NGHỊ ĐỊNH 30/2020/NĐ-CP -->
+  <div class="modal fade" id="modal-decree30-guide" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-dark text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-scale-balanced text-warning fa-lg"></i>
+            <h5 class="modal-title fw-bold">CẨM NANG TRA CỨU THỂ THỨC VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP)</h5>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+          <!-- NAV TABS -->
+          <ul class="nav nav-pills nav-fill mb-3 bg-white p-2 rounded shadow-sm" id="guideTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active fw-bold small" id="tab-font-rules" data-bs-toggle="pill" data-bs-target="#content-font-rules">
+                <i class="fa-solid fa-text-height me-1"></i> 1. Quy ước Cỡ chữ (Số trước / Số sau)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-doc-compare" data-bs-toggle="pill" data-bs-target="#content-doc-compare">
+                <i class="fa-solid fa-code-compare me-1"></i> 2. Công văn vs Có tên loại
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-sign-rules" data-bs-toggle="pill" data-bs-target="#content-sign-rules">
+                <i class="fa-solid fa-signature me-1"></i> 3. Thể thức Đề ký (7a)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-cap-rules" data-bs-toggle="pill" data-bs-target="#content-cap-rules">
+                <i class="fa-solid fa-font me-1"></i> 4. Viết hoa chuẩn (Phụ lục II)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-margin-rules" data-bs-toggle="pill" data-bs-target="#content-margin-rules">
+                <i class="fa-solid fa-ruler-combined me-1"></i> 5. Căn lề & Bảng 2x2, 1x2
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small text-danger" id="tab-box6-guide" data-bs-toggle="pill" data-bs-target="#content-box6-guide">
+                <i class="fa-solid fa-graduation-cap me-1"></i> 6. Cấu trúc Ô 6 Thông Báo (Bài 7 & 8)
+              </button>
+            </li>
+          </ul>
+
+          <!-- TAB CONTENTS -->
+          <div class="tab-content bg-white p-4 rounded shadow-sm">
+            <!-- TAB 1: CỠ CHỮ -->
+            <div class="tab-pane fade show active" id="content-font-rules">
+              <div class="alert alert-info border-0 mb-3 small">
+                <i class="fa-solid fa-circle-info me-1"></i> <strong>Nguyên tắc đồng nhất thẩm mỹ:</strong> Nghị định 30 đưa ra khoảng cỡ chữ (Ví dụ: 12-13pt hoặc 13-14pt). Người soạn thảo phải chọn thống nhất <strong>Bộ Số trước (Bộ nhỏ)</strong> HOẶC <strong>Bộ Số sau (Bộ lớn)</strong> xuyên suốt toàn bộ văn bản.
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle small mb-0">
+                  <thead class="table-primary text-center">
+                    <tr>
+                      <th>Vị trí Ô Thể thức</th>
+                      <th>Quy định Nghị định 30</th>
+                      <th>Bộ "Số trước" (Nhỏ)</th>
+                      <th>Bộ "Số sau" (Lớn)</th>
+                      <th>Kiểu chữ & Căn lề</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Ô 1: Quốc hiệu</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 1: Tiêu ngữ</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Đậm, Canh giữa (Shape line phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 2: CQ ban hành</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa (Line dài 1/3-1/2 phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 2: CQ chủ quản</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, <strong>Không đậm</strong>, Canh giữa</td>
+                    </tr>
+                    <tr class="table-warning">
+                      <td><strong>Ô 3: Số và ký hiệu</strong></td>
+                      <td class="text-center fw-bold text-danger">Chỉ có 1 cỡ chữ 13 pt</td>
+                      <td class="text-center fw-bold text-danger">13 pt</td>
+                      <td class="text-center fw-bold text-danger">13 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm, Canh giữa (Chỉ duy nhất một cỡ chữ 13)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 4: Địa danh ngày tháng</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, <strong>In nghiêng</strong>, Không đậm, Canh giữa</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5a: Tên loại văn bản</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa trang (ngoài bảng)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5a: Trích yếu văn bản</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Đậm, Canh giữa (Line dài 1/3-1/2 phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5b: Trích yếu Công văn (V/v)</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm, Canh giữa (trong bảng dưới Ô 3)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 6: Nội dung (Thân bài)</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Times New Roman, Đứng, Căn đều 2 lề (Justify), Lùi 1.27cm, Spacing 6pt</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 7a: Chức vụ người ký</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa ô</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 7b: Họ tên người ký</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường viết hoa chữ đầu, Đứng, Đậm, Canh giữa ô</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 9a: Kính gửi (Trực tiếp)</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm</td>
+                    </tr>
+                    <tr class="table-light">
+                      <td><strong>Ô 9b: Dòng "Nơi nhận:"</strong></td>
+                      <td class="text-center">Cố định 12 pt</td>
+                      <td class="text-center fw-bold text-danger">12 pt</td>
+                      <td class="text-center fw-bold text-danger">12 pt</td>
+                      <td>Chữ thường, <strong>In nghiêng, In đậm</strong></td>
+                    </tr>
+                    <tr class="table-light">
+                      <td><strong>Ô 9b: Danh sách nơi nhận con</strong></td>
+                      <td class="text-center">Cố định 11 pt</td>
+                      <td class="text-center fw-bold text-danger">11 pt</td>
+                      <td class="text-center fw-bold text-danger">11 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm. Dòng cuối: "Lưu: VT."</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 2: SO SÁNH CÔNG VĂN VS VĂN BẢN CÓ TÊN LOẠI -->
+            <div class="tab-pane fade" id="content-doc-compare">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card border-primary p-3 h-100">
+                    <h6 class="fw-bold text-primary border-bottom pb-2">
+                      <i class="fa-solid fa-file-lines me-1"></i> 1. CÔNG VĂN HÀNH CHÍNH (Văn bản không có tên loại)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Ô 3 (Số & Ký hiệu):</strong> Có dạng <code>Số: 12/ĐHNTT-ĐT</code>. <strong>TUYỆT ĐỐI KHÔNG CÓ</strong> chữ viết tắt tên loại 'CV' trong ký hiệu.</li>
+                      <li class="mb-2"><strong>Ô 5b (Trích yếu V/v):</strong> Bắt đầu bằng <code>V/v ...</code> (chữ thường, đứng, không đậm, cỡ 12-13pt). <strong>Nằm TRONG BẢNG đầu trang</strong> tại Dòng 2 Cột 1 ngay dưới Ô 3, cách dòng 6pt.</li>
+                      <li class="mb-2"><strong>Ô 9a (Kính gửi):</strong> <strong>Bắt buộc có</strong> dòng <code>Kính gửi: &lt;Tên cơ quan&gt;.</code> đặt trước phần nội dung văn bản.</li>
+                      <li><strong>Không có Ô 5a:</strong> Không có tên loại in hoa đặt ở giữa trang giấy.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-success p-3 h-100">
+                    <h6 class="fw-bold text-success border-bottom pb-2">
+                      <i class="fa-solid fa-file-shield me-1"></i> 2. VĂN BẢN CÓ TÊN LOẠI (Thông báo, Tờ trình, Báo cáo...)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Ô 3 (Số & Ký hiệu):</strong> <strong>Bắt buộc có</strong> tên loại viết tắt đứng đầu ký hiệu (Ví dụ: <code>Số: 45/TB-ĐT</code> cho Thông báo, <code>Số: 15/TTr-CNTT</code> cho Tờ trình).</li>
+                      <li class="mb-2"><strong>Ô 5a (Tên loại & Trích yếu):</strong> <strong>Nằm NGOÀI BẢNG</strong> đầu trang, canh giữa trang giấy:
+                        <ul>
+                          <li>Dòng trên: <strong>TÊN LOẠI VĂN BẢN</strong> (IN HOA, đậm, đứng, cỡ 13-14pt).</li>
+                          <li>Dòng dưới: <strong>Trích yếu nội dung</strong> (in thường, đậm, đứng, cỡ 13-14pt). Phía dưới có đường kẻ ngang bằng 1/3 đến 1/2 dòng chữ.</li>
+                        </ul>
+                      </li>
+                      <li class="mb-2"><strong>Ô 9a (Kính gửi):</strong> 
+                        <ul>
+                          <li>Đối với <strong>Tờ trình</strong> và <strong>Báo cáo</strong>: Bắt buộc có Ô 9a Kính gửi đặt dưới Trích yếu.</li>
+                          <li>Đối với <strong>Thông báo</strong> thông thường: Không có Ô 9a (chỉ có Ô 9b ở cuối trang).</li>
+                        </ul>
+                      </li>
+                      <li><strong>Không có Ô 5b:</strong> Dòng 2 Cột 1 Bảng đầu trang chỉ chứa Ô 3.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: THỂ THỨC ĐỀ KÝ -->
+            <div class="tab-pane fade" id="content-sign-rules">
+              <h6 class="fw-bold text-dark mb-2">Các thể thức đề ký áp dụng trong bài tập theo Nghị định 30:</h6>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-primary mb-1">1. Ký trực tiếp (Người đứng đầu cơ quan, tổ chức)</h6>
+                    <p class="small text-secondary mb-2">Áp dụng khi cấp trưởng (Hiệu trưởng, Giám đốc, Bí thư Đoàn) trực tiếp ký văn bản (1 dòng chức vụ).</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      HIỆU TRƯỞNG<br><br><br>Trần Ái Cầm
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-danger mb-1">2. Ký thay - Viết tắt 'KT.' (Cấp phó ký thay cấp trưởng)</h6>
+                    <p class="small text-secondary mb-2">Bắt buộc có dấu chấm 'KT.' và gồm đúng 2 dòng: Dòng 1 là chức vụ cấp trưởng, Dòng 2 là chức vụ cấp phó.</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      KT. GIÁM ĐỐC<br>PHÓ GIÁM ĐỐC<br><br><br>Võ Thị Kim Anh
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-warning-emphasis mb-1">3. Thừa lệnh - Viết tắt 'TL.' (Cấp phòng ký thừa lệnh)</h6>
+                    <p class="small text-secondary mb-2">Bắt buộc có dấu chấm 'TL.' và gồm 2 dòng: Dòng 1 là TL. Cấp trưởng cơ quan, Dòng 2 là Chức vụ cấp phòng.</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      TL. HIỆU TRƯỞNG<br>TRƯỞNG PHÒNG ĐÀO TẠO<br><br><br>Nguyễn Văn An
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: VIẾT HOA CHUẨN PHỤ LỤC II -->
+            <div class="tab-pane fade" id="content-cap-rules">
+              <h6 class="fw-bold text-dark mb-2">Quy chuẩn Viết hoa theo Phụ lục II Nghị định 30/2020/NĐ-CP:</h6>
+              <div class="alert alert-warning small border-0 mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Lưu ý quan trọng từ Giảng viên:</strong> Lỗi viết hoa tên cơ quan, tổ chức thường xuyên xuất hiện tại <strong>Ô 9a (Kính gửi)</strong>, <strong>Ô 6 (Nội dung bài tập)</strong> và <strong>Ô 9b (Nơi nhận)</strong>.
+              </div>
+              <ul class="small ps-3 mb-0">
+                <li class="mb-2"><strong>Quy tắc từ nối 'và' (Mục IV.1):</strong> Trong tên các Bộ, Sở, Cơ quan, từ chỉ loại hình viết hoa nhưng từ nối 'và' <strong>TUYỆT ĐỐI VIẾT THƯỜNG</strong>:
+                  <ul class="mt-1">
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Khoa học và Công nghệ</code> (Không viết: <code>Bộ Khoa học Và Công nghệ</code>)</li>
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Giáo dục và Đào tạo</code> (Không viết: <code>Bộ Giáo dục Và Đào tạo</code>)</li>
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Tài nguyên và Môi trường</code> (Không viết: <code>Bộ Tài nguyên Và Môi trường</code>)</li>
+                  </ul>
+                </li>
+                <li class="mb-2"><strong>Tên các cơ quan hành chính & tổ chức:</strong>
+                  <ul class="mt-1">
+                    <li><code>Ủy ban nhân dân Phường 13</code> (Từ chỉ loại hình 'Ủy ban nhân dân' viết hoa chữ cái đầu).</li>
+                    <li><code>Công an Phường An Phú Đông</code> (Từ chỉ loại hình 'Công an' viết hoa chữ cái đầu).</li>
+                    <li><code>Trường Đại học Nguyễn Tất Thành</code>, <code>Ban Giám hiệu</code>, <code>Phòng Đào tạo</code>, <code>Khoa Công nghệ thông tin</code>, <code>Đoàn Thanh niên</code>.</li>
+                  </ul>
+                </li>
+                <li class="mb-2"><strong>Địa danh hành chính (Mục III):</strong>
+                  <ul class="mt-1">
+                    <li>Chữ 'Tp.' được phép viết tắt, nhưng địa danh 'Hồ Chí Minh' <strong>không được viết tắt</strong>: <code>Tp. Hồ Chí Minh</code> hoặc <code>Thành phố Hồ Chí Minh</code> (Không viết: <code>Tp.HCM</code>, <code>TP.HCM</code>).</li>
+                  </ul>
+                </li>
+                <li><strong>Viết hoa vì phép đặt câu (Mục I):</strong> Viết hoa chữ cái đầu khi xuống dòng, đầu mục, đầu gạch ngang bullet <code>-</code> và sau các dấu chấm câu <code>. </code>.</li>
+              </ul>
+            </div>
+
+            <!-- TAB 5: CĂN LỀ & BẢNG -->
+            <div class="tab-pane fade" id="content-margin-rules">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="border rounded p-3 h-100">
+                    <h6 class="fw-bold text-primary border-bottom pb-2">
+                      <i class="fa-solid fa-ruler me-1"></i> Căn lề Trang giấy chuẩn A4 (Điều 8 & Phụ lục I)
+                    </h6>
+                    <table class="table table-sm small mb-0">
+                      <tr><td><strong>Khổ giấy:</strong></td><td class="text-danger fw-bold">A4 (210 x 297 mm)</td></tr>
+                      <tr><td><strong>Lề trên (Top):</strong></td><td>20 - 25 mm (2.0 - 2.5 cm)</td></tr>
+                      <tr><td><strong>Lề dưới (Bottom):</strong></td><td>20 - 25 mm (2.0 - 2.5 cm)</td></tr>
+                      <tr><td><strong>Lề trái (Left):</strong></td><td>30 - 35 mm (3.0 - 3.5 cm)</td></tr>
+                      <tr><td><strong>Lề phải (Right):</strong></td><td>15 - 20 mm (1.5 - 2.0 cm)</td></tr>
+                    </table>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="border rounded p-3 h-100">
+                    <h6 class="fw-bold text-success border-bottom pb-2">
+                      <i class="fa-solid fa-table me-1"></i> Cấu trúc 2 Bảng vô hình (Helper Tables)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Bảng đầu trang:</strong> Bắt buộc là bảng gồm đúng <strong>2 CỘT x 2 DÒNG</strong> (Hàng 1: [Ô 2 / Ô 1]; Hàng 2: [Ô 3 (+5b) / Ô 4]).</li>
+                      <li class="mb-2"><strong>Bảng cuối trang:</strong> Bắt buộc là bảng gồm đúng <strong>2 CỘT x 1 DÒNG</strong> (Cột 1: Ô 9b Nơi nhận; Cột 2: Ô 7a, 8, 7b Chức vụ, chữ ký, họ tên).</li>
+                      <li><strong>Viền bảng:</strong> Chọn <code>No Border</code> (Không kẻ viền) trong Word.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 6: KHUNG CHUẨN ĐỐI CHIẾU Ô 6 THÔNG BÁO (BÀI 7 & 8) -->
+            <div class="tab-pane fade" id="content-box6-guide">
+              <div class="alert alert-primary border-0 d-flex gap-3 align-items-center mb-3">
+                <i class="fa-solid fa-graduation-cap fa-2x text-primary"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">MÔ HÌNH SƯ PHẠM CHUẨN HÓA Ô 6 (THÂN BÀI THÔNG BÁO)</h6>
+                  <p class="mb-0 small text-secondary">
+                    Hành chính - Văn thư quy định Thân bài Thông báo (Ô 6) gồm <strong>3 Tầng kết cấu</strong> (Mở đầu - Nội dung - Kết thúc) và chia làm <strong>2 Dạng tư duy nghiệp vụ</strong>:
+                    <span class="badge bg-primary">Dạng 1: Nhiệm vụ được giao (Quy định / Phân công việc)</span>
+                    <span class="badge bg-success ms-1">Dạng 2: Thông tin hoạt động (Sự kiện / Phong trào / Hội thao)</span>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- MA TRẬN ĐỐI CHIẾU 3 CỘT -->
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                <i class="fa-solid fa-table-columns me-1 text-primary"></i> BẢNG MA TRẬN ĐỐI CHIẾU: LÝ THUYẾT VS BÀI TẬP 7 & BÀI TẬP 8
+              </h6>
+              <div class="table-responsive mb-4">
+                <table class="table table-bordered table-hover align-top small">
+                  <thead class="table-dark text-center">
+                    <tr>
+                      <th style="width: 18%;">Tầng kết cấu Ô 6</th>
+                      <th style="width: 27%;">Khung Cấu Trúc Chuẩn (Lý thuyết)</th>
+                      <th style="width: 27%;" class="bg-primary text-white">BÀI TẬP 7: NHIỆM VỤ ĐƯỢC GIAO<br><small class="fw-normal">Quy định sử dụng máy photocopy</small></th>
+                      <th style="width: 28%;" class="bg-success text-white">BÀI TẬP 8: THÔNG TIN HOẠT ĐỘNG<br><small class="fw-normal">Chuẩn bị tổ chức hội thao</small></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-danger me-1">TẦNG 1</span><br>
+                        MỞ ĐẦU<br>
+                        <small class="text-secondary fw-normal">(Đủ 4 yếu tố bắt buộc)</small>
+                      </td>
+                      <td>
+                        <strong>1. Mục đích:</strong> Để làm gì?<br>
+                        <strong>2. Chủ thể ban hành:</strong> Ai thông báo?<br>
+                        <strong>3. Sơ lược nội dung:</strong> Sự việc gì?<br>
+                        <strong>4. Đối tượng nhận:</strong> Gửi đến ai?
+                      </td>
+                      <td class="bg-light-subtle">
+                        <span class="text-danger fw-bold">[1] Mục đích:</span> Nhằm bảo quản máy photocopy và theo dõi việc sao chụp tài liệu của các bộ phận,<br>
+                        <span class="text-primary fw-bold">[2] Chủ thể:</span> thực hiện chỉ đạo của Ban Giám đốc, Phòng Hành chính<br>
+                        <span class="text-success fw-bold">[4] Đối tượng:</span> thông báo đến toàn thể nhân viên<br>
+                        <span class="text-dark fw-bold">[3] Nội dung:</span> thực hiện quy định sử dụng máy photocopy.
+                      </td>
+                      <td class="bg-light-subtle">
+                        <span class="text-danger fw-bold">[1] Mục đích:</span> Nhằm tạo không khí thi đua sôi nổi, tăng cường giao lưu và rèn luyện sức khỏe, chào mừng kỷ niệm 10 năm thành lập công ty,<br>
+                        <span class="text-primary fw-bold">[2] Chủ thể:</span> Ban Giám đốc<br>
+                        <span class="text-success fw-bold">[4] Đối tượng:</span> thông báo đến toàn thể nhân viên<br>
+                        <span class="text-dark fw-bold">[3] Nội dung:</span> về việc tổ chức hội thao.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">CÂU DẪN BẢN LỀ</td>
+                      <td>Câu chuyển tiếp sang phần chi tiết.</td>
+                      <td class="fst-italic text-primary">"Nhân viên có nhu cầu sử dụng máy photocopy phải thực hiện các yêu cầu sau:"</td>
+                      <td class="fst-italic text-success">"Chương trình hội thao với các nội dung sau:"</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-warning text-dark me-1">TẦNG 2</span><br>
+                        NỘI DUNG CHÍNH
+                      </td>
+                      <td>
+                        <strong>• Dạng Nhiệm vụ:</strong><br>
+                        - Phân công rõ người, rõ việc, rõ quy trình xử sự.<br>
+                        - Đánh số <code>1.</code>, <code>2.</code>, <code>3.</code>.<br><br>
+                        <strong>• Dạng Hoạt động:</strong><br>
+                        - Nhóm theo các mốc thông tin 5W1H (Thời gian, Địa điểm, Hoạt động, Giải thưởng, Đăng ký).
+                      </td>
+                      <td>
+                        <strong>1. Trước khi sử dụng máy:</strong> nhân viên phải ghi đầy đủ vào sổ theo dõi: họ và tên, chức vụ, phòng ban, nội dung tóm tắt của tài liệu, số bản sao chụp và số tờ giấy cần sử dụng.<br>
+                        <strong>2. Khi sử dụng:</strong> Sử dụng máy theo hướng dẫn; giữ gìn vệ sinh và sắp xếp tài liệu, giấy sau khi sử dụng.<br>
+                        <strong>3. Khi phát hiện máy có sự cố:</strong> nhân viên phải ngừng sử dụng và báo ngay cho Tổ Kỹ thuật; không tự ý tháo lắp hoặc sửa chữa máy.
+                      </td>
+                      <td>
+                        <strong>• Thời gian:</strong> 15/11/2026.<br>
+                        <strong>• Địa điểm:</strong> Sân vận động Phú Thọ.<br>
+                        <strong>• Môn thi đấu:</strong> Bóng đá, Đi bộ, Chạy cự ly 400m.<br>
+                        <strong>• Giải thưởng:</strong><br>
+                        &nbsp;&nbsp;- Giải 1: 5.000.000đ<br>
+                        &nbsp;&nbsp;- Giải 2: 4.000.000đ<br>
+                        &nbsp;&nbsp;- Giải 3: 1.000.000đ<br>
+                        <strong>• Thời hạn đăng ký:</strong> Chậm nhất ngày 05 tháng 11 năm 2026, gửi danh sách về Phòng Hành chính.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-info text-dark me-1">TẦNG 3</span><br>
+                        KẾT THÚC<br>
+                        <small class="text-secondary fw-normal">(Hiệu lực / Kêu gọi)</small>
+                      </td>
+                      <td>
+                        <strong>• Dạng Nhiệm vụ:</strong><br>
+                        Xác định thời gian hiệu lực + Chế tài xử lý vi phạm.<br><br>
+                        <strong>• Dạng Hoạt động:</strong><br>
+                        Kêu gọi hưởng ứng + Lời chúc thành công, đoàn kết.<br><br>
+                        <strong>• Câu chốt:</strong><br>
+                        <code>Trân trọng thông báo./.</code>
+                      </td>
+                      <td>
+                        Yêu cầu toàn thể nhân viên nghiêm túc thực hiện các nội dung trên kể từ ngày ban hành thông báo. Trường hợp vi phạm được xem xét, xử lý theo nội quy, quy định của công ty và đúng thẩm quyền.<br><br>
+                        <span class="fw-bold text-danger">Trân trọng thông báo./.</span>
+                      </td>
+                      <td>
+                        Kính mong nhận được sự hưởng ứng của nhân viên để hội thao diễn ra vui tươi, đoàn kết và đạt kết quả tốt.<br><br>
+                        <span class="fw-bold text-danger">Trân trọng thông báo./.</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- KHỐI CÔNG THỨC LEGO & QUY CHUẨN KỸ THUẬT WORD -->
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white fw-bold small py-2">
+                      <i class="fa-solid fa-puzzle-piece me-1"></i> CÔNG THỨC "LẮP RÁP CÂU CHỮ HÀNH CHÍNH" (LEGO FORMULA)
+                    </div>
+                    <div class="card-body small p-3">
+                      <p class="fw-bold text-primary mb-1">1. Khung câu Mở đầu vạn năng:</p>
+                      <div class="p-2 bg-light rounded border mb-2 fst-italic">
+                        "Nhằm / Để [Mục đích trích từ đề bài], [thực hiện chỉ đạo của Cấp trên (nếu có)], [Chủ thể ban hành] thông báo đến [Đối tượng nhận] về việc [Sơ lược nội dung] cụ thể như sau:"
+                      </div>
+
+                      <p class="fw-bold text-primary mb-1">2. Khung câu Kết thúc Dạng Nhiệm vụ (Quy định):</p>
+                      <div class="p-2 bg-light rounded border mb-2 fst-italic">
+                        "Yêu cầu [Đối tượng] nghiêm túc thực hiện thông báo này kể từ ngày ban hành. Mọi trường hợp vi phạm sẽ được xem xét, xử lý theo nội quy, quy chế của cơ quan/doanh nghiệp."
+                      </div>
+
+                      <p class="fw-bold text-primary mb-1">3. Khung câu Kết thúc Dạng Hoạt động (Sự kiện):</p>
+                      <div class="p-2 bg-light rounded border fst-italic">
+                        "Kính mong nhận được sự quan tâm, tham gia nhiệt tình của [Đối tượng] để [hoạt động/hội thao] diễn ra sôi nổi, đoàn kết và đạt kết quả tốt đẹp."
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white fw-bold small py-2">
+                      <i class="fa-solid fa-file-word me-1"></i> TIÊU CHUẨN ĐỊNH DẠNG WORD THEO NGHỊ ĐỊNH 30
+                    </div>
+                    <div class="card-body small p-3">
+                      <table class="table table-sm table-borderless mb-2">
+                        <tr><td><strong>Phông chữ:</strong></td><td class="text-danger fw-bold">Times New Roman</td></tr>
+                        <tr><td><strong>Cỡ chữ:</strong></td><td><strong>13pt</strong> (nếu chọn Bộ Số trước) hoặc <strong>14pt</strong> (Bộ Số sau)</td></tr>
+                        <tr><td><strong>Căn lề:</strong></td><td class="text-primary fw-bold">Justify (Căn đều 2 bên - Ctrl + J)</td></tr>
+                        <tr><td><strong>Lùi đầu dòng:</strong></td><td>First line indent: <strong>1.0 - 1.27 cm</strong> (đoạn văn)</td></tr>
+                        <tr><td><strong>Giãn đoạn:</strong></td><td>Space After: <strong>6pt</strong> (Before: 0pt)</td></tr>
+                        <tr><td><strong>Giãn dòng:</strong></td><td>Line spacing: <strong>1.15 - 1.5 lines</strong></td></tr>
+                        <tr><td><strong>Chốt văn bản:</strong></td><td>Dòng chữ <code>Trân trọng thông báo./.</code> đặt riêng 1 dòng</td></tr>
+                      </table>
+
+                      <div class="alert alert-success py-2 px-3 mb-0 small">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        <strong>Quy tắc viết hoa:</strong> Viết hoa đầu câu, đầu gạch đầu dòng, viết hoa đúng tên cơ quan (Ban Giám đốc, Phòng Hành chính, Tổ Kỹ thuật...).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Đóng cẩm nang</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

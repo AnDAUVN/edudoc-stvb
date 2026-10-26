@@ -1,0 +1,498 @@
+{
+  "bai_thu_hoach": [
+    {
+      "id": 1,
+      "question": "Trong văn bản 'Bài thu hoạch', phần Tên loại văn bản (Ô 5a) được trình bày như thế nào theo Nghị định 30/2020/NĐ-CP?",
+      "options": [
+        "In hoa, in đậm, cỡ chữ 13 đến 14, đặt canh giữa trang",
+        "In thường, in nghiêng, cỡ chữ 12, đặt canh trái",
+        "In hoa, in nghiêng, cỡ chữ 11, đặt trong bảng 2x2",
+        "In thường, in đậm, gạch chân dưới toàn bộ từ"
+      ],
+      "correct": 0,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, Tên loại văn bản (Ô 5a) được trình bày bằng chữ in hoa, cỡ chữ từ 13 đến 14, kiểu chữ đứng, đậm, đặt canh giữa trang."
+    },
+    {
+      "id": 2,
+      "question": "Tại phần Trích yếu nội dung của Bài thu hoạch (đặt ngay dưới Tên loại văn bản), quy cách trình bày chuẩn là gì?",
+      "options": [
+        "In hoa toàn bộ, cỡ chữ 14, in nghiêng",
+        "In thường, kiểu chữ đứng, đậm, cỡ chữ 13 đến 14, đặt canh giữa",
+        "In nghiêng, cỡ chữ 10, đặt trong ngoặc đơn",
+        "Bắt đầu bằng chữ 'V/v', in nghiêng, đặt canh phải"
+      ],
+      "correct": 1,
+      "explanation": "Trích yếu nội dung văn bản có tên loại (Ô 5a) được đặt ngay dưới tên loại văn bản, canh giữa, bằng chữ in thường, cỡ chữ từ 13 đến 14, kiểu chữ đứng, đậm."
+    },
+    {
+      "id": 3,
+      "question": "Đối với Bài thu hoạch của cá nhân học viên/sinh viên, phần ký tên xác nhận ở cuối văn bản (Ô 7b) thường ghi chức danh nào?",
+      "options": [
+        "HIỆU TRƯỞNG",
+        "TRƯỞNG PHÒNG",
+        "NGƯỜI THU HOẠCH (hoặc NGƯỜI VIẾT BÁO CÁO)",
+        "TM. HỘI ĐỒNG"
+      ],
+      "correct": 2,
+      "explanation": "Bài thu hoạch cá nhân do chính học viên/sinh viên hoàn thành và chịu trách nhiệm, chức danh ký là 'NGƯỜI THU HOẠCH' bằng chữ in hoa, đậm, cỡ 13-14."
+    },
+    {
+      "id": 4,
+      "question": "Số và ký hiệu của Bài thu hoạch (Ví dụ: Số: 01/BTH-ĐT) tại Ô 3 được định dạng theo quy tắc nào?",
+      "options": [
+        "Từ 'Số' in hoa toàn bộ 'SỐ:', cỡ chữ 14",
+        "Từ 'Số' in thường, đứng, cỡ chữ 12-13, sau có dấu ':', giữa số và ký hiệu có dấu '/', nối các từ viết tắt bằng dấu '-' không cách",
+        "Dùng dấu gạch dưới '_' để ngăn cách giữa số và tên viết tắt",
+        "Đặt tại góc dưới cùng bên phải của trang giấy"
+      ],
+      "correct": 1,
+      "explanation": "Theo Nghị định 30, từ 'Số' in thường, cỡ chữ 12-13, đứng, sau có dấu hai chấm (:). Giữa số và ký hiệu có gạch chéo (/), giữa các chữ viết tắt có dấu gạch nối (-) không có khoảng trắng."
+    },
+    {
+      "id": 5,
+      "question": "Mục 'Nơi nhận:' (Ô 9b) ở góc dưới bên trái của Bài thu hoạch được trình bày như thế nào?",
+      "options": [
+        "Từ 'Nơi nhận:' in nghiêng đậm size 12; các nơi nhận con in thường đứng size 11",
+        "Từ 'Nơi nhận:' in đứng size 14; các nơi nhận con in hoa size 13",
+        "Tất cả đều in nghiêng, cỡ chữ 13",
+        "Không cần trình bày Nơi nhận đối với bài thu hoạch"
+      ],
+      "correct": 0,
+      "explanation": "Dòng 'Nơi nhận:' kiểu chữ in thường, nghiêng, đậm, cỡ chữ 12, sau có dấu (:). Danh sách các nơi nhận cụ thể (ví dụ: - Ban Giảng huấn; - Lưu: Hồ sơ) in thường, đứng, cỡ chữ 11."
+    }
+  ],
+  "cong_van_de_nghi": [
+    {
+      "id": 1,
+      "question": "Trong Công văn hành chính, phần Trích yếu nội dung văn bản (Ô 5b) được trình bày như thế nào?",
+      "options": [
+        "Trình bày chữ in hoa, in đậm, đặt ở giữa trang giấy",
+        "Bắt đầu bằng chữ 'V/v', in thường, đứng, cỡ chữ 12-13, đặt canh giữa dưới số và ký hiệu văn bản",
+        "In nghiêng, cỡ chữ 14, đặt dưới Quốc hiệu và Tiêu ngữ",
+        "In hoa, cỡ chữ 13, đặt cùng hàng với nơi nhận văn bản"
+      ],
+      "correct": 1,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, trích yếu công văn bắt đầu bằng chữ V/v bằng chữ in thường, đứng, cỡ chữ 12-13, đặt canh giữa dưới số và ký hiệu văn bản, cách dòng 6pt."
+    },
+    {
+      "id": 2,
+      "question": "Công văn gửi cơ quan cấp trên hoặc cơ quan bên ngoài thì phần 'Kính gửi:' (Ô 9a) được trình bày với cỡ chữ và kiểu chữ nào?",
+      "options": [
+        "In hoa toàn bộ, cỡ chữ 14, in nghiêng",
+        "In thường, kiểu chữ đứng, cỡ chữ 13-14",
+        "In hoa chữ cái đầu, in nghiêng, cỡ chữ 12",
+        "In đậm, gạch chân dưới toàn bộ từ Kính gửi"
+      ],
+      "correct": 1,
+      "explanation": "Ô 9a (nơi nhận trực tiếp) được trình bày bằng chữ in thường, kiểu chữ đứng, cỡ chữ từ 13 đến 14."
+    },
+    {
+      "id": 3,
+      "question": "Tại Ô 3 của Công văn đề nghị, quy tắc trình bày 'Số và ký hiệu' nào sau đây là ĐÚNG?",
+      "options": [
+        "Số: 01 / ABC - HC (có dấu cách trước và sau dấu gạch)",
+        "SỐ: 01/ABC-HC (từ SỐ viết in hoa toàn bộ)",
+        "Số: 01/ABC-HC (chữ 'Số' in thường, sau có dấu ':', giữa số và ký hiệu có gạch chéo, nhóm chữ viết tắt nối bằng gạch nối không cách chữ)",
+        "Số 01-ABC/HC (dùng dấu gạch nối giữa số và cơ quan)"
+      ],
+      "correct": 2,
+      "explanation": "Từ 'Số' in thường, cỡ 13, đứng, sau có dấu (:). Giữa số và ký hiệu có gạch chéo (/), giữa các nhóm viết tắt có gạch nối (-) không có khoảng trắng."
+    },
+    {
+      "id": 4,
+      "question": "Tại Ô 9b (Nơi nhận ở góc dưới bên trái của Công văn), từ 'Nơi nhận:' và danh sách nơi nhận được trình bày ra sao?",
+      "options": [
+        "Từ 'Nơi nhận:' in nghiêng đậm size 12; các nơi nhận con in thường đứng size 11",
+        "Từ 'Nơi nhận:' in hoa size 14; các nơi nhận con in thường size 13",
+        "Tất cả đều in nghiêng, cỡ chữ 13",
+        "Từ 'Nơi nhận:' in đứng đậm size 14; các nơi nhận con in nghiêng size 12"
+      ],
+      "correct": 0,
+      "explanation": "Dòng 'Nơi nhận:' kiểu chữ in thường, nghiêng, đậm, cỡ chữ 12, sau có dấu (:). Danh sách các nơi nhận cụ thể (- Ban Giám đốc;...) in thường, đứng, cỡ chữ 11."
+    },
+    {
+      "id": 5,
+      "question": "Đoạn văn nội dung Công văn (Ô 6) theo Nghị định 30 cần đảm bảo tiêu chuẩn định dạng nào?",
+      "options": [
+        "Căn lề trái, cỡ chữ 12, không thụt đầu dòng",
+        "Cỡ chữ 13-14, đứng, dàn đều 2 bên (Justify), dòng đầu lùi 1 - 1.27cm, giãn đoạn tối thiểu 6pt",
+        "Cỡ chữ 15, in đậm toàn bộ, căn giữa",
+        "Căn lề phải, giãn dòng 2.0 lines, không giãn đoạn"
+      ],
+      "correct": 1,
+      "explanation": "Nội dung văn bản trình bày bằng chữ in thường, đứng, size 13-14, dàn đều 2 lề (Ctrl+J), dòng đầu lùi vào 1-1.27cm (1 phím tab), khoảng cách đoạn tối thiểu 6pt."
+    }
+  ],
+  "thong_bao_nhiem_vu": [
+    {
+      "id": 1,
+      "question": "Tên loại văn bản 'THÔNG BÁO' (Ô 5a) được định dạng chuẩn theo Nghị định 30 như thế nào?",
+      "options": [
+        "Chữ in thường, nghiêng, cỡ chữ 12, căn trái",
+        "Chữ in hoa, kiểu chữ đứng, đậm, cỡ chữ 13-14, canh giữa",
+        "Chữ in hoa, gạch chân toàn bộ, cỡ chữ 16, căn phải",
+        "Chữ thường in đậm, cỡ chữ 14, canh lề hai bên"
+      ],
+      "correct": 1,
+      "explanation": "Tên loại văn bản (THÔNG BÁO) được trình bày bằng chữ in hoa, kiểu chữ đứng, đậm, cỡ chữ 13-14, đặt canh giữa."
+    },
+    {
+      "id": 2,
+      "question": "Trích yếu nội dung của Thông báo nhiệm vụ được giao được trình bày dưới tên loại ra sao?",
+      "options": [
+        "In hoa toàn bộ, cỡ chữ 12, nghiêng, không có đường kẻ",
+        "Chữ in thường, đứng, đậm, cỡ 13-14, canh giữa; phía dưới có đường kẻ ngang nét liền dài 1/3 đến 1/2 dòng chữ đặt cân đối",
+        "In thường, nghiêng, cỡ chữ 11, căn phải",
+        "Bắt đầu bằng chữ V/v, in thường, cỡ chữ 12"
+      ],
+      "correct": 1,
+      "explanation": "Trích yếu dưới tên loại: in thường, đứng, đậm, cỡ chữ 13-14, canh giữa. Phía dưới có đường kẻ ngang nét liền dài từ 1/3 đến 1/2 độ dài dòng chữ và đặt cân đối."
+    },
+    {
+      "id": 3,
+      "question": "Trường hợp người ký Thông báo là Trưởng phòng theo sự ủy quyền thừa lệnh của Hiệu trưởng, Ô 7a trình bày như thế nào?",
+      "options": [
+        "KÝ THAY HIỆU TRƯỞNG",
+        "TL. HIỆU TRƯỞNG (dòng trên) và TRƯỞNG PHÒNG ĐÀO TẠO (dòng dưới), in hoa, đậm",
+        "THỪA LỆNH: HIỆU TRƯỞNG, chữ thường, in nghiêng",
+        "KT. HIỆU TRƯỞNG, chữ in hoa, in thường"
+      ],
+      "correct": 1,
+      "explanation": "Thừa lệnh viết tắt là TL. (in hoa, đậm). Dòng trên: TL. HIỆU TRƯỞNG; Dòng dưới: chức vụ người ký (TRƯỞNG PHÒNG...), in hoa, đậm, cỡ chữ 13-14."
+    },
+    {
+      "id": 4,
+      "question": "Quy cách đường kẻ dưới Quốc hiệu và Tiêu ngữ (Ô 1) của Thông báo là gì?",
+      "options": [
+        "Dùng chức năng Underline (Ctrl + U) gạch chân dòng tiêu ngữ",
+        "Dùng lệnh Draw/Shape kẻ đường nét liền, độ dài bằng đúng độ dài dòng Tiêu ngữ",
+        "Dùng phím gạch nối (-) gõ liên tiếp thành đường kẻ dài hết trang",
+        "Kẻ đường đôi (double line) dài từ lề trái sang lề phải"
+      ],
+      "correct": 1,
+      "explanation": "Đường kẻ dưới tiêu ngữ sử dụng lệnh Draw/Shape line, nét liền, không dùng underline, có độ dài bằng đúng độ dài dòng chữ Tiêu ngữ."
+    },
+    {
+      "id": 5,
+      "question": "Khi ngày ban hành văn bản là ngày 2 tháng 2 năm 2026, Ô 4 ghi như thế nào là ĐÚNG?",
+      "options": [
+        "TP.HCM, ngày 2/2/2026",
+        "Thành phố Hồ Chí Minh, ngày 2 tháng 2 năm 2026",
+        "Thành phố Hồ Chí Minh, ngày 02 tháng 02 năm 2026 (in nghiêng, cỡ 13-14)",
+        "Thành phố HCM, ngày 02/02/2026"
+      ],
+      "correct": 2,
+      "explanation": "Địa danh không viết tắt, sau có dấu phẩy. Chữ in nghiêng, cỡ 13-14. Ngày nhỏ hơn 10 và tháng nhỏ hơn 3 phải thêm số 0 phía trước."
+    }
+  ],
+  "thong_bao_hoat_dong": [
+    {
+      "id": 1,
+      "question": "Tại Ô 2 của Thông báo hoạt động (của Đoàn Thanh niên trực thuộc Trường), cách trình bày 2 cơ quan nào là ĐÚNG?",
+      "options": [
+        "Dòng 1: TRƯỜNG ĐH NGUYỄN TẤT THÀNH (đậm); Dòng 2: ĐOÀN THANH NIÊN (không đậm)",
+        "Dòng 1: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH (in hoa, đứng, không đậm); Dòng 2: ĐOÀN THANH NIÊN (in hoa, đứng, đậm)",
+        "Cả hai dòng đều in thường, nghiêng",
+        "Chỉ ghi tên Đoàn Thanh niên, không cần ghi tên cơ quan quản lý trực tiếp"
+      ],
+      "correct": 1,
+      "explanation": "Khi có đủ hai cơ quan: Cơ quan quản lý trực tiếp viết chữ in hoa, đứng, cỡ 12-13, không đậm. Cơ quan ban hành viết in hoa, đứng, đậm, cỡ 12-13. Cách nhau dòng đơn."
+    },
+    {
+      "id": 2,
+      "question": "Đường kẻ phía dưới Tên cơ quan ban hành (Ô 2) có đặc điểm gì?",
+      "options": [
+        "Độ dài bằng 1/3 đến 1/2 độ dài dòng chữ, đặt cân đối so với dòng chữ",
+        "Độ dài bằng 100% độ dài dòng chữ",
+        "Dài từ mép lề trái đến mép lề phải của văn bản",
+        "Không có đường kẻ dưới tên cơ quan ban hành"
+      ],
+      "correct": 0,
+      "explanation": "Phía dưới tên cơ quan ban hành có đường kẻ ngang, nét liền, có độ dài bằng từ 1/3 đến 1/2 độ dài dòng chữ và đặt cân đối so với dòng chữ."
+    },
+    {
+      "id": 3,
+      "question": "Ký hiệu của Thông báo hoạt động do Đoàn Thanh niên ban hành được viết chuẩn là gì?",
+      "options": [
+        "Số: 08/TB-ĐTN (hoặc /TB-DTN)",
+        "Số: 08 / TB - ĐTN (có khoảng trắng)",
+        "SỐ 08 - TB/DTN",
+        "Số 08.TB.DTN"
+      ],
+      "correct": 0,
+      "explanation": "Ký hiệu chuẩn có chữ 'Số:' in thường, giữa số và chữ viết tắt có gạch chéo (/), giữa tên loại và đơn vị có gạch nối (-) không khoảng trắng."
+    },
+    {
+      "id": 4,
+      "question": "Quy cách định dạng Họ và tên người ký (Ô 7b) tại văn bản Thông báo là gì?",
+      "options": [
+        "In hoa toàn bộ, đứng, đậm, cỡ chữ 13-14",
+        "Chữ in thường, viết hoa chữ cái đầu của các từ, kiểu chữ đứng, đậm, cỡ chữ 13-14, canh giữa",
+        "In nghiêng, không đậm, cỡ chữ 12",
+        "In hoa toàn bộ, gạch chân dưới họ tên"
+      ],
+      "correct": 1,
+      "explanation": "Họ và tên người ký (Ô 7b): Cỡ chữ 13-14, viết hoa chữ cái đầu các từ (ví dụ: Nguyễn Mạnh Hùng), in đậm, kiểu chữ đứng, canh giữa."
+    },
+    {
+      "id": 5,
+      "question": "Lề trang giấy (Page Margins) chuẩn của văn bản hành chính theo Nghị định 30 là bao nhiêu?",
+      "options": [
+        "Trên: 20-25mm, Dưới: 20-25mm, Trái: 30-35mm, Phải: 15-20mm",
+        "Trên: 10mm, Dưới: 10mm, Trái: 20mm, Phải: 10mm",
+        "Cả 4 lề đều bằng nhau: 20mm",
+        "Trên: 30mm, Dưới: 30mm, Trái: 15mm, Phải: 15mm"
+      ],
+      "correct": 0,
+      "explanation": "Chuẩn lề văn bản A4: Lề trên: 20-25mm (2-2.5cm); Lề dưới: 20-25mm (2-2.5cm); Lề trái: 30-35mm (3-3.5cm); Lề phải: 15-20mm (1.5-2cm)."
+    }
+  ],
+  "to_trinh_xin_kinh_phi": [
+    {
+      "id": 1,
+      "question": "Ký hiệu văn bản Ô 3 của Tờ trình xin kinh phí do Đoàn Thanh niên trường ban hành được viết như thế nào là ĐÚNG?",
+      "options": [
+        "Số: 35/TTr-ĐTN",
+        "Số: 35/TT-ĐTN",
+        "Số: 35/ĐTN",
+        "Số: 35/CV-ĐTN"
+      ],
+      "correct": 0,
+      "explanation": "Ký hiệu của Tờ trình bắt buộc phải có tên loại viết tắt 'TTr-' đứng trước tên viết tắt cơ quan/đơn vị ban hành (Số: .../TTr-ĐTN)."
+    },
+    {
+      "id": 2,
+      "question": "Trong Tờ trình xin kinh phí, Tên loại văn bản ('TỜ TRÌNH') và Trích yếu nội dung (Ô 5a) được đặt ở vị trí nào?",
+      "options": [
+        "Đặt ở ngoài Bảng đầu trang, canh giữa trang giấy",
+        "Đặt ở trong Bảng đầu trang (Dòng 2 Cột 1 dưới Số ký hiệu)",
+        "Đặt ở cuối văn bản ngang hàng Nơi nhận",
+        "Đặt sát lề trái của trang giấy"
+      ],
+      "correct": 0,
+      "explanation": "Đối với văn bản có tên loại (như Tờ trình, Thông báo), Tên loại và Trích yếu nội dung (Ô 5a) được đặt ở ngoài Bảng đầu trang, canh giữa trang giấy."
+    },
+    {
+      "id": 3,
+      "question": "Mục nơi nhận trực tiếp Kính gửi (Ô 9a) trong Tờ trình xin cấp kinh phí được trình bày như thế nào?",
+      "options": [
+        "Kính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành. (cỡ 13-14, chữ đứng thường)",
+        "KÍNH GỬI: BAN GIÁM HIỆU (in hoa, in đậm, gạch chân)",
+        "Kính gửi Ban Giám hiệu (không có dấu hai chấm sau chữ Kính gửi)",
+        "Kính gửi đặt ở chân trang ngang hàng chữ ký"
+      ],
+      "correct": 0,
+      "explanation": "Ô 9a (Kính gửi) bắt đầu bằng 'Kính gửi:', sau đó là tên cơ quan nhận, kết thúc bằng dấu chấm (.), kiểu chữ in thường đứng, cỡ 13-14."
+    },
+    {
+      "id": 4,
+      "question": "Đối với Tờ trình do Đoàn trường lập trình Ban Giám hiệu, thẩm quyền ký (Ô 7a) là thể thức nào?",
+      "options": [
+        "Ký trực tiếp: 'BÍ THƯ ĐOÀN TRƯỜNG' (in hoa, in đậm, canh giữa)",
+        "Ký thừa lệnh: 'TL. HIỆU TRƯỞNG'",
+        "Ký thay: 'KT. HIỆU TRƯỞNG'",
+        "Chữ in thường, in nghiêng: 'Bí thư đoàn'"
+      ],
+      "correct": 0,
+      "explanation": "Tờ trình của Đoàn trường do người đứng đầu tổ chức ký trực tiếp: 'BÍ THƯ ĐOÀN TRƯỜNG' (in hoa, in đậm, canh giữa)."
+    },
+    {
+      "id": 5,
+      "question": "Đường kẻ phụ nằm dưới Trích yếu nội dung của Tờ trình xin kinh phí có đặc điểm gì theo Nghị định 30?",
+      "options": [
+        "Nét liền, có độ dài bằng 1/3 đến 1/2 độ dài dòng chữ trích yếu và đặt cân đối",
+        "Nét liền có độ dài bằng toàn bộ dòng chữ trích yếu",
+        "Dùng lệnh gạch chân Underline (Ctrl + U)",
+        "Đường nét đứt dài hết chiều rộng trang giấy"
+      ],
+      "correct": 0,
+      "explanation": "Đường kẻ phụ dưới trích yếu của văn bản có tên loại là nét liền, dài từ 1/3 đến 1/2 độ dài dòng chữ và đặt cân đối so với dòng chữ."
+    }
+  ],
+  "to_trinh_nhan_su": [
+    {
+      "id": 1,
+      "question": "Trong Tờ trình bổ sung nhân sự, nơi nhận tại Ô 9a (phần Kính gửi) được đặt ở vị trí nào?",
+      "options": [
+        "Ở góc dưới bên trái văn bản",
+        "Dưới trích yếu nội dung văn bản, trước phần nội dung chính",
+        "Ở góc trên bên phải, cùng hàng với Quốc hiệu",
+        "Sau chữ ký của người ký tờ trình"
+      ],
+      "correct": 1,
+      "explanation": "Đối với Tờ trình và Báo cáo cấp dưới gửi cấp trên, phần nơi nhận trực tiếp Ô 9a (Kính gửi:...) được đặt dưới Tên loại và Trích yếu văn bản."
+    },
+    {
+      "id": 2,
+      "question": "Tên loại văn bản 'TỜ TRÌNH' (Ô 5a) có cỡ chữ và định dạng nào?",
+      "options": [
+        "In thường, nghiêng, cỡ chữ 12",
+        "In hoa toàn bộ, kiểu chữ đứng, đậm, cỡ chữ 13-14, canh giữa",
+        "In hoa, cỡ chữ 16, gạch chân",
+        "In thường, cỡ 14, căn lề hai bên"
+      ],
+      "correct": 1,
+      "explanation": "Tên loại văn bản 'TỜ TRÌNH' trình bày bằng chữ in hoa, kiểu chữ đứng, đậm, cỡ chữ 13-14, canh giữa."
+    },
+    {
+      "id": 3,
+      "question": "Ký hiệu văn bản Tờ trình của Khoa Công nghệ thông tin theo quy định viết tắt là gì?",
+      "options": [
+        "/TTr-CNTT",
+        "/TT-CNTT",
+        "/TTR.CNTT",
+        "-TTr/CNTT"
+      ],
+      "correct": 0,
+      "explanation": "Tờ trình được viết tắt chuẩn là TTr, do đó ký hiệu có dạng: [Số]/TTr-CNTT."
+    },
+    {
+      "id": 4,
+      "question": "Hàng chữ Quốc hiệu 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM' có được ngắt xuống 2 dòng không?",
+      "options": [
+        "Được ngắt xuống 2 dòng nếu lề hẹp",
+        "Tuyệt đối không được trình bày thành hai dòng",
+        "Tùy ý người soạn thảo",
+        "Được ngắt dòng sau chữ CHỦ NGHĨA"
+      ],
+      "correct": 1,
+      "explanation": "Theo quy định chặt chẽ tại tài liệu hướng dẫn và Nghị định 30: Dòng Quốc hiệu tuyệt đối không được trình bày thành hai dòng."
+    },
+    {
+      "id": 5,
+      "question": "Khoảng trống giữa Chức vụ (Ô 7a) và Họ tên người ký (Ô 7b) dùng để làm gì và chừa khoảng bao nhiêu dòng?",
+      "options": [
+        "Không để trống, ghi họ tên sát ngay dưới chức vụ",
+        "Để trống khoảng 3-4 dòng (khoảng 35-45pt) để ký tên và đóng dấu (Ô 8)",
+        "Để trống nửa trang giấy",
+        "Chỉ cách dòng đơn 1pt"
+      ],
+      "correct": 1,
+      "explanation": "Giữa chức vụ và họ tên người ký để trống khoảng 3-4 dòng để có không gian cho chữ ký trực tiếp và đóng dấu cơ quan (Ô 8)."
+    }
+  ],
+  "to_trinh_thiet_bi": [
+    {
+      "id": 1,
+      "question": "Trường hợp ký thay người đứng đầu đơn vị trong Tờ trình (Phó Giám đốc ký thay Giám đốc), thẩm quyền ký ghi là gì?",
+      "options": [
+        "KÝ THAY: GIÁM ĐỐC",
+        "KT. GIÁM ĐỐC (dòng trên) và PHÓ GIÁM ĐỐC (dòng dưới), in hoa, đậm",
+        "TL. GIÁM ĐỐC, chữ thường, nghiêng",
+        "PHÓ GIÁM ĐỐC KÝ THAY"
+      ],
+      "correct": 1,
+      "explanation": "Ký thay viết tắt là KT. (dành cho cấp phó ký thay cấp trưởng). Dòng 1: KT. GIÁM ĐỐC; Dòng 2: PHÓ GIÁM ĐỐC, in hoa, đậm, cỡ chữ 13-14."
+    },
+    {
+      "id": 2,
+      "question": "Quy cách trình bày đường kẻ dưới Trích yếu của Tờ trình xin máy móc thiết bị là gì?",
+      "options": [
+        "Dài bằng đúng độ dài dòng trích yếu",
+        "Nét liền, có độ dài bằng 1/3 đến 1/2 độ dài dòng chữ trích yếu và đặt cân đối",
+        "Đường nét đứt (dashed line) dài hết trang",
+        "Dùng phím gạch dưới underline"
+      ],
+      "correct": 1,
+      "explanation": "Đường kẻ dưới trích yếu có tên loại là nét liền, độ dài bằng từ 1/3 đến 1/2 độ dài dòng chữ trích yếu và đặt cân đối so với dòng chữ."
+    },
+    {
+      "id": 3,
+      "question": "Tại Ô 4 (Địa danh, ngày tháng năm), ngày nào sau đây viết ĐÚNG thể thức?",
+      "options": [
+        "ngày 4 tháng 10 năm 2026",
+        "ngày 04 tháng 10 năm 2026 (ngày < 10 có số 0 phía trước)",
+        "ngày 4/10/2026",
+        "ngày 04/tháng 10/2026"
+      ],
+      "correct": 1,
+      "explanation": "Nếu ngày ban hành nhỏ hơn 10 thì phải thêm số 0 phía trước (ngày 04 tháng 10 năm 2026)."
+    },
+    {
+      "id": 4,
+      "question": "Nội dung Tờ trình (Ô 6) khi có liệt kê danh mục thiết bị và số tiền cần tuân thủ định dạng nào?",
+      "options": [
+        "Font Times New Roman, cỡ 13-14, căn đều hai lề (Justify), giãn đoạn tối thiểu 6pt",
+        "Font Arial, cỡ 10, căn lề phải",
+        "Font Calibri, in nghiêng toàn bộ",
+        "Font Comic Sans, cỡ 16"
+      ],
+      "correct": 0,
+      "explanation": "Văn bản hành chính thống nhất sử dụng font Times New Roman, cỡ 13-14, căn đều hai lề (Ctrl+J), giãn đoạn tối thiểu 6pt."
+    },
+    {
+      "id": 5,
+      "question": "Tại Ô 9b của Tờ trình xin thiết bị, dòng 'Lưu: VT, TT KNN.' được trình bày với cỡ chữ và kiểu chữ nào?",
+      "options": [
+        "In hoa, cỡ 14, in đậm",
+        "In thường, kiểu chữ đứng, cỡ chữ 11",
+        "In nghiêng, cỡ chữ 13",
+        "In đậm, gạch chân"
+      ],
+      "correct": 1,
+      "explanation": "Danh sách các thành phần nhận tại Ô 9b (bao gồm Lưu: VT, đơn vị soạn thảo...) được trình bày bằng chữ in thường, kiểu chữ đứng, cỡ chữ 11."
+    }
+  ],
+  "bao_cao": [
+    {
+      "id": 1,
+      "question": "Trong văn bản Báo cáo hành chính, ký hiệu văn bản tại Ô 3 được cấu thành theo công thức nào sau đây là ĐÚNG?",
+      "options": [
+        "Số: .../BC-<Chữ viết tắt tên cơ quan, tổ chức ban hành>",
+        "Số: .../BCAO-<Tên cơ quan>",
+        "Số: .../CV-BC",
+        "Số: .../TTr-BC"
+      ],
+      "correct": 0,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, Báo cáo là văn bản có tên loại, chữ viết tắt tên loại là 'BC'. Ký hiệu văn bản có dạng: Số: .../BC-<Tên cơ quan/đơn vị ban hành> (Ví dụ: Số: 18/BC-CNTT hoặc Số: 25/BC-ĐHNTT)."
+    },
+    {
+      "id": 2,
+      "question": "Tại Ô 5a của Báo cáo hành chính, phần Tên loại và Trích yếu nội dung văn bản được trình bày như thế nào?",
+      "options": [
+        "Dòng 1: 'BÁO CÁO' (in hoa, đậm, giữa); Dòng 2: Trích yếu 'Về...' (in thường, đứng, đậm, giữa, có gạch ngang 1/3-1/2)",
+        "Cả Tên loại và Trích yếu đều in hoa, nghiêng, đặt sát lề trái",
+        "Tên loại in thường, trích yếu in hoa trong bảng đầu trang",
+        "Chỉ ghi trích yếu 'V/v...', không có dòng chữ BÁO CÁO"
+      ],
+      "correct": 0,
+      "explanation": "Ô 5a gồm 2 dòng: Dòng trên là tên loại văn bản 'BÁO CÁO' (in hoa, đứng, đậm, 13-14pt); Dòng dưới là trích yếu nội dung (in thường, đứng, đậm, 13-14pt, bên dưới có đường kẻ nét liền dài bằng 1/3 đến 1/2 độ dài dòng chữ)."
+    },
+    {
+      "id": 3,
+      "question": "Báo cáo gửi cơ quan cấp trên hoặc cơ quan quản lý thì mục Nơi nhận trực tiếp 'Kính gửi:' (Ô 9a) được trình bày ở vị trí nào?",
+      "options": [
+        "Đặt sau phần Trích yếu nội dung (Ô 5a) và trước khi bắt đầu phần nội dung báo cáo",
+        "Đặt ở góc dưới cùng bên trái của trang giấy, cạnh phần người ký",
+        "Đặt trong Bảng đầu trang, ngay dưới số ký hiệu văn bản",
+        "Đặt ở cuối báo cáo, sau chữ ký của thủ trưởng cơ quan"
+      ],
+      "correct": 0,
+      "explanation": "Mục Kính gửi (Ô 9a) của Báo cáo được trình bày sau Trích yếu văn bản (Ô 5a) và trước khi bắt đầu nội dung báo cáo (Ô 6)."
+    },
+    {
+      "id": 4,
+      "question": "Tại góc ký tên (Ô 7a, Ô 8, Ô 7b) của Báo cáo, trường hợp cấp phó ký thay người đứng đầu thì thể thức đề ký nào là ĐÚNG?",
+      "options": [
+        "Dòng 1: 'KT. GIÁM ĐỐC' (hoặc KT. HIỆU TRƯỞNG), Dòng 2: 'PHÓ GIÁM ĐỐC' (hoặc PHÓ HIỆU TRƯỞNG), in hoa, đậm, giữa",
+        "Chỉ ghi một dòng duy nhất: 'PHÓ GIÁM ĐỐC'",
+        "Ghi 'TL. GIÁM ĐỐC / PHÓ GIÁM ĐỐC'",
+        "Ghi 'TM. BAN GIÁM ĐỐC / PHÓ GIÁM ĐỐC'"
+      ],
+      "correct": 0,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, cấp phó ký thay người đứng đầu sử dụng thể thức 'KT.' gồm 2 dòng: Dòng 1 ghi 'KT. <CHỨC VỤ NGƯỜI ĐỨNG ĐẦU>', Dòng 2 ghi chức vụ cấp phó trực tiếp ký (đều in hoa, in đậm, căn giữa)."
+    },
+    {
+      "id": 5,
+      "question": "Tại Ô 9b (Nơi nhận ở chân trang) của Báo cáo gửi cấp trên, dòng đầu tiên trong danh sách nơi nhận thường là gì?",
+      "options": [
+        "- Như kính gửi;",
+        "- Kính gửi cơ quan cấp trên;",
+        "- Ban Giám đốc;",
+        "- Lưu: VT."
+      ],
+      "correct": 0,
+      "explanation": "Khi văn bản có mục 'Kính gửi:' ở Ô 9a, tại phần nơi nhận Ô 9b dòng đầu tiên của danh sách nơi nhận sẽ ghi '- Như kính gửi;'."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Local storage documents generated during testing/runtime
+storage/templates/*.docx
+storage/submitted/*.docx
+storage/uploads/*.docx
+storage/uploads/temp_*
+storage/test_out/
+
+# Environment & IDE
+.env
+venv/
+env/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
