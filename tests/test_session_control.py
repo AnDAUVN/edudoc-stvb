@@ -83,5 +83,32 @@ class TestSessionControl(unittest.TestCase):
         self.assertEqual(res_quiz.status_code, 200)
         self.assertIn("questions", res_quiz.get_json())
 
+    def test_active_doc_type_sync(self):
+        """Giảng viên chọn loại văn bản nào (VD: Bài thu hoạch) thì cổng sinh viên mặc định loại đó"""
+        # 1. Giảng viên đặt văn bản là bai_thu_hoach
+        res = self.client.post("/api/teacher/set-active-doc", json={"doc_type": "bai_thu_hoach"})
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["active_doc_type"], "bai_thu_hoach")
+
+        # 2. API /api/session-state trả về active_doc_type là bai_thu_hoach
+        res_state = self.client.get("/api/session-state")
+        self.assertEqual(res_state.status_code, 200)
+        self.assertEqual(res_state.get_json().get("active_doc_type"), "bai_thu_hoach")
+
+        # 3. Cổng sinh viên (GET /) render sẵn option bai_thu_hoach selected
+        res_student = self.client.get("/")
+        self.assertEqual(res_student.status_code, 200)
+        html = res_student.get_data(as_text=True)
+        self.assertIn('value="bai_thu_hoach" selected', html)
+
+        # 4. Khi giảng viên đổi sang to_trinh_xin_kinh_phi
+        res_change = self.client.post("/api/teacher/set-active-doc", json={"doc_type": "to_trinh_xin_kinh_phi"})
+        self.assertEqual(res_change.status_code, 200)
+
+        res_student2 = self.client.get("/")
+        html2 = res_student2.get_data(as_text=True)
+        self.assertIn('value="to_trinh_xin_kinh_phi" selected', html2)
+
 if __name__ == "__main__":
     unittest.main()

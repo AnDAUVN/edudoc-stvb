@@ -504,16 +504,19 @@
             <input type="text" id="inp-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" value="Nguyễn Văn A">
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Chọn loại văn bản bài tập</label>
-            <select id="sel-doc-type" class="form-select fw-semibold text-primary" onchange="onDocTypeChanged()">
-              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
-              <option value="cong_van_de_nghi" selected>2. Công văn đề nghị</option>
-              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
-              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
-              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
-              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
-              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
-              <option value="bao_cao">8. Báo cáo</option>
+            <label class="form-label fw-bold text-primary small d-flex align-items-center justify-content-between">
+              <span><i class="fa-solid fa-file-signature me-1"></i> Loại văn bản bài tập <span class="text-danger">*</span></span>
+              <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.7rem;"><i class="fa-solid fa-chalkboard-user me-1"></i> Theo bài Giảng viên giao</span>
+            </label>
+            <select id="sel-doc-type" class="form-select fw-bold text-primary border-primary-subtle" onchange="onDocTypeChanged()">
+              <option value="bai_thu_hoach" {% if active_doc_type == 'bai_thu_hoach' %}selected{% endif %}>1. Bài thu hoạch</option>
+              <option value="cong_van_de_nghi" {% if active_doc_type == 'cong_van_de_nghi' %}selected{% endif %}>2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu" {% if active_doc_type == 'thong_bao_nhiem_vu' %}selected{% endif %}>3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong" {% if active_doc_type == 'thong_bao_hoat_dong' %}selected{% endif %}>4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi" {% if active_doc_type == 'to_trinh_xin_kinh_phi' %}selected{% endif %}>5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su" {% if active_doc_type == 'to_trinh_nhan_su' %}selected{% endif %}>6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi" {% if active_doc_type == 'to_trinh_thiet_bi' %}selected{% endif %}>7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao" {% if active_doc_type == 'bao_cao' %}selected{% endif %}>8. Báo cáo</option>
             </select>
           </div>
         </div>
@@ -722,6 +725,29 @@
             <button type="button" class="btn btn-lg px-4 py-3 fw-bold shadow" id="btn-toggle-session" onclick="toggleExamSession()">
               <i class="fa-solid fa-play me-2"></i> CHO PHÉP BẮT ĐẦU LÀM BÀI
             </button>
+          </div>
+        </div>
+
+        <!-- CHỌN LOẠI VĂN BẢN GIAO BÀI TẬP CHO CẢ LỚP -->
+        <div class="mt-3 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-primary px-3 py-2 fs-6">
+              <i class="fa-solid fa-bullseye me-1"></i> Loại văn bản giao làm bài:
+            </span>
+            <select id="teacher-sel-active-doc" class="form-select fw-bold text-primary border-primary shadow-xs" style="width: auto; min-width: 290px;" onchange="onTeacherChangeActiveDocType()">
+              <option value="bai_thu_hoach" {% if active_doc_type == 'bai_thu_hoach' %}selected{% endif %}>1. Bài thu hoạch</option>
+              <option value="cong_van_de_nghi" {% if active_doc_type == 'cong_van_de_nghi' %}selected{% endif %}>2. Công văn đề nghị</option>
+              <option value="thong_bao_nhiem_vu" {% if active_doc_type == 'thong_bao_nhiem_vu' %}selected{% endif %}>3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong" {% if active_doc_type == 'thong_bao_hoat_dong' %}selected{% endif %}>4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi" {% if active_doc_type == 'to_trinh_xin_kinh_phi' %}selected{% endif %}>5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su" {% if active_doc_type == 'to_trinh_nhan_su' %}selected{% endif %}>6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi" {% if active_doc_type == 'to_trinh_thiet_bi' %}selected{% endif %}>7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao" {% if active_doc_type == 'bao_cao' %}selected{% endif %}>8. Báo cáo</option>
+            </select>
+          </div>
+          <div class="small text-muted">
+            <i class="fa-solid fa-arrows-rotate fa-spin text-success me-1"></i>
+            Khi Thầy/Cô chọn tại đây, <strong>cổng sinh viên sẽ tự động mặc định chọn loại văn bản này</strong>.
           </div>
         </div>
       </div>
@@ -2494,6 +2520,38 @@
         btn.className = 'btn btn-success btn-lg px-4 py-3 fw-bold shadow';
         btn.innerHTML = '<i class="fa-solid fa-play me-2"></i> CHO PHÉP BẮT ĐẦU LÀM BÀI';
       }
+
+      if (state.active_doc_type) {
+        const teacherSel = document.getElementById('teacher-sel-active-doc');
+        if (teacherSel && document.activeElement !== teacherSel && teacherSel.value !== state.active_doc_type) {
+          teacherSel.value = state.active_doc_type;
+        }
+      }
+    }
+
+    async function onTeacherChangeActiveDocType() {
+      const sel = document.getElementById('teacher-sel-active-doc');
+      if (!sel) return;
+      const docType = sel.value;
+      try {
+        const res = await fetch('/api/teacher/set-active-doc', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ doc_type: docType })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ GIAO BÀI TẬP CHO CẢ LỚP!',
+            text: `Cổng sinh viên hiện đã tự động chuyển mặc định sang: ${sel.options[sel.selectedIndex].text}`,
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể đổi loại văn bản: ' + e, 'error');
+      }
     }
 
     async function toggleExamSession(forceState = null) {
@@ -2583,6 +2641,18 @@
             confirmButtonText: 'Đã hiểu'
           });
           resetToStep1();
+        }
+      }
+
+      // Cập nhật loại văn bản mặc định theo phân công của Giảng viên
+      if (state && state.active_doc_type) {
+        const selDoc = document.getElementById('sel-doc-type');
+        const qSection = document.getElementById('section-quiz');
+        const isQuizStarted = qSection && !qSection.classList.contains('d-none');
+        // Chỉ tự động điều chỉnh nếu sinh viên đang ở Bước 1 và chưa bắt đầu làm bài trắc nghiệm
+        if (selDoc && !isQuizStarted && selDoc.value !== state.active_doc_type) {
+          selDoc.value = state.active_doc_type;
+          onDocTypeChanged();
         }
       }
     }
@@ -2955,6 +3025,7 @@
     // Khởi tạo theo chế độ Cổng Sinh viên hoặc Bàn Giảng viên
     const APP_MODE = "{{ mode }}";
     window.addEventListener('DOMContentLoaded', () => {
+      onDocTypeChanged();
       loadClasses();
       if (APP_MODE === 'teacher') {
         loadTeacherData();

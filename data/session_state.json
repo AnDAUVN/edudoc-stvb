@@ -1,6 +1,7 @@
 {
   "is_open": false,
   "enforce_roster": true,
+  "active_doc_type": "bai_thu_hoach",
   "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
-  "updated_at": "2026-10-26 15:00:00"
+  "updated_at": "2026-10-26 17:10:00"
 }

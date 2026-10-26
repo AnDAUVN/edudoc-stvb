@@ -44,12 +44,15 @@ def get_session_state():
     default_state = {
         "is_open": False,
         "enforce_roster": True,
+        "active_doc_type": "bai_thu_hoach",
         "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     state = load_json_file(SESSION_STATE_FILE, default_state)
     if "enforce_roster" not in state:
         state["enforce_roster"] = True
+    if "active_doc_type" not in state:
+        state["active_doc_type"] = "bai_thu_hoach"
     return state
 
 def is_session_open():
@@ -158,11 +161,15 @@ def parse_students_text(raw_text):
 
 @app.route("/")
 def index():
-    return render_template("index.html", mode="student")
+    state = get_session_state()
+    active_doc_type = state.get("active_doc_type", "bai_thu_hoach")
+    return render_template("index.html", mode="student", active_doc_type=active_doc_type)
 
 @app.route("/teacher")
 def teacher_portal():
-    return render_template("index.html", mode="teacher")
+    state = get_session_state()
+    active_doc_type = state.get("active_doc_type", "bai_thu_hoach")
+    return render_template("index.html", mode="teacher", active_doc_type=active_doc_type)
 
 @app.route("/api/session-state", methods=["GET"])
 def api_get_session_state():
@@ -173,13 +180,15 @@ def api_get_session_state():
 def api_set_session_state():
     data = request.json or {}
     current = get_session_state()
-    new_is_open = bool(data.get("is_open", not current.get("is_open", False)))
+    new_is_open = bool(data.get("is_open", current.get("is_open", False))) if "is_open" in data else current.get("is_open", False)
     new_message = str(data.get("message", "")).strip() or current.get("message", "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.")
     enforce_roster = bool(data.get("enforce_roster", current.get("enforce_roster", True)))
+    active_doc_type = str(data.get("active_doc_type", current.get("active_doc_type", "bai_thu_hoach"))).strip()
     
     updated_state = {
         "is_open": new_is_open,
         "enforce_roster": enforce_roster,
+        "active_doc_type": active_doc_type,
         "message": new_message,
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -188,6 +197,23 @@ def api_set_session_state():
         "success": True,
         "session_state": updated_state,
         "message": "Đã mở quyền làm bài cho sinh viên!" if new_is_open else "Đã khóa hệ thống để sinh viên tập trung nghe giảng!"
+    })
+
+@app.route("/api/teacher/set-active-doc", methods=["POST"])
+def api_set_active_doc():
+    data = request.json or {}
+    doc_type = str(data.get("doc_type", "")).strip()
+    if not doc_type:
+        return jsonify({"error": "Vui lòng chọn loại văn bản hợp lệ!"}), 400
+    state = get_session_state()
+    state["active_doc_type"] = doc_type
+    state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    save_json_file(SESSION_STATE_FILE, state)
+    return jsonify({
+        "success": True,
+        "active_doc_type": doc_type,
+        "session_state": state,
+        "message": f"Đã chuyển loại văn bản giao làm bài sang: [{doc_type}]"
     })
 
 @app.route("/api/teacher/roster-toggle", methods=["POST"])
