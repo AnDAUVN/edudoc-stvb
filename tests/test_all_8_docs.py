@@ -133,23 +133,15 @@ def create_sample_doc(doc_type_id, output_path):
             cq_bottom="KHOA CÔNG NGHỆ THÔNG TIN",
             quoc_hieu="CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
             tieu_ngu="Độc lập - Tự do - Hạnh phúc",
-            so_text="Số: 01/BTH-ĐT",
-            dia_danh_text="Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026"
+            so_text="Số: 01/DNTT",
+            dia_danh_text="Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026",
+            trich_yeu_5b="V/v đề nghị hỗ trợ kinh phí"
         )
-        # Ô 5a Tên loại & Trích yếu
-        p_t = doc.add_paragraph()
-        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r_t = p_t.add_run("BÀI THU HOẠCH")
-        r_t.font.name = "Times New Roman"
-        r_t.font.size = Pt(13)
-        r_t.bold = True
-
-        p_y = doc.add_paragraph()
-        p_y.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r_y = p_y.add_run("Về kết quả học tập chuyên đề kỹ năng soạn thảo văn bản hành chính")
-        r_y.font.name = "Times New Roman"
-        r_y.font.size = Pt(13)
-        r_y.bold = True
+        # Ô 9a Kính gửi (Bắt buộc theo sơ đồ Công văn)
+        p_kg = doc.add_paragraph()
+        r_kg = p_kg.add_run("Kính gửi: Bộ Khoa học và Công nghệ.")
+        r_kg.font.name = "Times New Roman"
+        r_kg.font.size = Pt(13)
 
         # Ô 6 Thân bài
         p_b = doc.add_paragraph()
@@ -164,8 +156,8 @@ def create_sample_doc(doc_type_id, output_path):
         # Footer table
         create_footer_table(
             doc,
-            noi_nhan_list=["- Ban Giảng huấn (để báo cáo);", "- Lưu: Hồ sơ cá nhân."],
-            chuc_vu_lines=["NGƯỜI THU HOẠCH"],
+            noi_nhan_list=["- Như kính gửi;", "- Lưu: VT."],
+            chuc_vu_lines=["HIỆU TRƯỞNG"],
             ho_ten="Nguyễn Văn A"
         )
 

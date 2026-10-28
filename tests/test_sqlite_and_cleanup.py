@@ -59,6 +59,8 @@ class TestSqliteAndCleanup(unittest.TestCase):
     def tearDown(self):
         # Dọn dẹp dữ liệu test khỏi SQLite
         delete_submission_by_mssv(self.test_mssv, self.test_doc)
+        from engine.db import delete_fraud_log_by_id
+        delete_fraud_log_by_id(f"test_fraud_{self.test_mssv}")
         
         # Dọn dẹp sinh viên test khỏi roster
         roster = load_json_file(STUDENTS_ROSTER_FILE, {})

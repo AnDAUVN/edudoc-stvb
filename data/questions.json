@@ -2,98 +2,98 @@
   "bai_thu_hoach": [
     {
       "id": 1,
-      "question": "Trong văn bản 'Bài thu hoạch', phần Tên loại văn bản (Ô 5a) được trình bày như thế nào theo Nghị định 30/2020/NĐ-CP?",
+      "question": "Trong Bài thu hoạch (áp dụng theo Sơ đồ Công văn - Hình 2 Nghị định 30/2020/NĐ-CP), phần Tên loại văn bản (Ô 5a) có được trình bày không?",
       "options": [
-        "In hoa, in đậm, cỡ chữ 13 đến 14, đặt canh giữa trang",
-        "In thường, in nghiêng, cỡ chữ 12, đặt canh trái",
-        "In hoa, in nghiêng, cỡ chữ 11, đặt trong bảng 2x2",
-        "In thường, in đậm, gạch chân dưới toàn bộ từ"
+        "Tuyệt đối KHÔNG có Ô 5a (tên loại in hoa ở giữa trang); công văn chỉ có Ô 5b (Trích yếu V/v) trong bảng đầu trang",
+        "Có Ô 5a in hoa, in đậm, đặt canh giữa trang",
+        "Có Ô 5a nhưng đặt trong Bảng cuối trang",
+        "Tùy ý sinh viên lựa chọn có hoặc không"
       ],
       "correct": 0,
-      "explanation": "Theo Nghị định 30/2020/NĐ-CP, Tên loại văn bản (Ô 5a) được trình bày bằng chữ in hoa, cỡ chữ từ 13 đến 14, kiểu chữ đứng, đậm, đặt canh giữa trang."
+      "explanation": "Theo Sơ đồ 2 (Hình 2 Phụ lục I Nghị định 30/2020/NĐ-CP), công văn hành chính không có tên loại văn bản (Ô 5a) ở giữa trang mà chỉ có trích yếu nội dung (Ô 5b) bắt đầu bằng V/v đặt tại Dòng 2 Cột 1 trong Bảng đầu trang."
     },
     {
       "id": 2,
-      "question": "Tại phần Trích yếu nội dung của Bài thu hoạch (đặt ngay dưới Tên loại văn bản), quy cách trình bày chuẩn là gì?",
+      "question": "Trong Bài thu hoạch (mẫu Công văn đề nghị), phần Trích yếu nội dung văn bản (Ô 5b) được bố trí ở vị trí nào theo sơ đồ chuẩn?",
       "options": [
-        "In hoa toàn bộ, cỡ chữ 14, in nghiêng",
-        "In thường, kiểu chữ đứng, đậm, cỡ chữ 13 đến 14, đặt canh giữa",
-        "In nghiêng, cỡ chữ 10, đặt trong ngoặc đơn",
-        "Bắt đầu bằng chữ 'V/v', in nghiêng, đặt canh phải"
+        "Nằm tại Dòng 2, Cột 1 trong Bảng đầu trang, ngay bên dưới Số và ký hiệu (Ô 3), cách dòng 6pt",
+        "Đặt ở giữa trang giấy, ngoài bảng, bên dưới Quốc hiệu và Tiêu ngữ",
+        "Đặt ở góc dưới bên trái cùng với Nơi nhận (Ô 9b)",
+        "Đặt ở Dòng 1, Cột 2 trong Bảng đầu trang"
       ],
-      "correct": 1,
-      "explanation": "Trích yếu nội dung văn bản có tên loại (Ô 5a) được đặt ngay dưới tên loại văn bản, canh giữa, bằng chữ in thường, cỡ chữ từ 13 đến 14, kiểu chữ đứng, đậm."
+      "correct": 0,
+      "explanation": "Theo Sơ đồ Công văn (Hình 2 Nghị định 30), Ô 5b (Trích yếu V/v) bắt buộc nằm ở Dòng 2 Cột 1 của Bảng đầu trang ngay dưới Ô 3."
     },
     {
       "id": 3,
-      "question": "Đối với Bài thu hoạch của cá nhân học viên/sinh viên, phần ký tên xác nhận ở cuối văn bản (Ô 7b) thường ghi chức danh nào?",
+      "question": "Trong Bài thu hoạch (mẫu Công văn), phần Kính gửi: (Ô 9a - Nơi nhận trực tiếp) được bố trí như thế nào theo Nghị định 30?",
       "options": [
-        "HIỆU TRƯỞNG",
-        "TRƯỞNG PHÒNG",
-        "NGƯỜI THU HOẠCH (hoặc NGƯỜI VIẾT BÁO CÁO)",
-        "TM. HỘI ĐỒNG"
+        "Bắt buộc có Ô 9a (Kính gửi), đặt ngay sau Bảng đầu trang và trước khi vào phần Nội dung (Ô 6)",
+        "Tuyệt đối không được có mục Kính gửi",
+        "Đặt bên trong Bảng đầu trang cùng hàng với Số ký hiệu",
+        "Chỉ ghi ở Bảng cuối trang tại Ô 9b"
       ],
-      "correct": 2,
-      "explanation": "Bài thu hoạch cá nhân do chính học viên/sinh viên hoàn thành và chịu trách nhiệm, chức danh ký là 'NGƯỜI THU HOẠCH' bằng chữ in hoa, đậm, cỡ 13-14."
+      "correct": 0,
+      "explanation": "Đối với Công văn hành chính, phần Kính gửi (Ô 9a) là thành phần bắt buộc đặt ngay sau bảng đầu trang và trước nội dung văn bản (Ô 6)."
     },
     {
       "id": 4,
-      "question": "Số và ký hiệu của Bài thu hoạch (Ví dụ: Số: 01/BTH-ĐT) tại Ô 3 được định dạng theo quy tắc nào?",
+      "question": "Trong Số và ký hiệu của Công văn (Ô 3), quy tắc nào sau đây là BẮT BUỘC theo Nghị định 30/2020/NĐ-CP?",
       "options": [
-        "Từ 'Số' in hoa toàn bộ 'SỐ:', cỡ chữ 14",
-        "Từ 'Số' in thường, đứng, cỡ chữ 12-13, sau có dấu ':', giữa số và ký hiệu có dấu '/', nối các từ viết tắt bằng dấu '-' không cách",
-        "Dùng dấu gạch dưới '_' để ngăn cách giữa số và tên viết tắt",
-        "Đặt tại góc dưới cùng bên phải của trang giấy"
+        "Tuyệt đối KHÔNG có chữ viết tắt tên loại CV trong ký hiệu (Công thức: Số: .../<Tên viết tắt CQ>-<Đơn vị>)",
+        "Bắt buộc phải có chữ CV đứng đầu sau dấu gạch chéo (Số: .../CV-...)",
+        "Từ Số phải viết hoa toàn bộ SỐ:",
+        "Giữa số và ký hiệu dùng dấu gạch ngang thay vì gạch chéo"
       ],
-      "correct": 1,
-      "explanation": "Theo Nghị định 30, từ 'Số' in thường, cỡ chữ 12-13, đứng, sau có dấu hai chấm (:). Giữa số và ký hiệu có gạch chéo (/), giữa các chữ viết tắt có dấu gạch nối (-) không có khoảng trắng."
+      "correct": 0,
+      "explanation": "Theo Nghị định 30/2020/NĐ-CP, trong số và ký hiệu của công văn tuyệt đối không ghi tên loại văn bản viết tắt CV."
     },
     {
       "id": 5,
-      "question": "Mục 'Nơi nhận:' (Ô 9b) ở góc dưới bên trái của Bài thu hoạch được trình bày như thế nào?",
+      "question": "Mục Nơi nhận: (Ô 9b) ở góc dưới bên trái của Công văn được trình bày như thế nào?",
       "options": [
-        "Từ 'Nơi nhận:' in nghiêng đậm size 12; các nơi nhận con in thường đứng size 11",
-        "Từ 'Nơi nhận:' in đứng size 14; các nơi nhận con in hoa size 13",
+        "Từ Nơi nhận: in nghiêng đậm size 12; các nơi nhận con in thường đứng size 11",
+        "Từ Nơi nhận: in hoa size 14; các nơi nhận con in thường size 13",
         "Tất cả đều in nghiêng, cỡ chữ 13",
-        "Không cần trình bày Nơi nhận đối với bài thu hoạch"
+        "Từ Nơi nhận: in đứng đậm size 14; các nơi nhận con in nghiêng size 12"
       ],
       "correct": 0,
-      "explanation": "Dòng 'Nơi nhận:' kiểu chữ in thường, nghiêng, đậm, cỡ chữ 12, sau có dấu (:). Danh sách các nơi nhận cụ thể (ví dụ: - Ban Giảng huấn; - Lưu: Hồ sơ) in thường, đứng, cỡ chữ 11."
+      "explanation": "Dòng Nơi nhận: kiểu chữ in thường, nghiêng, đậm, cỡ chữ 12, sau có dấu (:). Danh sách các nơi nhận cụ thể (- Như kính gửi; - Lưu: VT...) in thường, đứng, cỡ chữ 11."
     },
     {
       "id": 6,
-      "question": "Quy định định dạng lề trang giấy (Page Margins) chuẩn của văn bản theo Nghị định 30/2020/NĐ-CP là gì?",
+      "question": "Quy chuẩn căn lề trang giấy (Page Margins) bắt buộc áp dụng khi soạn thảo Công văn theo Nghị định 30 là gì?",
       "options": [
         "Lề trên: 20-25mm, Lề dưới: 20-25mm, Lề trái: 30-35mm, Lề phải: 15-20mm",
-        "Tất cả 4 lề đều bằng 20mm (2cm)",
-        "Lề trên: 15mm, Lề dưới: 15mm, Lề trái: 20mm, Lề phải: 20mm",
-        "Lề trái: 25mm, Lề phải: 25mm, Lề trên: 30mm, Lề dưới: 30mm"
+        "Lề trên: 10mm, Lề dưới: 10mm, Lề trái: 20mm, Lề phải: 10mm",
+        "Lề đều 4 phía 20mm (2cm)",
+        "Lề mặc định của Word (1 inch = 2.54cm cả 4 phía)"
       ],
       "correct": 0,
-      "explanation": "Theo Nghị định 30/2020/NĐ-CP, căn lề chuẩn trang văn bản khổ A4 (210 x 297 mm) gồm: Lề trên 20-25 mm, lề dưới 20-25 mm, lề trái 30-35 mm, lề phải 15-20 mm."
+      "explanation": "Theo Mục II Phụ lục I Nghị định 30: lề trên và dưới 20-25mm, lề trái 30-35mm, lề phải 15-20mm."
     },
     {
       "id": 7,
-      "question": "Phông chữ (Font) duy nhất bắt buộc áp dụng cho toàn bộ văn bản hành chính theo Nghị định 30/2020/NĐ-CP là gì?",
+      "question": "Phông chữ (Font) và bộ mã ký tự chuẩn bắt buộc sử dụng khi soạn thảo văn bản hành chính theo Nghị định 30 là:",
       "options": [
-        "Phông chữ Arial, bộ mã Unicode",
         "Phông chữ Times New Roman, bộ mã ký tự Unicode theo TCVN 6909:2001",
-        "Phông chữ Calibri hoặc Tahoma",
-        "Tùy chọn phông chữ theo thẩm mỹ của đơn vị soạn thảo"
+        "Phông chữ Arial hoặc Calibri",
+        "Tùy chọn phông chữ theo sở thích của người soạn thảo",
+        "Phông chữ VnTime, bảng mã TCVN3"
       ],
-      "correct": 1,
+      "correct": 0,
       "explanation": "Theo Mục II Phụ lục I Nghị định 30/2020/NĐ-CP, phông chữ sử dụng trình bày văn bản là phông chữ tiếng Việt Times New Roman, bộ mã ký tự Unicode (TCVN 6909:2001)."
     },
     {
       "id": 8,
       "question": "Quy tắc giãn dòng (Line Spacing) và khoảng cách đoạn (Paragraph Spacing) trong nội dung văn bản (Ô 6) được quy định như thế nào?",
       "options": [
+        "Giãn dòng tối thiểu cách dòng đơn (Single) hoặc 1.0 đến 1.15 lines; Spacing After tối thiểu 6pt giữa các đoạn văn",
         "Giãn dòng Double, giãn đoạn Before 12pt",
-        "Giãn dòng tối thiểu cách dòng đơn (Single) hoặc từ 1.0 đến 1.15 lines; Spacing After tối thiểu 6pt giữa các đoạn văn",
         "Giãn dòng Exactly 20pt, không giãn đoạn",
         "Không có quy định cụ thể, chỉ cần dễ đọc"
       ],
-      "correct": 1,
+      "correct": 0,
       "explanation": "Theo Nghị định 30/2020/NĐ-CP, khoảng cách giữa các đoạn văn tối thiểu là 6pt; khoảng cách giữa các dòng tối thiểu là cách dòng đơn, tối đa là 1.5 dòng."
     }
   ],

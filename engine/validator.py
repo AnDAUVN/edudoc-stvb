@@ -225,7 +225,7 @@ class Decree30Validator:
     # =========================================================================
     def check_table_structures(self, header_table, footer_table):
         errors = []
-        is_cong_van = (self.doc_type_id == "cong_van_de_nghi")
+        is_cong_van = (self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"])
 
         # 1. BẢNG ĐẦU TRANG: Phải là 2 cột x 2 dòng
         if not header_table:
@@ -501,7 +501,7 @@ class Decree30Validator:
             after_slash = t.split("/", 1)[1].strip()
             # 1. CÔNG VĂN: Số: .../<Tên viết tắt CQ>-<Đơn vị> (hoặc Số: .../<Tên viết tắt CQ>)
             # QUY TẮC CỐT LÕI: TUYỆT ĐỐI KHÔNG CÓ TÊN LOẠI VĂN BẢN 'CV'
-            is_cv = (self.doc_type_id == "cong_van_de_nghi") or getattr(self, "is_cong_van", False)
+            is_cv = (self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"]) or getattr(self, "is_cong_van", False)
             if is_cv:
                 if re.search(r"^(CV\b|CV[-–—])", after_slash, re.IGNORECASE) or re.search(r"[-–—]CV\b", after_slash, re.IGNORECASE):
                     errors.append({
@@ -547,7 +547,7 @@ class Decree30Validator:
                             default_num = def_m.group(1).strip()
 
                     is_match = False
-                    if self.doc_type_id == "cong_van_de_nghi":
+                    if self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"]:
                         # Đối với bài tập Công văn đề nghị: Tất cả các mục là tự giả định (không tuân thủ đề),
                         # cho phép sinh viên tự giả định bất kỳ số ban hành nào hoặc dùng 3 số cuối MSSV / số mặc định.
                         is_match = True
@@ -674,7 +674,7 @@ class Decree30Validator:
     # =========================================================================
     def check_box_5_trich_yeu(self, p_type=None, p_trich_yeu=None, p_so=None, is_5b_in_table=True, p_trich_yeu_outside_extra=None, p_5b_table=None, p_trich_yeu_outside=None, outside_header_paras=None):
         errors = []
-        is_cong_van = getattr(self, "is_cong_van", False) or (self.doc_type_id == "cong_van_de_nghi")
+        is_cong_van = getattr(self, "is_cong_van", False) or (self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"])
 
         # Tương thích ngược các tham số
         if p_5b_table is None:
@@ -1223,19 +1223,18 @@ class Decree30Validator:
                         "issue": "Sai thể thức đề ký của bài tập Thông báo nhiệm vụ: Cơ quan ban hành là Phòng Đào tạo, do đó bắt buộc ký Thừa lệnh (Dòng 1: 'TL. HIỆU TRƯỞNG', Dòng 2: 'TRƯỞNG PHÒNG ĐÀO TẠO').",
                         "fix": "Dòng 1 ghi 'TL. HIỆU TRƯỞNG', dòng 2 ghi 'TRƯỞNG PHÒNG ĐÀO TẠO' (in hoa, in đậm, canh giữa)."
                     })
-            elif self.doc_type_id == "cong_van_de_nghi":
-                # Đối với Công văn: Cho phép linh hoạt các thể thức đề ký chuẩn Nghị định 30:
+            elif self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"]:
+                # Đối với Công văn / Bài thu hoạch: Cho phép linh hoạt các thể thức đề ký chuẩn Nghị định 30:
                 # 1. Ký thay (KT.): KT. GIÁM ĐỐC / PHÓ GIÁM ĐỐC (hoặc KT. HIỆU TRƯỞNG / PHÓ HIỆU TRƯỞNG, KT. TỔNG GIÁM ĐỐC...)
                 # 2. Thừa lệnh (TL.): TL. HIỆU TRƯỞNG / TRƯỞNG PHÒNG... (hoặc TL. GIÁM ĐỐC...)
                 # 3. Ký trực tiếp: GIÁM ĐỐC, TỔNG GIÁM ĐỐC, HIỆU TRƯỞNG, CHỦ TỊCH...
+                # 4. Đối với Bài thu hoạch: Cho phép thêm NGƯỜI THU HOẠCH, SINH VIÊN THỰC HIỆN...
                 has_kt = any(re.match(r"^KT[\.\s]", l, re.IGNORECASE) for l in chuc_vu_lines)
                 has_tl = any(re.match(r"^TL[\.\s]", l, re.IGNORECASE) for l in chuc_vu_lines)
                 
                 if has_kt:
-                    # Đã được kiểm tra chuẩn thể thức KT. ở Phần 2.1 (Dòng 1: KT. <Người đứng đầu>, Dòng 2: chức vụ Phó)
                     pass
                 elif has_tl:
-                    # Đã được kiểm tra chuẩn thể thức TL. ở Phần 2.1 (Dòng 1: TL. <Người đứng đầu>, Dòng 2: trưởng đơn vị)
                     pass
                 else:
                     first_l = chuc_vu_lines[0].upper()
@@ -1245,11 +1244,15 @@ class Decree30Validator:
                             "issue": "Cấp phó ký thay người đứng đầu phải sử dụng thể thức Ký thay ('KT.') gồm 2 dòng: Dòng 1 ghi 'KT. <CHỨC VỤ NGƯỜI ĐỨNG ĐẦU>' (Ví dụ: 'KT. GIÁM ĐỐC' hoặc 'KT. HIỆU TRƯỞNG'), Dòng 2 ghi chức vụ cấp phó.",
                             "fix": "Dòng 1 ghi 'KT. GIÁM ĐỐC' (hoặc 'KT. HIỆU TRƯỞNG'), Dòng 2 ghi chức vụ cấp phó (in hoa, in đậm, canh giữa)."
                         })
-                    elif not any(kw in first_l for kw in ["HIỆU TRƯỞNG", "GIÁM ĐỐC", "TỔNG GIÁM ĐỐC", "CHỦ TỊCH", "VIỆN TRƯỞNG", "TRƯỞNG BAN", "TRƯỞNG PHÒNG"]):
-                        errors.append({
-                            "issue": "Chức vụ người ký của Công văn phải là chức vụ người đứng đầu (Ví dụ: 'GIÁM ĐỐC', 'HIỆU TRƯỞNG') hoặc Ký thay ('KT. GIÁM ĐỐC' / 'PHÓ GIÁM ĐỐC').",
-                            "fix": "Ghi đúng chức vụ người ký theo bài tập (Ví dụ: 'HIỆU TRƯỞNG', 'GIÁM ĐỐC' hoặc 'KT. GIÁM ĐỐC' / 'PHÓ GIÁM ĐỐC')."
-                        })
+                    else:
+                        valid_signers = ["HIỆU TRƯỞNG", "GIÁM ĐỐC", "TỔNG GIÁM ĐỐC", "CHỦ TỊCH", "VIỆN TRƯỞNG", "TRƯỞNG BAN", "TRƯỞNG PHÒNG", "TRƯỞNG KHOA"]
+                        if self.doc_type_id == "bai_thu_hoach":
+                            valid_signers.extend(["NGƯỜI THU HOẠCH", "NGƯỜI LÀM BÀI", "HỌC VIÊN", "SINH VIÊN", "NGƯỜI THỰC HIỆN", "HỌC VIÊN THỰC HIỆN", "SINH VIÊN THỰC HIỆN", "NGƯỜI BÁO CÁO"])
+                        if not any(kw in first_l for kw in valid_signers):
+                            errors.append({
+                                "issue": "Chức vụ người ký của Công văn phải là chức vụ người đứng đầu (Ví dụ: 'GIÁM ĐỐC', 'HIỆU TRƯỞNG') hoặc Ký thay ('KT. GIÁM ĐỐC' / 'PHÓ GIÁM ĐỐC').",
+                                "fix": "Ghi đúng chức vụ người ký theo bài tập (Ví dụ: 'HIỆU TRƯỞNG', 'GIÁM ĐỐC' hoặc 'KT. GIÁM ĐỐC' / 'PHÓ GIÁM ĐỐC')."
+                            })
             elif self.doc_type_id == "to_trinh_thiet_bi":
                 if not any("KT." in l or "KT " in l for l in chuc_vu_lines):
                     errors.append({
@@ -1278,14 +1281,7 @@ class Decree30Validator:
                             "issue": "Chức vụ người ký của Báo cáo phải là chức vụ thủ trưởng/trưởng đơn vị (Ví dụ: 'TRƯỞNG KHOA', 'GIÁM ĐỐC', 'HIỆU TRƯỞNG') hoặc Ký thay ('KT. GIÁM ĐỐC' / 'PHÓ GIÁM ĐỐC').",
                             "fix": "Ghi đúng chức vụ người ký (Ví dụ: 'TRƯỞNG KHOA', 'GIÁM ĐỐC' hoặc 'KT. GIÁM ĐỐC')."
                         })
-            elif self.doc_type_id == "bai_thu_hoach":
-                first_l = chuc_vu_lines[0].upper()
-                valid_signers = ["NGƯỜI THU HOẠCH", "NGƯỜI LÀM BÀI", "HỌC VIÊN", "SINH VIÊN", "NGƯỜI THỰC HIỆN", "HỌC VIÊN THỰC HIỆN", "SINH VIÊN THỰC HIỆN", "NGƯỜI BÁO CÁO"]
-                if not any(kw in first_l for kw in valid_signers):
-                    errors.append({
-                        "issue": "Phần chức danh người ký của Bài thu hoạch nên ghi 'NGƯỜI THU HOẠCH', 'NGƯỜI LÀM BÀI', 'HỌC VIÊN' hoặc 'SINH VIÊN' (in hoa, in đậm, canh giữa).",
-                        "fix": "Ghi chức danh người ký là 'NGƯỜI THU HOẠCH' (hoặc 'NGƯỜI LÀM BÀI', 'HỌC VIÊN')."
-                    })
+
 
         # 3. KHOẢNG CÁCH DÀNH ĐỂ KÝ TÊN VÀ ĐÓNG DẤU (Ô 8)
         last_cv_p = chuc_vu_paras[-1]
@@ -1328,7 +1324,7 @@ class Decree30Validator:
     # Ô 9a: NƠI NHẬN TRỰC TIẾP (KÍNH GỬI - CÔNG VĂN, TỜ TRÌNH, BÁO CÁO)
     # =========================================================================
     def check_box_9a_kinh_gui(self, p_kinh_gui, kinh_gui_items):
-        is_cv = (self.doc_type_id == "cong_van_de_nghi") or getattr(self, "is_cong_van", False)
+        is_cv = (self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"]) or getattr(self, "is_cong_van", False)
         is_required = is_cv or (self.doc_type_id in ["to_trinh_nhan_su", "to_trinh_thiet_bi", "to_trinh_xin_kinh_phi", "bao_cao"])
         if not is_required:
             if p_kinh_gui:
@@ -1337,7 +1333,7 @@ class Decree30Validator:
                     "name": "Ô 9a: Nơi nhận trực tiếp (Kính gửi)",
                     "passed": False,
                     "errors": [{
-                        "issue": "Sai sơ đồ bố trí theo Nghị định 30: Thông báo và Bài thu hoạch KHÔNG CÓ mục Nơi nhận trực tiếp (Kính gửi / Ô 9a) trước phần Nội dung (Ô 6).",
+                        "issue": "Sai sơ đồ bố trí theo Nghị định 30 (Sơ đồ 3 - Hình 3): Thông báo KHÔNG CÓ mục Nơi nhận trực tiếp (Kính gửi / Ô 9a) trước phần Nội dung (Ô 6).",
                         "fix": "Xóa dòng 'Kính gửi' trong Thông báo. Nơi nhận của Thông báo chỉ trình bày tại Ô 9b ở góc dưới bên trái văn bản."
                     }]
                 }
@@ -1710,7 +1706,7 @@ class Decree30Validator:
                     outside_header_paras.append(p)
 
         # TỰ ĐỘNG NHẬN DIỆN VĂN BẢN CÔNG VĂN (SƠ ĐỒ 2 - HÌNH 2)
-        is_cong_van = (self.doc_type_id == "cong_van_de_nghi")
+        is_cong_van = (self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"])
         if not is_cong_van:
             p_type_text = self._clean_text(p_type).upper() if p_type else ""
             outside_texts = [self._clean_text(p).upper() for p in outside_header_paras]
@@ -1721,7 +1717,7 @@ class Decree30Validator:
                 is_cong_van = True
             elif is_5b_in_table and p_kinh_gui is not None:
                 has_named_type = any(
-                    any(kw in ot for kw in ["THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])
+                    any(kw in ot for kw in ["THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO"])
                     for ot in outside_texts
                 )
                 if not has_named_type:

@@ -1358,18 +1358,20 @@
       const descEl = document.getElementById('schema-card-desc');
       const iconEl = document.getElementById('schema-badge-icon');
 
-      if (docType === 'cong_van_de_nghi') {
+      if (docType === 'cong_van_de_nghi' || docType === 'bai_thu_hoach') {
         iconEl.className = 'badge bg-primary p-3 fs-5 rounded-circle';
         iconEl.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i>';
         titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-primary">SƠ ĐỒ CỦA CÔNG VĂN (Hình 2)</span>';
-        descEl.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fa-solid fa-circle-check me-1"></i>Tự giả định tất cả các mục</span> Sinh viên tự giả định cơ quan, trích yếu, kính gửi, nội dung, người ký (không tuân thủ đề cố định). Bắt buộc tuân thủ <strong>Sơ đồ 2 (Hình 2 NĐ 30)</strong>: <strong>Ô 5b (Trích yếu V/v)</strong> nằm TRONG BẢNG đầu trang ngay dưới Ô 3 (cách 6pt); <span class="text-primary fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước Ô 6; <span class="text-danger fw-bold">KHÔNG CÓ Ô 5a tên loại</span> ở giữa trang; Ô 3 không có chữ \'CV\'.';
+        descEl.innerHTML = '<span class="badge bg-success-subtle text-success border border-success-subtle me-1"><i class="fa-solid fa-circle-check me-1"></i>Tự giả định tất cả các mục</span> ' +
+          (docType === 'bai_thu_hoach' ? '<strong>Bài thu hoạch (Mẫu Công văn):</strong> ' : '') +
+          'Sinh viên tự giả định cơ quan, trích yếu, kính gửi, nội dung, người ký (không tuân thủ đề cố định). Bắt buộc tuân thủ <strong>Sơ đồ 2 (Hình 2 NĐ 30)</strong>: <strong>Ô 5b (Trích yếu V/v)</strong> nằm TRONG BẢNG đầu trang ngay dưới Ô 3 (cách 6pt); <span class="text-primary fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước Ô 6; <span class="text-danger fw-bold">KHÔNG CÓ Ô 5a tên loại</span> ở giữa trang; Ô 3 không có chữ \'CV\'.';
       } else if (docType.startsWith('to_trinh') || docType === 'bao_cao') {
         iconEl.className = 'badge bg-warning text-dark p-3 fs-5 rounded-circle';
         iconEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i>';
         titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-warning-emphasis">SƠ ĐỒ TỜ TRÌNH, BÁO CÁO (Hình 1)</span>';
         descEl.innerHTML = 'Có <strong>Ô 5a (TÊN LOẠI & Trích yếu)</strong> ở giữa trang; <span class="text-danger fw-bold">BẮT BUỘC có Ô 9a (Kính gửi)</span> trước khi vào Ô 6; Bảng cuối trang gồm Ô 9b (Nơi nhận) và Ô 7a, 8, 7c, 7b.';
       } else {
-        // thong_bao_nhiem_vu, thong_bao_hoat_dong, bai_thu_hoach
+        // thong_bao_nhiem_vu, thong_bao_hoat_dong
         iconEl.className = 'badge bg-danger p-3 fs-5 rounded-circle';
         iconEl.innerHTML = '<i class="fa-solid fa-bullhorn"></i>';
         titleEl.innerHTML = 'Sơ đồ bố trí chuẩn: <span class="text-danger">SƠ ĐỒ THÔNG BÁO (Hình 3)</span>';
@@ -1391,7 +1393,7 @@
 
       // Kích hoạt subtab tương ứng
       setTimeout(() => {
-        if (docType === 'cong_van_de_nghi') {
+        if (docType === 'cong_van_de_nghi' || docType === 'bai_thu_hoach') {
           const subBtn = document.getElementById('subtab-schema-congvan');
           if (subBtn) bootstrap.Tab.getOrCreateInstance(subBtn).show();
         } else if (docType.startsWith('to_trinh') || docType === 'bao_cao') {
@@ -2018,8 +2020,10 @@
       const box9aEl = document.getElementById('ischema-box-9a');
 
       if (titleEl) {
-        if (docType === 'cong_van_de_nghi') {
-          titleEl.innerText = 'Sơ đồ Công văn (Hình 2 theo Nghị định 30)';
+        if (docType === 'cong_van_de_nghi' || docType === 'bai_thu_hoach') {
+          titleEl.innerText = (docType === 'bai_thu_hoach')
+            ? 'Sơ đồ Bài thu hoạch - Mẫu Công văn đề nghị (Hình 2 theo Nghị định 30)'
+            : 'Sơ đồ Công văn (Hình 2 theo Nghị định 30)';
           if (box5aEl) box5aEl.style.display = 'none'; // Công văn KHÔNG có Ô 5a
           if (box5bEl) box5bEl.style.display = 'block'; // Công văn CÓ Ô 5b trong bảng
           if (box9aEl) box9aEl.style.display = 'block'; // Công văn CÓ Ô 9a Kính gửi
@@ -2029,7 +2033,7 @@
           if (box5bEl) box5bEl.style.display = 'none';
           if (box9aEl) box9aEl.style.display = 'block';
         } else {
-          titleEl.innerText = 'Sơ đồ Thông báo & Bài thu hoạch (Hình 3 theo Nghị định 30)';
+          titleEl.innerText = 'Sơ đồ Thông báo (Hình 3 theo Nghị định 30)';
           if (box5aEl) box5aEl.style.display = 'block';
           if (box5bEl) box5bEl.style.display = 'none';
           if (box9aEl) box9aEl.style.display = 'none'; // Thông báo KHÔNG có Ô 9a
@@ -4011,7 +4015,7 @@ Hoặc gõ phân cách dấu gạch nối (-):
                 </li>
                 <li class="nav-item">
                   <button class="nav-link fw-bold" id="subtab-schema-thongbao" data-bs-toggle="tab" data-bs-target="#subcontent-thongbao">
-                    <i class="fa-solid fa-bullhorn text-danger me-1"></i> Sơ đồ 3: Thông báo & Bài thu hoạch
+                    <i class="fa-solid fa-bullhorn text-danger me-1"></i> Sơ đồ 3: Thông báo
                   </button>
                 </li>
               </ul>
@@ -4086,6 +4090,7 @@ Hoặc gõ phân cách dấu gạch nối (-):
                         <div class="card-body small">
                           <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
                           <ul class="mb-3 ps-3">
+                            <li><strong class="text-primary">1. Bài thu hoạch (Mẫu Công văn đề nghị - Tự giả định)</strong></li>
                             <li><strong>2. Công văn đề nghị</strong></li>
                             <li>Các loại công văn hành chính (xin ý kiến, trao đổi, hướng dẫn...)</li>
                           </ul>
@@ -4139,7 +4144,6 @@ Hoặc gõ phân cách dấu gạch nối (-):
                           <ul class="mb-3 ps-3">
                             <li><strong>3. Thông báo nhiệm vụ được giao</strong></li>
                             <li><strong>4. Thông báo thông tin hoạt động</strong></li>
-                            <li><strong>1. Bài thu hoạch</strong></li>
                           </ul>
 
                           <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>

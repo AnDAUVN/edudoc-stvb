@@ -2,20 +2,20 @@
   "bai_thu_hoach": {
     "id": "bai_thu_hoach",
     "name": "1. Bài thu hoạch",
-    "category": "Bài thu hoạch",
+    "category": "Công văn hành chính",
     "filename_suffix": "BaiThuHoach",
     "expected_data": {
-      "has_type_name": true,
-      "type_name": "BÀI THU HOẠCH",
-      "so_ky_hieu_pattern": "BTH",
-      "has_kinh_gui": false,
+      "has_type_name": false,
+      "so_ky_hieu_pattern": "DNTT",
+      "trich_yeu_prefix": "V/v",
+      "has_kinh_gui": true,
       "sign_type": "TRUC_TIEP"
     },
-    "is_body_blank": false,
-    "header_part": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/BTH-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÀI THU HOẠCH\ntrích yếu: Về kết quả học tập chuyên đề kỹ năng soạn thảo văn bản hành chính",
+    "is_body_blank": true,
+    "header_part": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.",
     "body_part": "",
-    "footer_part": "Nơi nhận:\n- Ban Giảng huấn (để báo cáo);\n- Lưu: Hồ sơ cá nhân.\n\nNGƯỜI THU HOẠCH\n\n\n\nNguyễn Văn A",
-    "raw_text": "cơ quan chủ quản: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\ncơ quan ban hành: KHOA CÔNG NGHỆ THÔNG TIN\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/BTH-ĐT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 25 tháng 10 năm 2026\ntên loại văn bản: BÀI THU HOẠCH\ntrích yếu: Về kết quả học tập chuyên đề kỹ năng soạn thảo văn bản hành chính\n\n\n\nNơi nhận:\n- Ban Giảng huấn (để báo cáo);\n- Lưu: Hồ sơ cá nhân.\n\nNGƯỜI THU HOẠCH\n\n\n\nNguyễn Văn A"
+    "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm",
+    "raw_text": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.\n\n[Nội dung văn bản: Sinh viên tự giả định nội dung theo thực tế bài giảng, không tuân thủ đề cố định. Sơ đồ bố trí bắt buộc tuân thủ Sơ đồ Công văn (Hình 2 theo Nghị định 30)]\n\nNơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm"
   },
   "cong_van_de_nghi": {
     "id": "cong_van_de_nghi",

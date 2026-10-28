@@ -1,7 +1,5 @@
 {
-  "is_open": false,
-  "enforce_roster": true,
+  "is_open": true,
   "active_doc_type": "cong_van_de_nghi",
-  "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
-  "updated_at": "2026-10-26 17:35:00"
+  "enforce_roster": true
 }

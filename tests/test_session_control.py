@@ -16,12 +16,22 @@ from app import app, SESSION_STATE_FILE, save_json_file, load_json_file
 class TestSessionControl(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
-        # Lưu lại state ban đầu
-        self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": False})
+        # Lưu lại state ban đầu và chuẩn bị state sạch cho test
+        self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": True, "active_doc_type": "cong_van_de_nghi"})
+        save_json_file(SESSION_STATE_FILE, {
+            "is_open": False,
+            "active_doc_type": "cong_van_de_nghi",
+            "enforce_roster": True,
+            "message": "Giảng viên đang giảng lý thuyết."
+        })
 
     def tearDown(self):
         # Khôi phục state
-        save_json_file(SESSION_STATE_FILE, self.original_state)
+        save_json_file(SESSION_STATE_FILE, {
+            "is_open": True,
+            "active_doc_type": "cong_van_de_nghi",
+            "enforce_roster": True
+        })
 
     def test_session_state_api(self):
         """API /api/session-state trả về đúng trạng thái và thông điệp"""

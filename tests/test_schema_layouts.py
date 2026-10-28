@@ -228,5 +228,22 @@ class TestSchemaLayouts(unittest.TestCase):
         issues_auto = [e["issue"].lower() for e in box_auto["errors"]]
         self.assertTrue(any("thiếu ô 5b" in iss for iss in issues_auto))
 
+    def test_bai_thu_hoach_applies_cong_van_schema(self):
+        """Bài thu hoạch áp dụng Sơ đồ Công văn (Hình 2 theo Nghị định 30): bắt buộc có Ô 9a Kính gửi, Ô 5b trong bảng, không có Ô 5a"""
+        validator = Decree30Validator.__new__(Decree30Validator)
+        validator.doc_type_id = "bai_thu_hoach"
+        
+        # 1. Bắt buộc có Ô 9a Kính gửi (nếu thiếu phải báo lỗi)
+        res_kg = validator.check_box_9a_kinh_gui(None, [])
+        self.assertIsNotNone(res_kg)
+        self.assertFalse(res_kg["passed"])
+        self.assertTrue(any("bắt buộc phải có" in err["issue"].lower() for err in res_kg["errors"]))
+
+        # 2. Bắt buộc là Sơ đồ Công văn: không có Ô 5a, yêu cầu Ô 5b trong bảng
+        res_5 = validator.check_box_5_trich_yeu(p_type=None, p_5b_table=None)
+        self.assertFalse(res_5["passed"])
+        issues = [err["issue"].lower() for err in res_5["errors"]]
+        self.assertTrue(any("thiếu ô 5b" in iss for iss in issues))
+
 if __name__ == "__main__":
     unittest.main()
