@@ -28,9 +28,10 @@ from engine.validator import Decree30Validator
 
 student_bp = Blueprint("student", __name__)
 
+@student_bp.route("/thi")
 @student_bp.route("/")
 def index():
-    """Giao diện Cổng làm bài dành cho Sinh viên"""
+    """Giao diện Cổng khảo thí & làm bài dành cho Sinh viên (/thi)"""
     state = get_session_state()
     active_doc_type = state.get("active_doc_type", "cong_van_de_nghi")
     return render_template("index.html", mode="student", active_doc_type=active_doc_type)

@@ -35,3 +35,10 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Compressed backup / archive files
+*.rar
+*.zip
+*.7z
+*.tar.gz
+*.bak

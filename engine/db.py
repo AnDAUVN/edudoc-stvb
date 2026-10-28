@@ -19,6 +19,7 @@ DB_PATH = os.path.join(DATA_DIR, "edudoc.db")
 SUBMISSIONS_JSON = os.path.join(DATA_DIR, "submissions.json")
 FRAUD_LOGS_JSON = os.path.join(DATA_DIR, "fraud_logs.json")
 STUDENT_SESSIONS_JSON = os.path.join(DATA_DIR, "student_sessions.json")
+SESSION_STATE_JSON = os.path.join(DATA_DIR, "session_state.json")
 
 def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """
@@ -92,6 +93,17 @@ def init_db(db_path: Optional[str] = None) -> None:
         );
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_mssv ON student_sessions(mssv);")
+        # 4. BẢNG ĐIỀU KHIỂN PHÒNG HỌC / CA THI (SESSION_STATE)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS session_state (
+            key TEXT PRIMARY KEY,
+            is_open INTEGER DEFAULT 1,
+            enforce_roster INTEGER DEFAULT 1,
+            active_doc_type TEXT DEFAULT 'cong_van_de_nghi',
+            message TEXT,
+            updated_at TEXT
+        );
+        """)
     conn.close()
 
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
@@ -114,6 +126,10 @@ def _sync_to_json_cache():
         sess = get_all_student_sessions()
         with open(STUDENT_SESSIONS_JSON, "w", encoding="utf-8") as f:
             json.dump(sess, f, ensure_ascii=False, indent=2)
+        # Sync session_state
+        state = get_session_state_db()
+        with open(SESSION_STATE_JSON, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
     except Exception as e:
         pass
 
@@ -201,6 +217,27 @@ def migrate_json_to_sqlite(db_path: Optional[str] = None) -> None:
                             float(val.get("timestamp", time.time())),
                             val.get("preview_count", 0)
                         ))
+                    conn.commit()
+            except Exception:
+                pass
+        # 4. Migrate Session State
+        cursor.execute("SELECT COUNT(*) FROM session_state;")
+        st_count = cursor.fetchone()[0]
+        if st_count == 0 and os.path.exists(SESSION_STATE_JSON):
+            try:
+                with open(SESSION_STATE_JSON, "r", encoding="utf-8") as f:
+                    old_st = json.load(f)
+                if isinstance(old_st, dict):
+                    conn.execute("""
+                        INSERT OR REPLACE INTO session_state (key, is_open, enforce_roster, active_doc_type, message, updated_at)
+                        VALUES ('current_session', ?, ?, ?, ?, ?)
+                    """, (
+                        1 if old_st.get("is_open", True) else 0,
+                        1 if old_st.get("enforce_roster", True) else 0,
+                        old_st.get("active_doc_type", "cong_van_de_nghi"),
+                        old_st.get("message", "Phòng làm bài đang mở."),
+                        old_st.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    ))
                     conn.commit()
             except Exception:
                 pass
@@ -424,6 +461,74 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
     finally:
         conn.close()
     _sync_to_json_cache()
+
+# =========================================================================
+# API SESSION STATE (ĐIỀU KHIỂN PHÒNG HỌC SQLITE WAL)
+# =========================================================================
+def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
+    """Lấy trạng thái điều khiển phòng học từ SQLite"""
+    conn = get_db_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+        if row:
+            return {
+                "is_open": bool(row["is_open"]),
+                "enforce_roster": bool(row["enforce_roster"]),
+                "active_doc_type": row["active_doc_type"] or "cong_van_de_nghi",
+                "message": row["message"] or "",
+                "updated_at": row["updated_at"] or ""
+            }
+        return {
+            "is_open": True,
+            "enforce_roster": True,
+            "active_doc_type": "cong_van_de_nghi",
+            "message": "Phòng làm bài đang mở.",
+            "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    finally:
+        conn.close()
+
+def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) -> None:
+    """Lưu hoặc cập nhật trạng thái phòng học vào SQLite (hỗ trợ merge dict)"""
+    conn = get_db_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+        cur_is_open = bool(row["is_open"]) if row else True
+        cur_enforce = bool(row["enforce_roster"]) if row else True
+        cur_active = (row["active_doc_type"] or "cong_van_de_nghi") if row else "cong_van_de_nghi"
+        cur_msg = (row["message"] or "") if row else "Phòng làm bài đang mở."
+
+        is_open = state["is_open"] if "is_open" in state else cur_is_open
+        enforce_roster = state["enforce_roster"] if "enforce_roster" in state else cur_enforce
+        active_doc_type = state["active_doc_type"] if "active_doc_type" in state else cur_active
+        message = state["message"] if "message" in state else cur_msg
+        updated_at = state.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+        with conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO session_state (key, is_open, enforce_roster, active_doc_type, message, updated_at)
+                VALUES ('current_session', ?, ?, ?, ?, ?)
+            """, (
+                1 if is_open else 0,
+                1 if enforce_roster else 0,
+                active_doc_type,
+                message,
+                updated_at
+            ))
+    finally:
+        conn.close()
+    try:
+        merged_dict = {
+            "is_open": bool(is_open),
+            "enforce_roster": bool(enforce_roster),
+            "active_doc_type": active_doc_type,
+            "message": message,
+            "updated_at": updated_at
+        }
+        with open(SESSION_STATE_JSON, "w", encoding="utf-8") as f:
+            json.dump(merged_dict, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 # Khởi tạo database tự động khi import
 init_db()

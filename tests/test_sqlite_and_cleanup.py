@@ -25,12 +25,13 @@ from engine.db import (
     get_db_connection, init_db, DB_PATH,
     get_all_submissions, save_submission, delete_submission_by_mssv,
     get_all_fraud_logs, add_fraud_log, clear_all_fraud_logs,
-    get_student_session, save_student_session
+    get_student_session, save_student_session,
+    get_session_state_db, save_session_state_db
 )
 from engine.security import generate_anti_cheat_token
 from engine.common import (
     STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
-    STUDENTS_ROSTER_FILE, load_json_file, save_json_file
+    STUDENTS_ROSTER_FILE, SESSION_STATE_FILE, load_json_file, save_json_file
 )
 import docx
 
@@ -241,6 +242,79 @@ class TestSqliteAndCleanup(unittest.TestCase):
         ]
         for pattern in required_patterns:
             self.assertIn(pattern, gitignore_content, f".gitignore phải chứa mẫu: {pattern}")
+
+    def test_06_session_state_sqlite_wal_sync(self):
+        """Kiểm tra đồng bộ trạng thái ca thi qua SQLite WAL và Dual-sync JSON"""
+        # 1. Lưu qua hàm SQLite DB
+        test_state = {
+            "is_open": True,
+            "enforce_roster": True,
+            "active_doc_type": "cong_van_de_nghi",
+            "message": "Kiểm tra phòng thi WAL mode"
+        }
+        save_session_state_db(test_state)
+
+        # Đọc từ DB
+        db_state = get_session_state_db()
+        self.assertTrue(db_state["is_open"])
+        self.assertEqual(db_state["active_doc_type"], "cong_van_de_nghi")
+        self.assertEqual(db_state["message"], "Kiểm tra phòng thi WAL mode")
+
+        # Đọc từ JSON qua load_json_file
+        cached_json = load_json_file(SESSION_STATE_FILE, {})
+        self.assertTrue(cached_json["is_open"])
+        self.assertEqual(cached_json["active_doc_type"], "cong_van_de_nghi")
+
+        # 2. Ghi qua save_json_file cũng tự động đồng bộ vào SQLite DB
+        save_json_file(SESSION_STATE_FILE, {
+            "is_open": False,
+            "enforce_roster": False,
+            "active_doc_type": "bai_thu_hoach",
+            "message": "Phòng thi đang khóa bài tập"
+        })
+        synced_db = get_session_state_db()
+        self.assertFalse(synced_db["is_open"])
+        self.assertFalse(synced_db["enforce_roster"])
+        self.assertEqual(synced_db["active_doc_type"], "bai_thu_hoach")
+
+        # Khôi phục trạng thái chuẩn
+        save_session_state_db(test_state)
+
+    def test_07_separated_routes_and_academic_navy_ui(self):
+        """Kiểm tra tách biệt các route (/thi, /quan-tri, /admin) và Academic Navy UI"""
+        # 1. Route Sinh viên (/thi và /)
+        res_thi = self.client.get("/thi")
+        self.assertEqual(res_thi.status_code, 200)
+        html_thi = res_thi.get_data(as_text=True)
+        self.assertIn("EDUDOC - HỆ THỐNG HUẤN LUYỆN & CHẤM BÀI STVB", html_thi)
+        self.assertIn("checklist-cards-container", html_thi)
+        self.assertIn("score-progress-container", html_thi)
+        self.assertIn("1e3a8a", html_thi.lower())  # Academic Navy accent
+
+        # 2. Route Giảng viên (/quan-tri và /admin)
+        res_quantri = self.client.get("/quan-tri")
+        self.assertEqual(res_quantri.status_code, 200)
+        html_quantri = res_quantri.get_data(as_text=True)
+        self.assertIn("EDUDOC - BÀN LÀM VIỆC GIẢNG VIÊN", html_quantri)
+        self.assertIn("content-analytics", html_quantri)
+        self.assertIn("tab-analytics", html_quantri)
+        self.assertIn("1e3a8a", html_quantri.lower())  # Academic Navy banner
+
+        res_admin = self.client.get("/admin")
+        self.assertEqual(res_admin.status_code, 200)
+
+    def test_08_clean_package_generator(self):
+        """Kiểm tra kịch bản đóng gói mã nguồn sạch (loại bỏ .git, __pycache__, rác >90%)"""
+        packager_path = os.path.join(ROOT_DIR, "tools", "create_clean_package.py")
+        bat_path = os.path.join(ROOT_DIR, "Tao_Ban_Sao_Luu_Gon_Nhe.bat")
+        self.assertTrue(os.path.exists(packager_path), "Công cụ create_clean_package.py phải tồn tại")
+        self.assertTrue(os.path.exists(bat_path), "File kịch bản Tao_Ban_Sao_Luu_Gon_Nhe.bat phải tồn tại")
+
+        # Kiểm tra file nén latest (nếu đã tạo) có kích thước siêu nhẹ (< 3MB)
+        latest_zip = os.path.join(ROOT_DIR, "edudoc_stvb_clean_code_latest.zip")
+        if os.path.exists(latest_zip):
+            size_mb = os.path.getsize(latest_zip) / (1024 * 1024)
+            self.assertLess(size_mb, 3.0, f"Bản sao lưu sạch phải < 3MB, thực tế: {size_mb:.2f} MB")
 
 if __name__ == "__main__":
     unittest.main()

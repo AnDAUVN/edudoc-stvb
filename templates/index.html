@@ -30,7 +30,7 @@
       --warning-light: #fffbeb;
       --info: #0284c7;
       --info-light: #f0f9ff;
-      --body-bg: #f8fafc;
+      --body-bg: #F8FAFC; /* Academic Soft Slate */
       --card-bg: #ffffff;
       --border-color: #e2e8f0;
       --border-focus: #3b82f6;
@@ -58,7 +58,7 @@
 
     /* HEADER */
     .header-banner {
-      background: linear-gradient(135deg, #091227 0%, #172554 40%, #1e40af 100%);
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #1E40AF 100%);
       color: white;
       padding: 1.15rem 0;
       border-bottom: 3.5px solid var(--accent);
@@ -448,20 +448,12 @@
           <button class="btn btn-warning rounded-pill fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
             <i class="fa-solid fa-book-bookmark me-1"></i> Tra cứu Thể thức NĐ 30
           </button>
-          {% if mode == 'teacher' %}
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-white text-danger rounded-pill px-3 py-2 fw-bold shadow-sm fs-6">
-              <i class="fa-solid fa-chalkboard-user me-1"></i> Bàn làm việc Giảng viên
-            </span>
-            <a href="/" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
-              <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Sinh viên
-            </a>
-          </div>
-          {% else %}
-          <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold shadow-sm fs-6">
-            <i class="fa-solid fa-user-graduate me-1"></i> Cổng Sinh viên
+          <span class="badge bg-white rounded-pill px-3 py-2 fw-bold shadow-sm fs-6 border" style="color: #1E3A8A !important;">
+            <i class="fa-solid fa-user-graduate me-1 text-primary"></i> Cổng Khảo thí Sinh viên (/thi)
           </span>
-          {% endif %}
+          <a href="/quan-tri" target="_blank" class="btn btn-outline-light rounded-pill px-3 py-1 btn-sm fw-semibold shadow-sm">
+            <i class="fa-solid fa-chalkboard-user me-1"></i> Bàn làm việc Giảng viên (/quan-tri)
+          </a>
         </div>
       </div>
     </div>
@@ -469,8 +461,7 @@
 
   <div class="container my-4">
 
-    {% if mode != 'teacher' %}
-    <!-- ==================== CỔNG SINH VIÊN ==================== -->
+    <!-- ==================== CỔNG KHẢO THÍ SINH VIÊN (/thi) ==================== -->
     <div id="student-view">
       
       <!-- THÔNG BÁO TẬP TRUNG NGHE GIẢNG LÝ THUYẾT (KHI GIẢNG VIÊN CHƯA MỞ KHÓA BÀI TẬP) -->
@@ -895,8 +886,12 @@
               </div>
             </div>
 
+                        <!-- THANH TIẾN TRÌNH & ĐIỂM SỐ NGHỊ ĐỊNH 30 -->
+            <div id="score-progress-container" class="mb-3"></div>
+
+            <!-- DANH SÁCH LỖI THEO 4 NHÓM THỂ THỨC (ACCORDION) -->
             <div id="checklist-cards-container" class="d-flex flex-column gap-3">
-              <!-- Render danh sách 9 Ô -->
+              <!-- Render 4 nhóm: 1. Khổ giấy & Lề; 2. Quốc hiệu & Số ký hiệu; 3. Nội dung & Bảng; 4. Chữ ký & Nơi nhận -->
             </div>
           </div>
 
@@ -905,406 +900,6 @@
       </div>
 
     </div>
-    {% else %}
-    <!-- ==================== CỔNG GIẢNG VIÊN ==================== -->
-    <div id="teacher-view">
-      
-      <!-- BỘ ĐIỀU KHIỂN PHÒNG HỌC: GIẢNG LÝ THUYẾT / CHO PHÉP LÀM BÀI -->
-      <div class="card card-custom p-4 mb-4 shadow-sm border-2" id="teacher-session-card">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-          <div class="d-flex align-items-center gap-3">
-            <span class="p-3 rounded-circle fs-2 shadow-sm text-center" id="session-status-icon-bg" style="width:68px;height:68px;display:flex;align-items:center;justify-content:center;">
-              <i class="fa-solid fa-chalkboard-user" id="session-status-icon"></i>
-            </span>
-            <div>
-              <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge fs-6 px-3 py-2 fw-bold" id="session-status-badge">ĐANG TẢI...</span>
-                <span class="text-muted small" id="session-status-time"></span>
-              </div>
-              <h5 class="fw-bold mb-1 text-dark" id="session-status-title">Trạng thái Phòng học</h5>
-              <div class="text-secondary small" id="session-status-desc">Hệ thống đang đồng bộ...</div>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-lg px-4 py-3 fw-bold shadow" id="btn-toggle-session" onclick="toggleExamSession()">
-              <i class="fa-solid fa-play me-2"></i> CHO PHÉP BẮT ĐẦU LÀM BÀI
-            </button>
-          </div>
-        </div>
-
-        <!-- CHỌN LOẠI VĂN BẢN GIAO BÀI TẬP CHO CẢ LỚP -->
-        <div class="mt-3 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="badge bg-primary px-3 py-2 fs-6">
-              <i class="fa-solid fa-bullseye me-1"></i> Loại văn bản giao làm bài:
-            </span>
-            <select id="teacher-sel-active-doc" class="form-select fw-bold text-primary border-primary shadow-xs" style="width: auto; min-width: 290px;" onchange="onTeacherChangeActiveDocType()">
-              <option value="bai_thu_hoach" {% if active_doc_type == 'bai_thu_hoach' %}selected{% endif %}>1. Bài thu hoạch</option>
-              <option value="cong_van_de_nghi" {% if active_doc_type == 'cong_van_de_nghi' %}selected{% endif %}>2. Công văn đề nghị</option>
-              <option value="thong_bao_nhiem_vu" {% if active_doc_type == 'thong_bao_nhiem_vu' %}selected{% endif %}>3. Thông báo nhiệm vụ được giao</option>
-              <option value="thong_bao_hoat_dong" {% if active_doc_type == 'thong_bao_hoat_dong' %}selected{% endif %}>4. Thông báo thông tin hoạt động</option>
-              <option value="to_trinh_xin_kinh_phi" {% if active_doc_type == 'to_trinh_xin_kinh_phi' %}selected{% endif %}>5. Tờ trình xin kinh phí</option>
-              <option value="to_trinh_nhan_su" {% if active_doc_type == 'to_trinh_nhan_su' %}selected{% endif %}>6. Tờ trình xin bổ sung nhân sự</option>
-              <option value="to_trinh_thiet_bi" {% if active_doc_type == 'to_trinh_thiet_bi' %}selected{% endif %}>7. Tờ trình xin máy móc thiết bị</option>
-              <option value="bao_cao" {% if active_doc_type == 'bao_cao' %}selected{% endif %}>8. Báo cáo</option>
-            </select>
-          </div>
-          <div class="small text-muted">
-            <i class="fa-solid fa-arrows-rotate fa-spin text-success me-1"></i>
-            Khi Thầy/Cô chọn tại đây, <strong>cổng sinh viên sẽ tự động mặc định chọn loại văn bản này</strong>.
-          </div>
-        </div>
-      </div>
-      
-      <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card-custom border-start border-primary border-4">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">SV Trong Danh Sách</small>
-                <h3 class="fw-bold text-primary mb-0 mt-1" id="stat-total-roster">0</h3>
-              </div>
-              <div class="stat-icon-wrapper bg-primary-subtle text-primary">
-                <i class="fa-solid fa-users"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card-custom border-start border-success border-4">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Bài Đã Nộp Hợp Lệ</small>
-                <h3 class="fw-bold text-success mb-0 mt-1" id="stat-total-submissions">0</h3>
-              </div>
-              <div class="stat-icon-wrapper bg-success-subtle text-success">
-                <i class="fa-solid fa-clipboard-check"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card-custom border-start border-danger border-4">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Cảnh Báo Gian Lận</small>
-                <h3 class="fw-bold text-danger mb-0 mt-1" id="stat-total-frauds">0</h3>
-              </div>
-              <div class="stat-icon-wrapper bg-danger-subtle text-danger">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card-custom border-start border-warning border-4">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <small class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Quy Chuẩn Thể Thức</small>
-                <h5 class="fw-bold text-dark mb-0 mt-2" style="font-size: 1.05rem;">NĐ 30/2020/NĐ-CP</h5>
-              </div>
-              <div class="stat-icon-wrapper bg-warning-subtle text-warning">
-                <i class="fa-solid fa-scale-balanced"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- QUẢN LÝ MÃ LỚP KN (KỸ NĂNG) -->
-      <div class="card card-custom p-4 mb-4 border-start border-danger border-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="fw-bold text-dark mb-0">
-            <i class="fa-solid fa-graduation-cap me-2 text-danger"></i> QUẢN LÝ MÃ LỚP KN (GIẢNG VIÊN TẠO ĐỂ QUẢN LÝ BÀI TẬP)
-          </h5>
-          <span class="badge bg-danger px-3 py-2 fw-bold" id="lbl-total-classes">0 Lớp</span>
-        </div>
-        <p class="text-secondary small mb-3">
-          Giảng viên tạo các <strong>Mã lớp KN</strong> (ví dụ: <code>22DTH01</code>, <code>23DTH02</code>, <code>KN01</code>...). Sinh viên sẽ chọn đúng Mã lớp của mình khi đăng nhập làm bài để Thầy/Cô dễ dàng lọc và quản lý bài nộp.
-        </p>
-        <div class="row g-3 align-items-center">
-          <div class="col-md-5">
-            <div class="input-group">
-              <input type="text" id="inp-new-class-code" class="form-control text-uppercase fw-bold" placeholder="Nhập mã lớp mới (VD: 22DTH03)">
-              <button class="btn btn-danger fw-bold" onclick="addNewClass()">
-                <i class="fa-solid fa-plus me-1"></i> Thêm Mã Lớp
-              </button>
-            </div>
-          </div>
-          <div class="col-md-7">
-            <div class="d-flex flex-wrap gap-2 align-items-center" id="class-badges-container">
-              <!-- Render badges of classes with delete button -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- QUẢN LÝ DANH SÁCH SINH VIÊN THEO LỚP (BẢO VỆ CHỈ SINH VIÊN TRONG LỚP MỚI ĐƯỢC LÀM BÀI) -->
-      <div class="card card-custom p-4 mb-4 border-start border-success border-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-          <div>
-            <h5 class="fw-bold text-dark mb-0">
-              <i class="fa-solid fa-user-check me-2 text-success"></i> QUẢN LÝ DANH SÁCH SINH VIÊN THEO LỚP (DANH SÁCH ĐƯỢC CẤP QUYỀN)
-            </h5>
-            <small class="text-secondary">Chống chia sẻ link tràn lan & Chặn tuyệt đối người ngoài vào thi hộ</small>
-          </div>
-          <div class="d-flex align-items-center gap-3">
-            <div class="form-check form-switch fs-5 pb-0 m-0">
-              <input class="form-check-input" type="checkbox" id="teacher-chk-enforce-roster" checked onchange="toggleEnforceRoster()">
-              <label class="form-check-label fw-bold text-dark fs-6" for="teacher-chk-enforce-roster">
-                Khóa ngoài danh sách: <span id="lbl-enforce-roster-status" class="text-success fw-bold">BẬT (Chỉ SV trong DS mới được làm bài)</span>
-              </label>
-            </div>
-            <span class="badge bg-success px-3 py-2 fw-bold" id="lbl-roster-class-count">0 Sinh viên</span>
-          </div>
-        </div>
-        <p class="text-secondary small mb-3">
-          Khi bật chế độ bảo vệ, sinh viên <strong>bắt buộc phải có MSSV trong danh sách lớp</strong> mới có thể Bắt đầu làm trắc nghiệm, Nhận file mẫu và Nộp bài thẩm định. Thầy/Cô có thể <strong>thêm từng sinh viên</strong> hoặc <strong>dán trực tiếp danh sách copy từ Excel / Google Sheets</strong>.
-        </p>
-
-        <div class="row g-3 align-items-center mb-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold small mb-1">
-              <i class="fa-solid fa-graduation-cap text-success me-1"></i> Chọn lớp để xem danh sách:
-            </label>
-            <select id="teacher-roster-sel-class" class="form-select fw-bold text-success border-success" onchange="loadClassRoster()">
-              <!-- Nạp danh sách lớp động -->
-            </select>
-          </div>
-          <div class="col-md-8 text-md-end pt-md-4">
-            <div class="btn-group shadow-sm">
-              <button class="btn btn-success fw-bold px-3" onclick="openAddStudentModal()">
-                <i class="fa-solid fa-user-plus me-1"></i> Thêm 1 Sinh Viên
-              </button>
-              <button class="btn btn-outline-success fw-bold px-3" onclick="openImportStudentsModal()">
-                <i class="fa-solid fa-file-excel me-1"></i> Dán danh sách từ Excel
-              </button>
-              <button class="btn btn-outline-danger fw-bold px-3" onclick="clearClassRoster()">
-                <i class="fa-solid fa-trash-can me-1"></i> Xóa cả lớp
-              </button>
-              <button class="btn btn-outline-secondary px-2" title="Làm mới danh sách" onclick="loadClassRoster()">
-                <i class="fa-solid fa-arrows-rotate"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- BẢNG DANH SÁCH SINH VIÊN TRONG LỚP -->
-        <div class="table-responsive bg-white rounded border">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 50px;" class="text-center">STT</th>
-                <th style="width: 90px;">SBD</th>
-                <th style="width: 140px;">MSSV</th>
-                <th>Họ và Tên Sinh Viên</th>
-                <th style="width: 150px;" class="text-center">Trạng thái làm bài</th>
-                <th style="width: 80px;" class="text-center">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="teacher-roster-tbody">
-              <tr>
-                <td colspan="6" class="text-center text-muted py-4">Đang tải danh sách sinh viên...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- QUẢN LÝ NỘI DUNG FILE MẪU BÀI TẬP (GIẢNG VIÊN TÙY CHỈNH HOẶC ĐỂ TRỐNG) -->
-      <div class="card card-custom p-4 mb-4 border-start border-warning border-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold text-dark mb-0">
-            <i class="fa-solid fa-file-pen me-2 text-warning"></i> QUẢN LÝ NỘI DUNG FILE MẪU BÀI TẬP (GIẢNG VIÊN TỰ ĐƯA VÔ HOẶC ĐỂ TRỐNG)
-          </h5>
-          <span class="badge bg-warning text-dark px-3 py-2 fw-bold">Tùy biến đề bài & Để trống</span>
-        </div>
-        <p class="text-secondary small mb-3">
-          Thầy/Cô có thể <strong>tự gõ/paste nội dung bài tập của mình</strong> vào ô bên dưới, hoặc chọn <strong>"Để trống phần nội dung"</strong> để sinh viên tự gõ theo bài giảng trực tiếp tại lớp.
-        </p>
-        
-        <div class="row g-3">
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Chọn loại văn bản cần sửa đề:</label>
-            <select id="teacher-sel-doc" class="form-select fw-semibold text-primary" onchange="onTeacherDocSelect()">
-              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
-              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
-              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
-              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
-              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
-              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
-              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
-              <option value="bao_cao">8. Báo cáo</option>
-            </select>
-          </div>
-          <div class="col-md-7 d-flex align-items-end">
-            <div class="form-check form-switch fs-5 pb-1">
-              <input class="form-check-input" type="checkbox" id="teacher-chk-blank" onchange="onTeacherBlankToggle()">
-              <label class="form-check-label fw-bold text-danger fs-6" for="teacher-chk-blank">
-                Để trống phần thân bài trong file mẫu (Sinh viên tự gõ nội dung theo bài giảng trên lớp)
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label fw-semibold">Phần Thân bài / Nội dung văn bản (Giảng viên tự soạn hoặc dán vào đây):</label>
-          <textarea id="teacher-txt-body" class="form-control font-monospace" rows="6" placeholder="Nhập nội dung bài tập thô mà Thầy/Cô muốn đưa vào file mẫu..."></textarea>
-          <div id="teacher-blank-hint" class="alert alert-warning py-2 mt-2 small d-none">
-            <i class="fa-solid fa-info-circle me-1"></i> Chế độ hiện tại: <strong>ĐANG ĐỂ TRỐNG PHẦN THÂN BÀI</strong>. File mẫu sinh ra sẽ để trống phần nội dung để sinh viên tự gõ theo hướng dẫn trên lớp.
-          </div>
-        </div>
-
-        <div class="mt-3 text-end">
-          <button class="btn btn-primary px-4 fw-bold" onclick="saveTeacherTemplateConfig()">
-            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu cấu hình Đề bài cho File Mẫu
-          </button>
-        </div>
-      </div>
-
-      <!-- QUẢN LÝ NGÂN HÀNG CÂU HỎI TRẮC NGHIỆM (CHỈNH SỬA & BỔ SUNG CHO TẤT CẢ VĂN BẢN) -->
-      <div class="card card-custom p-4 mb-4 border-start border-info border-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold text-dark mb-0">
-            <i class="fa-solid fa-clipboard-question me-2 text-info"></i> QUẢN LÝ NGÂN HÀNG CÂU HỎI TRẮC NGHIỆM (SỬA & BỔ SUNG CHO TẤT CẢ VĂN BẢN)
-          </h5>
-          <span class="badge bg-info text-dark px-3 py-2 fw-bold" id="lbl-total-quiz-count">0 Câu hỏi</span>
-        </div>
-        <p class="text-secondary small mb-3">
-          Thầy/Cô có thể <strong>xem, chỉnh sửa, xóa hoặc bổ sung thêm các câu hỏi trắc nghiệm</strong> thể thức cho tất cả 8 loại văn bản. Sinh viên phải trả lời đạt tỷ lệ theo yêu cầu mới nhận được file mẫu bài tập.
-        </p>
-        
-        <div class="row g-3 align-items-center mb-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Chọn loại văn bản để quản lý câu hỏi:</label>
-            <select id="teacher-quiz-sel-doc" class="form-select fw-semibold text-primary" onchange="loadTeacherQuizQuestions()">
-              <option value="bai_thu_hoach">1. Bài thu hoạch</option>
-              <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
-              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
-              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
-              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
-              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
-              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
-              <option value="bao_cao">8. Báo cáo</option>
-            </select>
-          </div>
-          <div class="col-md-6 text-end d-flex justify-content-md-end align-items-end">
-            <button class="btn btn-success fw-bold px-3 py-2" onclick="openAddQuestionModal()">
-              <i class="fa-solid fa-circle-plus me-1"></i> Bổ Sung Câu Hỏi Mới
-            </button>
-          </div>
-        </div>
-
-        <div id="teacher-quiz-list-container" class="mt-3">
-          <!-- Danh sách câu hỏi render tại đây -->
-        </div>
-      </div>
-
-      <!-- NHẬT KÝ BẮT GIAN LẬN (RED ALERTS) -->
-      <div class="card card-custom p-4 mb-4 border-danger">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <div class="d-flex align-items-center gap-3">
-            <h5 class="fw-bold text-danger mb-0">
-              <i class="fa-solid fa-triangle-exclamation me-2"></i> NHẬT KÝ THANH TRA SAO CHÉP BÀI (HỒ SƠ VI PHẠM)
-            </h5>
-            <span class="badge bg-danger text-white px-2 py-1" id="lbl-fraud-badge">0 vi phạm</span>
-            <div class="d-flex align-items-center gap-2 ms-2">
-              <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap"><i class="fa-solid fa-filter text-danger me-1"></i>Lọc Lớp:</label>
-              <select id="sel-filter-fraud-class" class="form-select form-select-sm fw-bold border-danger text-danger" style="width: auto;" onchange="onClassFilterChange(this)">
-                <option value="ALL">-- Tất cả các lớp --</option>
-              </select>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-danger fw-semibold" onclick="clearAllFraudLogs()">
-              <i class="fa-solid fa-trash me-1"></i> Xóa sạch nhật ký vi phạm
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="loadTeacherData()">
-              <i class="fa-solid fa-rotate-right me-1"></i> Làm mới
-            </button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-danger">
-              <tr>
-                <th>Mã lớp KN</th>
-                <th>Thời gian</th>
-                <th>Sinh viên sao chép (Người nộp)</th>
-                <th>Sinh viên cho chép (Nguồn gốc)</th>
-                <th>Hình thức vi phạm</th>
-                <th>Bằng chứng kỹ thuật số</th>
-                <th>Đề xuất xử lý</th>
-                <th class="text-center">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-fraud-body">
-              <tr>
-                <td colspan="8" class="text-center text-muted py-3">Chưa phát hiện trường hợp gian lận nào.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- DANH SÁCH BÀI ĐÃ NỘP -->
-      <div class="card card-custom p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <div class="d-flex align-items-center gap-3">
-            <h5 class="fw-bold text-primary mb-0">
-              <i class="fa-solid fa-list-check me-2"></i> DANH SÁCH BÀI TẬP ĐÃ HOÀN THÀNH ĐÚNG 100% NGHỊ ĐỊNH 30
-            </h5>
-            <div class="d-flex align-items-center gap-2">
-              <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap"><i class="fa-solid fa-filter text-danger me-1"></i>Lọc Mã lớp KN:</label>
-              <select id="sel-filter-class" class="form-select form-select-sm fw-bold border-danger text-danger" style="width: auto;" onchange="onClassFilterChange(this)">
-                <option value="ALL">-- Tất cả các lớp --</option>
-              </select>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <div class="input-group input-group-sm" style="width: 220px;">
-              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-secondary"></i></span>
-              <input type="text" id="inp-search-submissions" class="form-control" placeholder="Tìm MSSV hoặc Tên..." onkeyup="searchSubmissions()">
-            </div>
-            <button class="btn btn-sm btn-success fw-bold text-nowrap" onclick="exportSubmissionsCSV()">
-              <i class="fa-solid fa-file-excel me-1"></i> Xuất CSV / Excel
-            </button>
-            <button class="btn btn-sm btn-outline-primary" onclick="loadTeacherData()">
-              <i class="fa-solid fa-rotate-right me-1"></i> Cập nhật
-            </button>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Mã lớp KN</th>
-                <th>SBD</th>
-                <th>MSSV</th>
-                <th>Họ và tên</th>
-                <th>Loại văn bản</th>
-                <th>Tên file nộp</th>
-                <th>Thời gian nộp</th>
-                <th>Thời gian làm bài & Cảnh báo</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-submissions-body">
-              <tr>
-                <td colspan="10" class="text-center text-muted py-4">
-                  <i class="fa-solid fa-inbox text-secondary fa-2x mb-2 d-block opacity-50"></i>
-                  Chưa có bài nộp nào trong danh sách.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-    {% endif %}
-
   </div>
 
   <script>
@@ -1924,6 +1519,15 @@
       }
     }
 
+    function getChecklistGroup(boxId) {
+      const b = String(boxId).toLowerCase();
+      if (b === 'margins' || b === 'margin') return 1; // 1. Khổ giấy & Căn lề
+      if (['1', '2', '3', '4', '5a', '5b'].includes(b)) return 2; // 2. Quốc hiệu & Số ký hiệu
+      if (['tables', 'table', '9a', '6'].includes(b)) return 3; // 3. Nội dung & Bảng biểu
+      if (['7', '7a', '7b', '8', '9b'].includes(b)) return 4; // 4. Chữ ký & Nơi nhận
+      return 3;
+    }
+
     function renderChecklist(data) {
       document.getElementById('lbl-score-percentage').innerText = `${data.percentage}%`;
       document.getElementById('lbl-score-ratio').innerText = `Đạt ${data.passed_count} / ${data.total_count} tiêu chuẩn Nghị định 30`;
@@ -1959,53 +1563,160 @@
         btnSubmit.setAttribute('disabled', 'true');
       }
 
+      // 1. THANH TIẾN TRÌNH & ĐIỂM SỐ NGHỊ ĐỊNH 30 (PROGRESS BAR)
+      const score = (data.score !== undefined) ? Number(data.score).toFixed(1) : ((data.percentage / 10).toFixed(1));
+      const pct = Math.round(data.percentage || 0);
+
+      let barColor = 'bg-success';
+      let statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6 fw-bold"><i class="fa-solid fa-circle-check me-1"></i> ĐẠT CHUẨN 100% NĐ 30</span>';
+      if (pct < 60) {
+        barColor = 'bg-danger';
+        statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fs-6 fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> CẦN SỬA NHIỀU LỖI</span>';
+      } else if (pct < 100) {
+        barColor = 'bg-warning text-dark';
+        statusBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 fs-6 fw-bold"><i class="fa-solid fa-wrench me-1"></i> CẦN HOÀN THIỆN THỂ THỨC</span>';
+      }
+
+      const scoreContainer = document.getElementById('score-progress-container');
+      if (scoreContainer) {
+        scoreContainer.innerHTML = `
+          <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white" style="border-top: 4px solid #1E3A8A !important;">
+            <div class="card-body p-3 p-md-4">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div>
+                  <div class="text-uppercase small fw-bold text-muted">Tiến độ đạt chuẩn thể thức Nghị định 30</div>
+                  <h3 class="fw-bold mb-0 text-navy" style="color: #1E3A8A;">${score} <span class="fs-5 text-muted">/ 10 Điểm</span> <span class="fs-5 text-primary">(${pct}%)</span></h3>
+                </div>
+                <div>${statusBadge}</div>
+              </div>
+              <div class="progress mb-2" style="height: 14px; border-radius: 8px; background-color: #E2E8F0;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated ${barColor}" 
+                     role="progressbar" 
+                     style="width: ${pct}%; transition: width 0.8s ease;" 
+                     aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <div class="d-flex justify-content-between text-muted small fw-semibold">
+                <span><i class="fa-solid fa-circle-check text-success me-1"></i> Đạt: <strong class="text-success">${data.passed_count}</strong> / ${data.total_count} tiêu chuẩn</span>
+                <span><i class="fa-solid fa-triangle-exclamation ${data.failed_count > 0 ? 'text-danger' : 'text-success'} me-1"></i> Lỗi cần sửa: <strong class="${data.failed_count > 0 ? 'text-danger' : 'text-success'}">${data.failed_count}</strong> mục</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. PHÂN LOẠI 4 NHÓM THỂ THỨC (ACCORDION)
+      const groups = {
+        1: { id: "group-margins", name: "1. Khổ giấy & Căn lề", icon: "fa-ruler-combined", items: [], errorsCount: 0 },
+        2: { id: "group-headers", name: "2. Quốc hiệu & Số ký hiệu (Ô 1 - Ô 5b)", icon: "fa-landmark", items: [], errorsCount: 0 },
+        3: { id: "group-body", name: "3. Nội dung & Bảng biểu (Ô 6, Ô 9a, Bảng)", icon: "fa-file-lines", items: [], errorsCount: 0 },
+        4: { id: "group-footer", name: "4. Chữ ký & Nơi nhận (Ô 7, Ô 8, Ô 9b)", icon: "fa-signature", items: [], errorsCount: 0 }
+      };
+
+      data.checklist.forEach(item => {
+        const gKey = getChecklistGroup(item.box_id);
+        groups[gKey].items.push(item);
+        if (!item.passed) {
+          groups[gKey].errorsCount += (item.errors ? item.errors.length : 1);
+        }
+      });
+
+      // 3. RENDER ACCORDION 4 NHÓM THỂ THỨC
       const container = document.getElementById('checklist-cards-container');
       container.innerHTML = '';
 
-      data.checklist.forEach(item => {
-        let errsHtml = '';
-        if (!item.passed) {
-          errsHtml = '<div class="mt-2 pt-2 border-top border-danger border-opacity-25">';
-          item.errors.forEach(err => {
-            errsHtml += `
-              <div class="error-item">
-                <div class="text-danger fw-semibold small mb-1">
-                  <i class="fa-solid fa-circle-xmark me-1"></i> <strong>Lỗi thể thức:</strong> ${escapeHtml(err.issue)}
+      let accordionHtml = '<div class="accordion d-flex flex-column gap-3" id="accordionChecklistGroups">';
+
+      [1, 2, 3, 4].forEach(gIdx => {
+        const grp = groups[gIdx];
+        const hasErr = grp.errorsCount > 0;
+        const collapseId = `collapseGroup${gIdx}`;
+        const headerId = `headingGroup${gIdx}`;
+
+        // Tự động mở nhóm nếu có lỗi, hoặc nếu tất cả đều đạt thì mở nhóm 1
+        const shouldShow = hasErr || (data.failed_count === 0 && gIdx === 1);
+
+        const grpBadge = hasErr
+          ? `<span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>${grp.errorsCount} lỗi cần sửa</span>`
+          : `<span class="badge bg-success text-white px-2 py-1"><i class="fa-solid fa-check me-1"></i>Đạt chuẩn</span>`;
+
+        let itemsHtml = '';
+        grp.items.forEach(item => {
+          let errRows = '';
+          if (!item.passed) {
+            item.errors.forEach(err => {
+              errRows += `
+                <div class="row g-2 mt-2 pt-2 border-top border-danger border-opacity-25 error-item-row">
+                  <div class="col-md-6">
+                    <div class="p-2 rounded bg-danger-subtle border border-danger-subtle h-100">
+                      <div class="text-danger fw-bold small mb-1">
+                        <i class="fa-solid fa-circle-xmark me-1"></i> Lỗi thể thức phát hiện:
+                      </div>
+                      <div class="small text-dark fw-semibold">
+                        ${escapeHtml(err.issue)}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="p-2 rounded bg-primary-subtle border border-primary-subtle h-100">
+                      <div class="text-primary fw-bold small mb-1" style="color: #1E3A8A !important;">
+                        <i class="fa-solid fa-lightbulb text-warning me-1"></i> Hướng dẫn khắc phục nhanh trong Word:
+                      </div>
+                      <div class="small text-dark">
+                        ${escapeHtml(err.fix || 'Kiểm tra lại định dạng trong Word theo quy định Nghị định 30.')}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                ${err.fix ? `
-                <div class="text-secondary small">
-                  <i class="fa-solid fa-wrench text-warning me-1"></i> <strong>Cách sửa theo NĐ 30:</strong> ${escapeHtml(err.fix)}
-                </div>` : ''}
+              `;
+            });
+          } else {
+            errRows = `
+              <div class="mt-2 text-success small fw-semibold">
+                <i class="fa-solid fa-check-double me-1"></i> Đã tuân thủ chính xác quy tắc thể thức theo Nghị định 30/2020/NĐ-CP.
               </div>
             `;
-          });
-          errsHtml += '</div>';
-        } else {
-          errsHtml = `
-            <div class="mt-2 text-success small fw-semibold">
-              <i class="fa-solid fa-check-double me-1"></i> Đã tuân thủ chính xác quy tắc thể thức theo Nghị định 30/2020/NĐ-CP.
+          }
+
+          const iconClass = item.passed ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-circle-exclamation text-danger';
+          const cardClass = item.passed ? 'box-card passed p-3 rounded-2 shadow-xs mb-2' : 'box-card failed p-3 rounded-2 shadow-xs mb-2';
+          const itemBadge = item.passed 
+            ? '<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-1"><i class="fa-solid fa-check me-1"></i> ĐẠT CHUẨN</span>'
+            : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> CẦN SỬA</span>';
+
+          itemsHtml += `
+            <div class="${cardClass}" id="card-box-${item.box_id}">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold fs-6 text-dark">
+                  <i class="${iconClass} me-2"></i> ${escapeHtml(item.name)}
+                </span>
+                ${itemBadge}
+              </div>
+              ${errRows}
             </div>
           `;
-        }
+        });
 
-        const iconClass = item.passed ? 'fa-solid fa-circle-check text-success fs-5' : 'fa-solid fa-circle-exclamation text-danger fs-5';
-        const cardClass = item.passed ? 'box-card passed p-3 rounded shadow-xs' : 'box-card failed p-3 rounded shadow-xs';
-        const badgeHtml = item.passed 
-          ? '<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold px-2 py-1"><i class="fa-solid fa-check me-1"></i> ĐẠT CHUẨN</span>'
-          : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> CẦN CHỈNH SỬA</span>';
-
-        container.innerHTML += `
-          <div class="${cardClass}" id="card-box-${item.box_id}">
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold fs-6 text-dark">
-                <i class="${iconClass} me-2"></i> ${escapeHtml(item.name)}
-              </span>
-              ${badgeHtml}
+        accordionHtml += `
+          <div class="accordion-item border rounded-3 overflow-hidden shadow-xs bg-white">
+            <h2 class="accordion-header" id="${headerId}">
+              <button class="accordion-button ${shouldShow ? '' : 'collapsed'} fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="${shouldShow ? 'true' : 'false'}" aria-controls="${collapseId}" style="color: #1E3A8A;">
+                <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                  <span><i class="fa-solid ${grp.icon} text-primary me-2"></i>${grp.name}</span>
+                  ${grpBadge}
+                </div>
+              </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse ${shouldShow ? 'show' : ''}" aria-labelledby="${headerId}">
+              <div class="accordion-body p-3 bg-light bg-opacity-25">
+                ${itemsHtml}
+              </div>
             </div>
-            ${errsHtml}
           </div>
         `;
       });
+
+      accordionHtml += '</div>';
+      container.innerHTML = accordionHtml;
 
       // Cập nhật trạng thái trực quan trên Sơ đồ Interactive Schema
       updateInteractiveSchema(data);

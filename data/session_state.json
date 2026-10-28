@@ -1,5 +1,7 @@
 {
   "is_open": true,
+  "enforce_roster": true,
   "active_doc_type": "cong_van_de_nghi",
-  "enforce_roster": true
+  "message": "Kiểm tra phòng thi WAL mode",
+  "updated_at": "2026-10-29 04:33:16"
 }

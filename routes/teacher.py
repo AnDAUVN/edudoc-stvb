@@ -15,7 +15,7 @@ from flask import Blueprint, request, jsonify, render_template, send_file, Respo
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
     CLASSES_FILE, SESSION_STATE_FILE, STUDENTS_ROSTER_FILE, QUESTIONS_FILE,
-    load_json_file, save_json_file, get_session_state, parse_students_text
+    load_json_file, save_json_file, get_session_state, save_session_state, parse_students_text
 )
 from engine.db import (
     get_all_submissions, delete_submission_by_mssv,
@@ -24,9 +24,11 @@ from engine.db import (
 
 teacher_bp = Blueprint("teacher", __name__)
 
+@teacher_bp.route("/quan-tri")
 @teacher_bp.route("/teacher")
+@teacher_bp.route("/admin")
 def teacher_portal():
-    """Giao diện Bàn làm việc độc lập dành cho Giảng viên"""
+    """Giao diện Bàn làm việc & Dashboard Quản trị Khảo thí dành cho Giảng viên (/quan-tri)"""
     state = get_session_state()
     active_doc_type = state.get("active_doc_type", "cong_van_de_nghi")
     # Render teacher.html chuyên biệt, an toàn và tối ưu tải trang
@@ -49,7 +51,7 @@ def api_set_session_state():
         "message": new_message,
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    save_json_file(SESSION_STATE_FILE, updated_state)
+    save_session_state(updated_state)
     return jsonify({
         "success": True,
         "session_state": updated_state,
@@ -66,7 +68,7 @@ def api_set_active_doc():
     state = get_session_state()
     state["active_doc_type"] = doc_type
     state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_json_file(SESSION_STATE_FILE, state)
+    save_session_state(state)
     return jsonify({
         "success": True,
         "active_doc_type": doc_type,
@@ -84,7 +86,7 @@ def toggle_roster_mode():
     else:
         state["enforce_roster"] = not state.get("enforce_roster", True)
     state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_json_file(SESSION_STATE_FILE, state)
+    save_session_state(state)
     return jsonify({
         "success": True,
         "enforce_roster": state["enforce_roster"],

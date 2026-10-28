@@ -29,6 +29,12 @@ for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
 
 def load_json_file(file_path: str, default_val: Any) -> Any:
     """Nạp tệp JSON an toàn với giá trị mặc định khi có lỗi"""
+    try:
+        if os.path.normcase(os.path.abspath(file_path)) == os.path.normcase(os.path.abspath(SESSION_STATE_FILE)):
+            from engine.db import get_session_state_db
+            return get_session_state_db()
+    except Exception:
+        pass
     if os.path.exists(file_path):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -41,22 +47,40 @@ def save_json_file(file_path: str, data: Any) -> None:
     """Ghi dữ liệu ra tệp JSON với định dạng utf-8 thụt đầu dòng đẹp"""
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    try:
+        if os.path.normcase(os.path.abspath(file_path)) == os.path.normcase(os.path.abspath(SESSION_STATE_FILE)) and isinstance(data, dict):
+            from engine.db import save_session_state_db
+            save_session_state_db(data)
+    except Exception:
+        pass
 
 def get_session_state() -> Dict[str, Any]:
-    """Lấy trạng thái điều khiển phòng học"""
-    default_state = {
-        "is_open": False,
-        "enforce_roster": True,
-        "active_doc_type": "cong_van_de_nghi",
-        "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
-        "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    state = load_json_file(SESSION_STATE_FILE, default_state)
-    if "enforce_roster" not in state:
-        state["enforce_roster"] = True
-    if "active_doc_type" not in state:
-        state["active_doc_type"] = "cong_van_de_nghi"
-    return state
+    """Lấy trạng thái điều khiển phòng học từ SQLite WAL (có cache JSON)"""
+    try:
+        from engine.db import get_session_state_db
+        return get_session_state_db()
+    except Exception:
+        default_state = {
+            "is_open": False,
+            "enforce_roster": True,
+            "active_doc_type": "cong_van_de_nghi",
+            "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
+            "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        state = load_json_file(SESSION_STATE_FILE, default_state)
+        if "enforce_roster" not in state:
+            state["enforce_roster"] = True
+        if "active_doc_type" not in state:
+            state["active_doc_type"] = "cong_van_de_nghi"
+        return state
+
+def save_session_state(state: Dict[str, Any]) -> None:
+    """Lưu trạng thái điều khiển phòng học vào SQLite WAL và đồng bộ JSON"""
+    try:
+        from engine.db import save_session_state_db
+        save_session_state_db(state)
+    except Exception:
+        save_json_file(SESSION_STATE_FILE, state)
 
 def is_session_open(app_testing: bool = False) -> bool:
     """Kiểm tra xem phòng thi/bài tập có đang mở cho sinh viên không"""

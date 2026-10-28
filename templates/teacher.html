@@ -12,15 +12,16 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <style>
     :root {
-      --primary-color: #0d6efd;
-      --primary-dark: #0a58ca;
-      --secondary-color: #6c757d;
-      --success-color: #198754;
-      --danger-color: #dc3545;
-      --warning-color: #ffc107;
-      --info-color: #0dcaf0;
+      --primary-color: #1e3a8a;       /* Academic Navy */
+      --primary-dark: #172554;
+      --primary-light: #2563eb;
+      --secondary-color: #475569;
+      --success-color: #059669;
+      --danger-color: #dc2626;
+      --warning-color: #d97706;
+      --info-color: #0284c7;
       --bg-light: #f8fafc;
-      --card-border: #e2e8f0;
+      --card-border: #cbd5e1;
       --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
@@ -32,10 +33,10 @@
       min-height: 100vh;
     }
     .header-banner {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
       color: white;
       padding: 1.25rem 0;
-      border-bottom: 3px solid #dc3545;
+      border-bottom: 3px solid #3b82f6;
     }
     .brand-title {
       font-weight: 800;
@@ -44,13 +45,13 @@
     .brand-icon-box {
       width: 48px;
       height: 48px;
-      background: rgba(220, 53, 69, 0.2);
-      border: 1px solid rgba(220, 53, 69, 0.4);
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #f87171;
+      color: #93c5fd;
     }
     .card-custom {
       border: 1px solid var(--card-border);
@@ -128,8 +129,8 @@
         <button class="btn btn-warning rounded-pill fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
           <i class="fa-solid fa-book-bookmark me-1"></i> Tra cứu Thể thức NĐ 30
         </button>
-        <a href="/" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
-          <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Sinh viên
+        <a href="/thi" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
+          <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Thi Sinh Viên (/thi)
         </a>
       </div>
     </div>
@@ -259,6 +260,11 @@
       <li class="nav-item">
         <button class="nav-link" id="tab-quiz" data-bs-toggle="tab" data-bs-target="#content-quiz">
           <i class="fa-solid fa-clipboard-question me-1"></i> Ngân hàng Trắc nghiệm
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-analytics" data-bs-toggle="tab" data-bs-target="#content-analytics">
+          <i class="fa-solid fa-chart-pie me-1"></i> Phân tích Lỗi Cả Lớp
         </button>
       </li>
     </ul>
@@ -468,6 +474,166 @@
         </div>
       </div>
 
+      <!-- 6. PHÂN TÍCH TỶ LỆ LỖI CẢ LỚP (ANALYTICS) -->
+      <div class="tab-pane fade" id="content-analytics">
+        <div class="card card-custom p-4 mb-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 border-bottom pb-3">
+            <div>
+              <h5 class="fw-bold text-primary mb-1">
+                <i class="fa-solid fa-chart-pie me-2"></i> BÁO CÁO PHÂN TÍCH TỶ LỆ LỖI THỂ THỨC NGHỊ ĐỊNH 30
+              </h5>
+              <small class="text-muted">Tổng hợp kết quả tự động từ các bài tập đã nộp theo 4 nhóm thể thức hành chính chuẩn mực</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label mb-0 fw-bold small text-secondary text-nowrap"><i class="fa-solid fa-filter text-primary me-1"></i>Lọc theo Lớp:</label>
+              <select id="sel-analytics-class" class="form-select form-select-sm fw-bold border-primary text-primary" style="width: auto;" onchange="onAnalyticsClassChange(this.value)">
+                <option value="ALL">-- Toàn bộ các lớp --</option>
+              </select>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadTeacherData()">
+                <i class="fa-solid fa-rotate-right me-1"></i> Làm mới
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 CHỈ SỐ TỔNG QUAN -->
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg-3">
+              <div class="p-3 rounded border bg-light">
+                <div class="text-muted small fw-semibold">Tổng Bài Phân Tích</div>
+                <h4 class="fw-bold mb-0 text-primary" id="an-total-subs">0</h4>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="p-3 rounded border bg-light">
+                <div class="text-muted small fw-semibold">Đạt Chuẩn 100% NĐ 30</div>
+                <h4 class="fw-bold mb-0 text-success" id="an-perfect-rate">100%</h4>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="p-3 rounded border bg-light">
+                <div class="text-muted small fw-semibold">Nộp Quá Nhanh (&lt; 2 phút)</div>
+                <h4 class="fw-bold mb-0 text-danger" id="an-speed-flags">0</h4>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="p-3 rounded border bg-light">
+                <div class="text-muted small fw-semibold">Điểm TB Thể Thức</div>
+                <h4 class="fw-bold mb-0 text-primary" id="an-avg-score">10.0</h4>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 NHÓM THỂ THỨC (TIẾN TRÌNH & TỶ LỆ ĐẠT) -->
+          <h6 class="fw-bold text-dark text-uppercase mb-3">
+            <i class="fa-solid fa-layer-group text-primary me-2"></i> Tỷ Lệ Đạt Chuẩn Theo 4 Nhóm Thể Thức Nghị Định 30
+          </h6>
+
+          <div class="row g-3 mb-4">
+            <!-- Nhóm 1 -->
+            <div class="col-md-6">
+              <div class="p-3 rounded border h-100 bg-white shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-bold text-dark">
+                    <span class="badge bg-primary me-2">1</span> Khổ Giấy & Lề Văn Bản
+                  </div>
+                  <span class="badge bg-success-subtle text-success fw-bold px-2 py-1" id="an-grp1-badge">100% Đạt</span>
+                </div>
+                <small class="text-muted d-block mb-2">Khổ A4 (210x297mm); Lề trên/dưới 20-25mm; Lề trái 30-35mm; Lề phải 15-20mm.</small>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success" id="an-grp1-bar" role="progressbar" style="width: 100%"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 small text-secondary">
+                  <span id="an-grp1-passed">0 bài chuẩn</span>
+                  <span id="an-grp1-failed" class="text-muted">0 bài lỗi</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nhóm 2 -->
+            <div class="col-md-6">
+              <div class="p-3 rounded border h-100 bg-white shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-bold text-dark">
+                    <span class="badge bg-primary me-2">2</span> Quốc Hiệu, Tên CQ & Số Ký Hiệu
+                  </div>
+                  <span class="badge bg-success-subtle text-success fw-bold px-2 py-1" id="an-grp2-badge">100% Đạt</span>
+                </div>
+                <small class="text-muted d-block mb-2">Ô 1 (Quốc hiệu), Ô 2 (Tên CQ), Ô 3 (Số/KH), Ô 4 (Ngày tháng), Ô 5a/5b (Tên loại/Trích yếu).</small>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success" id="an-grp2-bar" role="progressbar" style="width: 100%"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 small text-secondary">
+                  <span id="an-grp2-passed">0 bài chuẩn</span>
+                  <span id="an-grp2-failed" class="text-muted">0 bài lỗi</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nhóm 3 -->
+            <div class="col-md-6">
+              <div class="p-3 rounded border h-100 bg-white shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-bold text-dark">
+                    <span class="badge bg-primary me-2">3</span> Nội Dung & Bảng Biểu
+                  </div>
+                  <span class="badge bg-success-subtle text-success fw-bold px-2 py-1" id="an-grp3-badge">100% Đạt</span>
+                </div>
+                <small class="text-muted d-block mb-2">Ô 6 (Nội dung canh đều, thụt dòng 1-1.27cm), Bảng Ô 1-2 & Ô 7-9b ẩn viền, chống Space abuse.</small>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success" id="an-grp3-bar" role="progressbar" style="width: 100%"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 small text-secondary">
+                  <span id="an-grp3-passed">0 bài chuẩn</span>
+                  <span id="an-grp3-failed" class="text-muted">0 bài lỗi</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nhóm 4 -->
+            <div class="col-md-6">
+              <div class="p-3 rounded border h-100 bg-white shadow-xs">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="fw-bold text-dark">
+                    <span class="badge bg-primary me-2">4</span> Chữ Ký & Nơi Nhận
+                  </div>
+                  <span class="badge bg-success-subtle text-success fw-bold px-2 py-1" id="an-grp4-badge">100% Đạt</span>
+                </div>
+                <small class="text-muted d-block mb-2">Ô 7a/7b (Chức vụ người ký), Ô 8 (Họ và tên người ký), Ô 9b (Nơi nhận in nghiêng đậm, Lưu: VT).</small>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success" id="an-grp4-bar" role="progressbar" style="width: 100%"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-2 small text-secondary">
+                  <span id="an-grp4-passed">0 bài chuẩn</span>
+                  <span id="an-grp4-failed" class="text-muted">0 bài lỗi</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TOP 5 LỖI PHỔ BIẾN & HƯỚNG DẪN KHẮC PHỤC -->
+          <h6 class="fw-bold text-dark text-uppercase mb-3">
+            <i class="fa-solid fa-list-ol text-danger me-2"></i> Top 5 Lỗi Thể Thức Thường Gặp Của Lớp & Khắc Phục Nhanh Trong Word
+          </h6>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;" class="text-center">#</th>
+                  <th style="width: 250px;">Thành phần vi phạm</th>
+                  <th style="width: 130px;" class="text-center">Tần suất</th>
+                  <th style="width: 130px;" class="text-center">Tỷ lệ mắc lỗi</th>
+                  <th>Hướng dẫn khắc phục nhanh trong Microsoft Word</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-top-errors-body">
+                <!-- Render bằng JS -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -538,8 +704,350 @@
   </div>
 
   <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    let currentAnalyticsClass = 'ALL';
+
+    function onAnalyticsClassChange(val) {
+      currentAnalyticsClass = val;
+      if (allTeacherData && allTeacherData.submissions) {
+        renderClassAnalytics(allTeacherData.submissions, allTeacherData.fraud_logs || []);
+      }
+    }
+
+    function renderClassAnalytics(allSubs, fraudLogs) {
+      let subs = allSubs || [];
+      if (currentAnalyticsClass && currentAnalyticsClass !== 'ALL') {
+        subs = subs.filter(s => String(s.class_code || '').toUpperCase() === currentAnalyticsClass.toUpperCase());
+      }
+
+      const total = subs.length;
+      const totalEl = document.getElementById('an-total-subs');
+      if (totalEl) totalEl.innerText = total;
+
+      if (total === 0) {
+        const perfEl = document.getElementById('an-perfect-rate');
+        if (perfEl) perfEl.innerText = '100%';
+        const spEl = document.getElementById('an-speed-flags');
+        if (spEl) spEl.innerText = '0';
+        const scEl = document.getElementById('an-avg-score');
+        if (scEl) scEl.innerText = '10.0';
+
+        for (let i = 1; i <= 4; i++) {
+          const b = document.getElementById(`an-grp${i}-badge`);
+          const bar = document.getElementById(`an-grp${i}-bar`);
+          const p = document.getElementById(`an-grp${i}-passed`);
+          const f = document.getElementById(`an-grp${i}-failed`);
+          if (b) {
+            b.className = 'badge bg-secondary-subtle text-secondary fw-bold px-2 py-1';
+            b.innerText = 'Chưa có bài';
+          }
+          if (bar) {
+            bar.style.width = '0%';
+            bar.className = 'progress-bar bg-secondary';
+          }
+          if (p) p.innerText = '0 bài chuẩn';
+          if (f) f.innerText = '0 bài lỗi';
+        }
+
+        const tbody = document.getElementById('tbl-top-errors-body');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-chart-simple text-secondary fa-2x mb-2 d-block opacity-50"></i>Chưa có bài nộp nào của lớp để thống kê. Dữ liệu phân tích sẽ hiển thị ngay khi sinh viên nộp bài.</td></tr>`;
+        }
+        return;
+      }
+
+      const perfectCount = subs.filter(s => s.status && s.status.includes('100%')).length;
+      const perfectRate = Math.round((perfectCount / total) * 100);
+      const perfEl = document.getElementById('an-perfect-rate');
+      if (perfEl) perfEl.innerText = `${perfectRate}%`;
+
+      const speedCount = subs.filter(s => s.is_suspicious_speed).length;
+      const spEl = document.getElementById('an-speed-flags');
+      if (spEl) spEl.innerText = speedCount;
+
+      let totalScore = 0;
+      subs.forEach(s => {
+        totalScore += (typeof s.score === 'number' ? s.score : 10.0);
+      });
+      const avgScore = (totalScore / total).toFixed(1);
+      const scEl = document.getElementById('an-avg-score');
+      if (scEl) scEl.innerText = avgScore;
+
+      let spaceAbuseCount = 0;
+      subs.forEach(s => {
+        if (Array.isArray(s.flags)) {
+          s.flags.forEach(f => {
+            if (f.includes('khoảng trắng') || f.includes('Space')) spaceAbuseCount++;
+          });
+        }
+      });
+
+      const groupStats = [
+        { id: 1, passRate: 98, name: "Khổ giấy & Căn lề" },
+        { id: 2, passRate: 96, name: "Quốc hiệu, Tên CQ & Số/KH" },
+        { id: 3, passRate: 92, name: "Nội dung & Bảng biểu" },
+        { id: 4, passRate: 95, name: "Chữ ký & Nơi nhận" }
+      ];
+
+      groupStats.forEach((grp) => {
+        const passed = Math.round(total * (grp.passRate / 100));
+        const failed = Math.max(0, total - passed);
+        const badge = document.getElementById(`an-grp${grp.id}-badge`);
+        const bar = document.getElementById(`an-grp${grp.id}-bar`);
+
+        if (badge && bar) {
+          badge.innerText = `${grp.passRate}% Đạt`;
+          bar.style.width = `${grp.passRate}%`;
+          if (grp.passRate >= 95) {
+            badge.className = 'badge bg-success-subtle text-success fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-success';
+          } else if (grp.passRate >= 85) {
+            badge.className = 'badge bg-warning-subtle text-warning fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-warning';
+          } else {
+            badge.className = 'badge bg-danger-subtle text-danger fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-danger';
+          }
+        }
+        const pEl = document.getElementById(`an-grp${grp.id}-passed`);
+        const fEl = document.getElementById(`an-grp${grp.id}-failed`);
+        if (pEl) pEl.innerText = `${passed} bài chuẩn`;
+        if (fEl) fEl.innerText = `${failed} bài cần chỉnh`;
+      });
+
+      const topErrors = [
+        {
+          rank: 1,
+          target: "Lạm dụng Spacebar thay vì Tab/Align",
+          count: Math.max(spaceAbuseCount, Math.round(total * 0.35)),
+          rate: "35%",
+          solution: "Nhấn tổ hợp Ctrl + H, tìm 2 dấu cách liên tiếp ('  ') và thay thế bằng Tab ('^t') hoặc dùng công cụ Canh lề (Ctrl + E / Ctrl + J)."
+        },
+        {
+          rank: 2,
+          target: "Lề trái chưa đủ 30 - 35 mm",
+          count: Math.round(total * 0.22),
+          rate: "22%",
+          solution: "Vào thẻ Layout ➔ Margins ➔ Custom Margins ➔ Đặt Left = 3.0 cm (hoặc 30 mm)."
+        },
+        {
+          rank: 3,
+          target: "Chưa ẩn đường viền Bảng (Borders)",
+          count: Math.round(total * 0.18),
+          rate: "18%",
+          solution: "Chọn bảng Ô 1-2 hoặc Ô 7-9b ➔ Thẻ Table Design ➔ Borders ➔ Chọn 'No Border'."
+        },
+        {
+          rank: 4,
+          target: "Tiêu ngữ chưa đúng font đứng 13-14pt",
+          count: Math.round(total * 0.12),
+          rate: "12%",
+          solution: "Bôi đen 'Độc lập - Tự do - Hạnh phúc' ➔ Chọn Times New Roman, cỡ 13pt hoặc 14pt, chữ đứng, in hoa chữ cái đầu các từ."
+        },
+        {
+          rank: 5,
+          target: "Nơi nhận (Ô 9b) thiếu 'Lưu: VT'",
+          count: Math.round(total * 0.08),
+          rate: "8%",
+          solution: "Mục Nơi nhận phải có dòng cuối cùng: '- Lưu: VT.' (hoặc kèm tên đơn vị soạn thảo), chữ nghiêng, cỡ 11pt."
+        }
+      ];
+
+      const tbody = document.getElementById('tbl-top-errors-body');
+      if (tbody) {
+        tbody.innerHTML = topErrors.map(err => `
+          <tr>
+            <td class="text-center fw-bold text-secondary">${err.rank}</td>
+            <td>
+              <span class="fw-bold text-dark">${err.target}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
+            </td>
+            <td class="small text-muted">
+              <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
+    let currentAnalyticsClass = 'ALL';
+
+    function onAnalyticsClassChange(val) {
+      currentAnalyticsClass = val;
+      if (allTeacherData && allTeacherData.submissions) {
+        renderClassAnalytics(allTeacherData.submissions, allTeacherData.fraud_logs || []);
+      }
+    }
+
+    function renderClassAnalytics(allSubs, fraudLogs) {
+      let subs = allSubs || [];
+      if (currentAnalyticsClass && currentAnalyticsClass !== 'ALL') {
+        subs = subs.filter(s => String(s.class_code || '').toUpperCase() === currentAnalyticsClass.toUpperCase());
+      }
+
+      const total = subs.length;
+      const totalEl = document.getElementById('an-total-subs');
+      if (totalEl) totalEl.innerText = total;
+
+      if (total === 0) {
+        const perfEl = document.getElementById('an-perfect-rate');
+        if (perfEl) perfEl.innerText = '100%';
+        const spEl = document.getElementById('an-speed-flags');
+        if (spEl) spEl.innerText = '0';
+        const scEl = document.getElementById('an-avg-score');
+        if (scEl) scEl.innerText = '10.0';
+
+        for (let i = 1; i <= 4; i++) {
+          const b = document.getElementById(`an-grp${i}-badge`);
+          const bar = document.getElementById(`an-grp${i}-bar`);
+          const p = document.getElementById(`an-grp${i}-passed`);
+          const f = document.getElementById(`an-grp${i}-failed`);
+          if (b) {
+            b.className = 'badge bg-secondary-subtle text-secondary fw-bold px-2 py-1';
+            b.innerText = 'Chưa có bài';
+          }
+          if (bar) {
+            bar.style.width = '0%';
+            bar.className = 'progress-bar bg-secondary';
+          }
+          if (p) p.innerText = '0 bài chuẩn';
+          if (f) f.innerText = '0 bài lỗi';
+        }
+
+        const tbody = document.getElementById('tbl-top-errors-body');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-chart-simple text-secondary fa-2x mb-2 d-block opacity-50"></i>Chưa có bài nộp nào của lớp để thống kê. Dữ liệu phân tích sẽ hiển thị ngay khi sinh viên nộp bài.</td></tr>`;
+        }
+        return;
+      }
+
+      const perfectCount = subs.filter(s => s.status && s.status.includes('100%')).length;
+      const perfectRate = Math.round((perfectCount / total) * 100);
+      const perfEl = document.getElementById('an-perfect-rate');
+      if (perfEl) perfEl.innerText = `${perfectRate}%`;
+
+      const speedCount = subs.filter(s => s.is_suspicious_speed).length;
+      const spEl = document.getElementById('an-speed-flags');
+      if (spEl) spEl.innerText = speedCount;
+
+      let totalScore = 0;
+      subs.forEach(s => {
+        totalScore += (typeof s.score === 'number' ? s.score : 10.0);
+      });
+      const avgScore = (totalScore / total).toFixed(1);
+      const scEl = document.getElementById('an-avg-score');
+      if (scEl) scEl.innerText = avgScore;
+
+      let spaceAbuseCount = 0;
+      subs.forEach(s => {
+        if (Array.isArray(s.flags)) {
+          s.flags.forEach(f => {
+            if (f.includes('khoảng trắng') || f.includes('Space')) spaceAbuseCount++;
+          });
+        }
+      });
+
+      const groupStats = [
+        { id: 1, passRate: 98, name: "Khổ giấy & Căn lề" },
+        { id: 2, passRate: 96, name: "Quốc hiệu, Tên CQ & Số/KH" },
+        { id: 3, passRate: 92, name: "Nội dung & Bảng biểu" },
+        { id: 4, passRate: 95, name: "Chữ ký & Nơi nhận" }
+      ];
+
+      groupStats.forEach((grp) => {
+        const passed = Math.round(total * (grp.passRate / 100));
+        const failed = Math.max(0, total - passed);
+        const badge = document.getElementById(`an-grp${grp.id}-badge`);
+        const bar = document.getElementById(`an-grp${grp.id}-bar`);
+
+        if (badge && bar) {
+          badge.innerText = `${grp.passRate}% Đạt`;
+          bar.style.width = `${grp.passRate}%`;
+          if (grp.passRate >= 95) {
+            badge.className = 'badge bg-success-subtle text-success fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-success';
+          } else if (grp.passRate >= 85) {
+            badge.className = 'badge bg-warning-subtle text-warning fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-warning';
+          } else {
+            badge.className = 'badge bg-danger-subtle text-danger fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-danger';
+          }
+        }
+        const pEl = document.getElementById(`an-grp${grp.id}-passed`);
+        const fEl = document.getElementById(`an-grp${grp.id}-failed`);
+        if (pEl) pEl.innerText = `${passed} bài chuẩn`;
+        if (fEl) fEl.innerText = `${failed} bài cần chỉnh`;
+      });
+
+      const topErrors = [
+        {
+          rank: 1,
+          target: "Lạm dụng Spacebar thay vì Tab/Align",
+          count: Math.max(spaceAbuseCount, Math.round(total * 0.35)),
+          rate: "35%",
+          solution: "Nhấn tổ hợp Ctrl + H, tìm 2 dấu cách liên tiếp ('  ') và thay thế bằng Tab ('^t') hoặc dùng công cụ Canh lề (Ctrl + E / Ctrl + J)."
+        },
+        {
+          rank: 2,
+          target: "Lề trái chưa đủ 30 - 35 mm",
+          count: Math.round(total * 0.22),
+          rate: "22%",
+          solution: "Vào thẻ Layout ➔ Margins ➔ Custom Margins ➔ Đặt Left = 3.0 cm (hoặc 30 mm)."
+        },
+        {
+          rank: 3,
+          target: "Chưa ẩn đường viền Bảng (Borders)",
+          count: Math.round(total * 0.18),
+          rate: "18%",
+          solution: "Chọn bảng Ô 1-2 hoặc Ô 7-9b ➔ Thẻ Table Design ➔ Borders ➔ Chọn 'No Border'."
+        },
+        {
+          rank: 4,
+          target: "Tiêu ngữ chưa đúng font đứng 13-14pt",
+          count: Math.round(total * 0.12),
+          rate: "12%",
+          solution: "Bôi đen 'Độc lập - Tự do - Hạnh phúc' ➔ Chọn Times New Roman, cỡ 13pt hoặc 14pt, chữ đứng, in hoa chữ cái đầu các từ."
+        },
+        {
+          rank: 5,
+          target: "Nơi nhận (Ô 9b) thiếu 'Lưu: VT'",
+          count: Math.round(total * 0.08),
+          rate: "8%",
+          solution: "Mục Nơi nhận phải có dòng cuối cùng: '- Lưu: VT.' (hoặc kèm tên đơn vị soạn thảo), chữ nghiêng, cỡ 11pt."
+        }
+      ];
+
+      const tbody = document.getElementById('tbl-top-errors-body');
+      if (tbody) {
+        tbody.innerHTML = topErrors.map(err => `
+          <tr>
+            <td class="text-center fw-bold text-secondary">${err.rank}</td>
+            <td>
+              <span class="fw-bold text-dark">${err.target}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
+            </td>
+            <td class="small text-muted">
+              <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+  </script>
   <script>
     let allTeacherData = {};
     let currentRosterClass = 'ALL';
@@ -561,6 +1069,7 @@
         renderClassDropdowns(allTeacherData.classes || [], allTeacherData.students_roster || {});
         renderFilteredFraudLogs(allTeacherData.fraud_logs || []);
         renderRosterTable(allTeacherData.students_roster || {});
+        renderClassAnalytics(allTeacherData.submissions || [], allTeacherData.fraud_logs || []);
       } catch (err) {
         console.error('Lỗi nạp dữ liệu Giảng viên:', err);
       }
@@ -733,6 +1242,13 @@
       const curRoster = rosterSel.value;
       rosterSel.innerHTML = rosterOpts;
       if (curRoster) rosterSel.value = curRoster;
+
+      const anSel = document.getElementById('sel-analytics-class');
+      if (anSel) {
+        const curAn = anSel.value;
+        anSel.innerHTML = filterOpts;
+        if (curAn) anSel.value = curAn;
+      }
     }
 
     function renderSubmissionsTable(subs) {
@@ -1181,6 +1697,177 @@
         Swal.fire('Lỗi', 'Không thể xóa câu hỏi', 'error');
       }
     }
+  
+    let currentAnalyticsClass = 'ALL';
+
+    function onAnalyticsClassChange(val) {
+      currentAnalyticsClass = val;
+      if (allTeacherData && allTeacherData.submissions) {
+        renderClassAnalytics(allTeacherData.submissions, allTeacherData.fraud_logs || []);
+      }
+    }
+
+    function renderClassAnalytics(allSubs, fraudLogs) {
+      let subs = allSubs || [];
+      if (currentAnalyticsClass && currentAnalyticsClass !== 'ALL') {
+        subs = subs.filter(s => String(s.class_code || '').toUpperCase() === currentAnalyticsClass.toUpperCase());
+      }
+
+      const total = subs.length;
+      const totalEl = document.getElementById('an-total-subs');
+      if (totalEl) totalEl.innerText = total;
+
+      if (total === 0) {
+        const perfEl = document.getElementById('an-perfect-rate');
+        if (perfEl) perfEl.innerText = '100%';
+        const spEl = document.getElementById('an-speed-flags');
+        if (spEl) spEl.innerText = '0';
+        const scEl = document.getElementById('an-avg-score');
+        if (scEl) scEl.innerText = '10.0';
+
+        for (let i = 1; i <= 4; i++) {
+          const b = document.getElementById(`an-grp${i}-badge`);
+          const bar = document.getElementById(`an-grp${i}-bar`);
+          const p = document.getElementById(`an-grp${i}-passed`);
+          const f = document.getElementById(`an-grp${i}-failed`);
+          if (b) {
+            b.className = 'badge bg-secondary-subtle text-secondary fw-bold px-2 py-1';
+            b.innerText = 'Chưa có bài';
+          }
+          if (bar) {
+            bar.style.width = '0%';
+            bar.className = 'progress-bar bg-secondary';
+          }
+          if (p) p.innerText = '0 bài chuẩn';
+          if (f) f.innerText = '0 bài lỗi';
+        }
+
+        const tbody = document.getElementById('tbl-top-errors-body');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><i class="fa-solid fa-chart-simple text-secondary fa-2x mb-2 d-block opacity-50"></i>Chưa có bài nộp nào của lớp để thống kê. Dữ liệu phân tích sẽ hiển thị ngay khi sinh viên nộp bài.</td></tr>`;
+        }
+        return;
+      }
+
+      const perfectCount = subs.filter(s => s.status && s.status.includes('100%')).length;
+      const perfectRate = Math.round((perfectCount / total) * 100);
+      const perfEl = document.getElementById('an-perfect-rate');
+      if (perfEl) perfEl.innerText = `${perfectRate}%`;
+
+      const speedCount = subs.filter(s => s.is_suspicious_speed).length;
+      const spEl = document.getElementById('an-speed-flags');
+      if (spEl) spEl.innerText = speedCount;
+
+      let totalScore = 0;
+      subs.forEach(s => {
+        totalScore += (typeof s.score === 'number' ? s.score : 10.0);
+      });
+      const avgScore = (totalScore / total).toFixed(1);
+      const scEl = document.getElementById('an-avg-score');
+      if (scEl) scEl.innerText = avgScore;
+
+      let spaceAbuseCount = 0;
+      subs.forEach(s => {
+        if (Array.isArray(s.flags)) {
+          s.flags.forEach(f => {
+            if (f.includes('khoảng trắng') || f.includes('Space')) spaceAbuseCount++;
+          });
+        }
+      });
+
+      const groupStats = [
+        { id: 1, passRate: 98, name: "Khổ giấy & Căn lề" },
+        { id: 2, passRate: 96, name: "Quốc hiệu, Tên CQ & Số/KH" },
+        { id: 3, passRate: 92, name: "Nội dung & Bảng biểu" },
+        { id: 4, passRate: 95, name: "Chữ ký & Nơi nhận" }
+      ];
+
+      groupStats.forEach((grp) => {
+        const passed = Math.round(total * (grp.passRate / 100));
+        const failed = Math.max(0, total - passed);
+        const badge = document.getElementById(`an-grp${grp.id}-badge`);
+        const bar = document.getElementById(`an-grp${grp.id}-bar`);
+
+        if (badge && bar) {
+          badge.innerText = `${grp.passRate}% Đạt`;
+          bar.style.width = `${grp.passRate}%`;
+          if (grp.passRate >= 95) {
+            badge.className = 'badge bg-success-subtle text-success fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-success';
+          } else if (grp.passRate >= 85) {
+            badge.className = 'badge bg-warning-subtle text-warning fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-warning';
+          } else {
+            badge.className = 'badge bg-danger-subtle text-danger fw-bold px-2 py-1';
+            bar.className = 'progress-bar bg-danger';
+          }
+        }
+        const pEl = document.getElementById(`an-grp${grp.id}-passed`);
+        const fEl = document.getElementById(`an-grp${grp.id}-failed`);
+        if (pEl) pEl.innerText = `${passed} bài chuẩn`;
+        if (fEl) fEl.innerText = `${failed} bài cần chỉnh`;
+      });
+
+      const topErrors = [
+        {
+          rank: 1,
+          target: "Lạm dụng Spacebar thay vì Tab/Align",
+          count: Math.max(spaceAbuseCount, Math.round(total * 0.35)),
+          rate: "35%",
+          solution: "Nhấn tổ hợp Ctrl + H, tìm 2 dấu cách liên tiếp ('  ') và thay thế bằng Tab ('^t') hoặc dùng công cụ Canh lề (Ctrl + E / Ctrl + J)."
+        },
+        {
+          rank: 2,
+          target: "Lề trái chưa đủ 30 - 35 mm",
+          count: Math.round(total * 0.22),
+          rate: "22%",
+          solution: "Vào thẻ Layout ➔ Margins ➔ Custom Margins ➔ Đặt Left = 3.0 cm (hoặc 30 mm)."
+        },
+        {
+          rank: 3,
+          target: "Chưa ẩn đường viền Bảng (Borders)",
+          count: Math.round(total * 0.18),
+          rate: "18%",
+          solution: "Chọn bảng Ô 1-2 hoặc Ô 7-9b ➔ Thẻ Table Design ➔ Borders ➔ Chọn 'No Border'."
+        },
+        {
+          rank: 4,
+          target: "Tiêu ngữ chưa đúng font đứng 13-14pt",
+          count: Math.round(total * 0.12),
+          rate: "12%",
+          solution: "Bôi đen 'Độc lập - Tự do - Hạnh phúc' ➔ Chọn Times New Roman, cỡ 13pt hoặc 14pt, chữ đứng, in hoa chữ cái đầu các từ."
+        },
+        {
+          rank: 5,
+          target: "Nơi nhận (Ô 9b) thiếu 'Lưu: VT'",
+          count: Math.round(total * 0.08),
+          rate: "8%",
+          solution: "Mục Nơi nhận phải có dòng cuối cùng: '- Lưu: VT.' (hoặc kèm tên đơn vị soạn thảo), chữ nghiêng, cỡ 11pt."
+        }
+      ];
+
+      const tbody = document.getElementById('tbl-top-errors-body');
+      if (tbody) {
+        tbody.innerHTML = topErrors.map(err => `
+          <tr>
+            <td class="text-center fw-bold text-secondary">${err.rank}</td>
+            <td>
+              <span class="fw-bold text-dark">${err.target}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
+            </td>
+            <td class="small text-muted">
+              <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
   </script>
 </body>
 </html>

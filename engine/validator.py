@@ -275,7 +275,7 @@ class Decree30Validator:
         if space_abuse_found:
             errors.append({
                 "issue": "Phát hiện lạm dụng phím Space (từ 4 dấu cách liên tiếp trở lên) để căn chỉnh vị trí chữ.",
-                "fix": "Xóa toàn bộ các khoảng trắng (Space) liên tiếp. Sử dụng Bảng ẩn (Table không viền) hoặc phím Tab chuẩn theo Nghị định 30."
+                "fix": "Nhấn tổ hợp Ctrl + H, tìm 2 dấu cách liên tiếp ('  ') và thay thế bằng Tab ('^t') hoặc dùng công cụ Canh lề (Ctrl + E / Ctrl + J). Tuyệt đối không gõ Space liên tiếp để đẩy chữ."
             })
 
         # 4. KIỂM TRA ĐỐI PHÓ: LẠM DỤNG PHÍM ENTER LIÊN TIẾP DỒN TRANG
