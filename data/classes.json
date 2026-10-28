@@ -1,9 +1,11 @@
-[
-  "22DTH01",
-  "22DTH02",
-  "HC01K157",
-  "KN01",
-  "KN02",
-  "TEST_ADD_CLS",
-  "TEST_IMPORT_CLS"
-]
+{
+  "classes": [
+    "22DTH01",
+    "22DTH02",
+    "HC01K157",
+    "KN01",
+    "KN02",
+    "TEST_ADD_CLS",
+    "TEST_IMPORT_CLS"
+  ]
+}

@@ -3,15 +3,27 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
+*.pyo
 
 # Local storage documents generated during testing/runtime
-storage/templates/*.docx
-storage/submitted/*.docx
-storage/uploads/*.docx
-storage/uploads/temp_*
+storage/templates/*
+!storage/templates/.gitkeep
+storage/submitted/*
+!storage/submitted/.gitkeep
+storage/uploads/*
+!storage/uploads/.gitkeep
 storage/test_out/
+storage/test_out/*
 storage/test_temp/
+storage/test_temp/*
 tests/temp_schema_tests/
+
+# SQLite Database files
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.sqlite*
+data/edudoc.db*
 
 # Environment & IDE
 .env

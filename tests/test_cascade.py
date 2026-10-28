@@ -1,7 +1,17 @@
 import docx
+import os
+import glob
+import shutil
 import xml.etree.ElementTree as ET
 
-doc = docx.Document('storage/uploads/temp_2100001234_01_2100001234_NGUYỄNVĂNA_CongVanDeNghi.docx')
+target_path = 'storage/uploads/temp_2100001234_01_2100001234_NGUYỄNVĂNA_CongVanDeNghi.docx'
+if not os.path.exists(target_path):
+    candidates = glob.glob('storage/templates/*2100001234*CongVanDeNghi*.docx')
+    if candidates:
+        os.makedirs('storage/uploads', exist_ok=True)
+        shutil.copy2(candidates[0], target_path)
+
+doc = docx.Document(target_path)
 
 def get_cascaded_font_size(paragraph, doc):
     # 1. Check runs
@@ -52,7 +62,15 @@ def get_cascaded_font_size(paragraph, doc):
 
     return 13.0
 
-cell = doc.tables[1].cell(0, 0)
-for i, p in enumerate(cell.paragraphs):
-    sz = get_cascaded_font_size(p, doc)
-    print(f"P{i}: text='{p.text}' -> Cascaded Size = {sz} pt")
+if len(doc.tables) > 1:
+    cell = doc.tables[1].cell(0, 0)
+    for i, p in enumerate(cell.paragraphs):
+        sz = get_cascaded_font_size(p, doc)
+        print(f"P{i}: text='{p.text}' -> Cascaded Size = {sz} pt")
+elif len(doc.tables) == 1:
+    cell = doc.tables[0].cell(0, 0)
+    for i, p in enumerate(cell.paragraphs):
+        sz = get_cascaded_font_size(p, doc)
+        print(f"P{i}: text='{p.text}' -> Cascaded Size = {sz} pt")
+else:
+    print("Document has no tables, cascaded font size check skipped.")

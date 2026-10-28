@@ -25,6 +25,7 @@ TEST_SUITES = [
     "test_anti_cheat_stages.py",
     "test_cong_van_tu_gia_dinh.py",
     "test_roster_management.py",
+    "test_sqlite_and_cleanup.py",
     "comprehensive_audit_suite.py"
 ]
 

@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDUDOC - Bàn làm việc Giảng viên (STVB Nghị định 30)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <style>
+    :root {
+      --primary-color: #0d6efd;
+      --primary-dark: #0a58ca;
+      --secondary-color: #6c757d;
+      --success-color: #198754;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #0dcaf0;
+      --bg-light: #f8fafc;
+      --card-border: #e2e8f0;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    body {
+      background-color: var(--bg-light);
+      font-family: var(--font-sans);
+      color: #1e293b;
+      letter-spacing: -0.01em;
+      min-height: 100vh;
+    }
+    .header-banner {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: white;
+      padding: 1.25rem 0;
+      border-bottom: 3px solid #dc3545;
+    }
+    .brand-title {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-icon-box {
+      width: 48px;
+      height: 48px;
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid rgba(220, 53, 69, 0.4);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f87171;
+    }
+    .card-custom {
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      background: #ffffff;
+      transition: all 0.2s ease;
+    }
+    .stat-card {
+      padding: 1.25rem;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .nav-tabs-custom .nav-link {
+      font-weight: 600;
+      color: #64748b;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+    }
+    .nav-tabs-custom .nav-link.active {
+      color: #0d6efd;
+      border-bottom: 2px solid #0d6efd;
+      background: transparent;
+    }
+    .table-custom {
+      font-size: 0.9rem;
+    }
+    .table-custom th {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .badge-mono {
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER BÀN LÀM VIỆC GIẢNG VIÊN -->
+  <header class="header-banner shadow-sm">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="brand-icon-box">
+          <i class="fa-solid fa-chalkboard-user fa-xl"></i>
+        </div>
+        <div>
+          <h4 class="mb-0 fw-bold brand-title">EDUDOC - BÀN LÀM VIỆC GIẢNG VIÊN</h4>
+          <small class="text-light opacity-75">Quản lý Ca học, Danh sách lớp, Bảng điểm & Thẩm định Nghị định 30/2020/NĐ-CP</small>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fw-bold">
+          <i class="fa-solid fa-database me-1"></i> SQLite WAL Mode
+        </span>
+        <button class="btn btn-warning rounded-pill fw-bold text-dark px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-decree30-guide">
+          <i class="fa-solid fa-book-bookmark me-1"></i> Tra cứu Thể thức NĐ 30
+        </button>
+        <a href="/" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
+          <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Sinh viên
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container my-4">
+
+    <!-- BỘ ĐIỀU KHIỂN PHÒNG HỌC (SESSION CONTROL) -->
+    <div class="card card-custom p-4 mb-4 shadow-sm border-2" id="teacher-session-card">
+      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-primary text-white p-3 rounded-circle fs-3 shadow-sm" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-school-lock" id="icon-session-status"></i>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h5 class="fw-bold mb-0 text-dark">ĐIỀU KHIỂN CA THI / BÀI TẬP:</h5>
+              <span class="badge bg-danger fs-6 px-3 py-1 rounded-pill shadow-sm" id="badge-teacher-session-status">
+                <i class="fa-solid fa-lock me-1"></i> Đang Khóa (Giảng lý thuyết)
+              </span>
+            </div>
+            <div class="text-secondary small mt-1" id="text-teacher-session-desc">
+              Sinh viên đang tập trung nghe giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa.
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <!-- PHÂN CÔNG VĂN BẢN MẶC ĐỊNH -->
+          <div class="d-flex align-items-center gap-2 bg-light p-2 rounded border shadow-xs">
+            <label class="form-label mb-0 fw-bold small text-dark text-nowrap"><i class="fa-solid fa-file-pen text-primary me-1"></i>Văn bản giao:</label>
+            <select id="teacher-sel-active-doc" class="form-select form-select-sm fw-bold border-primary text-primary" style="min-width: 200px;" onchange="onTeacherChangeActiveDocType()">
+              <option value="cong_van_de_nghi" selected>2. Công văn đề nghị (Chuẩn H2)</option>
+              <option value="bai_thu_hoach">1. Bài thu hoạch (Lý thuyết)</option>
+              <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
+              <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
+              <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+              <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
+              <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
+              <option value="bao_cao">8. Báo cáo</option>
+            </select>
+          </div>
+
+          <!-- NÚT BẬT/TẮT KIỂM SOÁT ROSTER -->
+          <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3 py-2 shadow-sm text-nowrap" id="btn-toggle-roster" onclick="toggleTeacherRosterMode()">
+            <i class="fa-solid fa-user-shield me-1"></i> Danh sách lớp: <span id="lbl-roster-status" class="text-success fw-bold">BẮT BUỘC</span>
+          </button>
+
+          <!-- NÚT MỞ / KHÓA CA THI -->
+          <button class="btn btn-success px-4 py-2 fw-bold shadow-sm text-nowrap" id="btn-toggle-session" onclick="toggleSessionState()">
+            <i class="fa-solid fa-door-open me-2"></i> BẬT: CHO PHÉP LÀM BÀI
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 THẺ THỐNG KÊ THỜI GIAN THỰC -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary-subtle text-primary">
+            <i class="fa-solid fa-file-arrow-up"></i>
+          </div>
+          <div>
+            <div class="text-muted small fw-semibold">Tổng Bài Nộp</div>
+            <h3 class="fw-bold mb-0 text-dark" id="stat-total-submissions">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-success-subtle text-success">
+            <i class="fa-solid fa-award"></i>
+          </div>
+          <div>
+            <div class="text-muted small fw-semibold">Tỷ Lệ Đạt 100% NĐ 30</div>
+            <h3 class="fw-bold mb-0 text-success" id="stat-perfect-rate">100%</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-danger-subtle text-danger">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <div class="text-muted small fw-semibold">Hồ Sơ Vi Phạm Gian Lận</div>
+            <h3 class="fw-bold mb-0 text-danger" id="stat-fraud-count">0</h3>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-info-subtle text-info">
+            <i class="fa-solid fa-users-line"></i>
+          </div>
+          <div>
+            <div class="text-muted small fw-semibold">SV Trong Danh Sách</div>
+            <h3 class="fw-bold mb-0 text-dark" id="stat-total-roster">0</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS ĐIỀU HƯỚNG BÀN LÀM VIỆC -->
+    <ul class="nav nav-tabs nav-tabs-custom mb-3" id="teacherTab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="tab-submissions" data-bs-toggle="tab" data-bs-target="#content-submissions">
+          <i class="fa-solid fa-list-check me-1"></i> Danh sách Bài nộp (<span id="lbl-tab-sub-count">0</span>)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-roster" data-bs-toggle="tab" data-bs-target="#content-roster">
+          <i class="fa-solid fa-users me-1"></i> Danh sách Lớp & SV (<span id="lbl-tab-roster-count">0</span>)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-fraud" data-bs-toggle="tab" data-bs-target="#content-fraud">
+          <i class="fa-solid fa-shield-halved text-danger me-1"></i> Nhật ký Gian lận (<span id="lbl-tab-fraud-count" class="text-danger fw-bold">0</span>)
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-templates" data-bs-toggle="tab" data-bs-target="#content-templates">
+          <i class="fa-solid fa-file-pen me-1"></i> Tùy chỉnh Mẫu bài tập
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-quiz" data-bs-toggle="tab" data-bs-target="#content-quiz">
+          <i class="fa-solid fa-clipboard-question me-1"></i> Ngân hàng Trắc nghiệm
+        </button>
+      </li>
+    </ul>
+
+    <!-- TAB CONTENTS -->
+    <div class="tab-content" id="teacherTabContent">
+
+      <!-- 1. BẢNG DANH SÁCH BÀI NỘP -->
+      <div class="tab-pane fade show active" id="content-submissions">
+        <div class="card card-custom p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <h5 class="fw-bold text-primary mb-0">
+                <i class="fa-solid fa-list-check me-2"></i> KẾT QUẢ NỘP BÀI THỰC HÀNH NGHỊ ĐỊNH 30
+              </h5>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 fw-semibold text-secondary small text-nowrap"><i class="fa-solid fa-filter text-danger me-1"></i>Lọc lớp:</label>
+                <select id="sel-filter-class" class="form-select form-select-sm fw-bold border-danger text-danger" style="width: auto;" onchange="onClassFilterChange(this)">
+                  <option value="ALL">-- Tất cả các lớp --</option>
+                </select>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="width: 220px;">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-secondary"></i></span>
+                <input type="text" id="inp-search-submissions" class="form-control" placeholder="Tìm MSSV hoặc Tên..." onkeyup="searchSubmissions()">
+              </div>
+              <button class="btn btn-sm btn-success fw-bold text-nowrap" onclick="exportSubmissionsCSV()">
+                <i class="fa-solid fa-file-excel me-1"></i> Xuất CSV / Excel
+              </button>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadTeacherData()">
+                <i class="fa-solid fa-rotate-right me-1"></i> Cập nhật
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle table-custom">
+              <thead>
+                <tr>
+                  <th>Mã lớp</th>
+                  <th>SBD</th>
+                  <th>MSSV</th>
+                  <th>Họ và tên</th>
+                  <th>Loại văn bản</th>
+                  <th>Tên file nộp</th>
+                  <th>Thời gian nộp</th>
+                  <th>Thời gian làm & Cảnh báo</th>
+                  <th>Trạng thái</th>
+                  <th class="text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-submissions-body">
+                <tr>
+                  <td colspan="10" class="text-center text-muted py-4">
+                    <i class="fa-solid fa-inbox text-secondary fa-2x mb-2 d-block opacity-50"></i>
+                    Chưa có bài nộp nào trong danh sách.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. QUẢN LÝ DANH SÁCH LỚP (ROSTER) -->
+      <div class="tab-pane fade" id="content-roster">
+        <div class="card card-custom p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <h5 class="fw-bold text-primary mb-1">
+                <i class="fa-solid fa-users me-2"></i> DANH SÁCH SINH VIÊN THEO LỚP HỌC
+              </h5>
+              <small class="text-secondary">Chỉ các sinh viên có trong danh sách mới được hệ thống cấp quyền nhận đề và nộp bài thi.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <select id="sel-roster-class" class="form-select form-select-sm fw-bold border-primary text-primary" style="width: auto;" onchange="onRosterClassChange(this)">
+                <option value="ALL">-- Chọn lớp quản lý --</option>
+              </select>
+              <button class="btn btn-sm btn-primary fw-bold" onclick="openAddStudentModal()">
+                <i class="fa-solid fa-user-plus me-1"></i> Thêm sinh viên lẻ
+              </button>
+              <button class="btn btn-sm btn-outline-success fw-bold" onclick="openImportRosterModal()">
+                <i class="fa-solid fa-file-import me-1"></i> Dán danh sách Excel
+              </button>
+              <button class="btn btn-sm btn-outline-danger fw-bold" onclick="clearClassRoster()">
+                <i class="fa-solid fa-trash-can me-1"></i> Làm trống lớp
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle table-custom">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">STT</th>
+                  <th style="width: 100px;">SBD</th>
+                  <th style="width: 160px;">Mã số sinh viên (MSSV)</th>
+                  <th>Họ và tên</th>
+                  <th style="width: 140px;">Mã lớp KN</th>
+                  <th style="width: 120px;" class="text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-roster-body">
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                    Vui lòng chọn lớp học để xem danh sách sinh viên.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. NHẬT KÝ GIAN LẬN (FRAUD LOGS) -->
+      <div class="tab-pane fade" id="content-fraud">
+        <div class="card card-custom p-4 border-danger border-opacity-25">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <h5 class="fw-bold text-danger mb-1">
+                <i class="fa-solid fa-shield-halved me-2"></i> NHẬT KÝ PHÁT HIỆN SAO CHÉP / GIAN LẬN
+              </h5>
+              <small class="text-secondary">Hệ thống tự động bẫy mã sinh viên ẩn (Watermark) và đối chiếu nguồn gốc bài làm.</small>
+            </div>
+            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="clearAllFraudLogs()">
+              <i class="fa-solid fa-trash-can me-1"></i> Xóa toàn bộ nhật ký
+            </button>
+          </div>
+          <div id="fraud-logs-container" class="d-flex flex-column gap-3">
+            <div class="text-center text-muted py-4">
+              <i class="fa-solid fa-circle-check text-success fa-2x mb-2 d-block"></i>
+              Không phát hiện trường hợp vi phạm gian lận nào.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. TÙY CHỈNH MẪU ĐỀ BÀI -->
+      <div class="tab-pane fade" id="content-templates">
+        <div class="card card-custom p-4">
+          <h5 class="fw-bold text-primary mb-3">
+            <i class="fa-solid fa-file-pen me-2"></i> TÙY CHỈNH NỘI DUNG VĂN BẢN MẪU
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Chọn loại văn bản:</label>
+              <select id="teacher-doc-select" class="form-select fw-semibold" onchange="onTeacherDocSelect()">
+                <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
+                <option value="bai_thu_hoach">1. Bài thu hoạch</option>
+                <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ được giao</option>
+                <option value="thong_bao_hoat_dong">4. Thông báo thông tin hoạt động</option>
+                <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+                <option value="to_trinh_nhan_su">6. Tờ trình xin bổ sung nhân sự</option>
+                <option value="to_trinh_thiet_bi">7. Tờ trình xin máy móc thiết bị</option>
+                <option value="bao_cao">8. Báo cáo</option>
+              </select>
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="chk-teacher-blank-body" onchange="onTeacherBlankToggle()">
+                <label class="form-check-label fw-semibold" for="chk-teacher-blank-body">Để trống thân bài (sinh viên tự gõ theo bài giảng)</label>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Đầu trang (Header):</label>
+                <textarea id="txt-teacher-header" class="form-control" rows="4"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Thân bài (Body):</label>
+                <textarea id="txt-teacher-body" class="form-control" rows="5"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold small text-muted">Cuối trang (Footer):</label>
+                <textarea id="txt-teacher-footer" class="form-control" rows="4"></textarea>
+              </div>
+              <button class="btn btn-primary fw-bold" onclick="saveTeacherTemplateConfig()">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu cấu hình mẫu bài tập
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. NGÂN HÀNG TRẮC NGHIỆM -->
+      <div class="tab-pane fade" id="content-quiz">
+        <div class="card card-custom p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-primary mb-0">
+              <i class="fa-solid fa-clipboard-question me-2"></i> QUẢN LÝ NGÂN HÀNG CÂU HỎI TRẮC NGHIỆM
+            </h5>
+            <div class="d-flex gap-2">
+              <select id="sel-teacher-quiz-doc" class="form-select form-select-sm fw-bold" onchange="loadTeacherQuizQuestions()">
+                <option value="cong_van_de_nghi">2. Công văn đề nghị</option>
+                <option value="bai_thu_hoach">1. Bài thu hoạch</option>
+                <option value="thong_bao_nhiem_vu">3. Thông báo nhiệm vụ</option>
+                <option value="thong_bao_hoat_dong">4. Thông báo hoạt động</option>
+                <option value="to_trinh_xin_kinh_phi">5. Tờ trình xin kinh phí</option>
+                <option value="to_trinh_nhan_su">6. Tờ trình nhân sự</option>
+                <option value="to_trinh_thiet_bi">7. Tờ trình thiết bị</option>
+                <option value="bao_cao">8. Báo cáo</option>
+              </select>
+              <button class="btn btn-sm btn-primary fw-bold text-nowrap" onclick="openAddQuestionModal()">
+                <i class="fa-solid fa-plus me-1"></i> Thêm câu hỏi
+              </button>
+            </div>
+          </div>
+          <div id="teacher-quiz-list" class="d-flex flex-column gap-3"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL THÊM SINH VIÊN LẺ -->
+  <div class="modal fade" id="modal-add-student" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Thêm Sinh Viên Lẻ Vào Lớp</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Mã lớp KN <span class="text-danger">*</span></label>
+            <input type="text" id="inp-add-student-class" class="form-control text-uppercase" placeholder="VD: KN01, KN02">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Số báo danh (SBD)</label>
+            <input type="text" id="inp-add-student-sbd" class="form-control" placeholder="VD: 01, 15">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Mã số sinh viên (MSSV) <span class="text-danger">*</span></label>
+            <input type="text" id="inp-add-student-mssv" class="form-control" placeholder="VD: 2100001234">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Họ và tên sinh viên <span class="text-danger">*</span></label>
+            <input type="text" id="inp-add-student-name" class="form-control" placeholder="VD: Nguyễn Văn An">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary fw-bold" onclick="saveSingleStudent()">Lưu sinh viên</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NHẬP HÀNG LOẠT EXCEL -->
+  <div class="modal fade" id="modal-import-roster" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-import me-2"></i>Dán Danh Sách Sinh Viên Từ Excel</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Mã lớp áp dụng <span class="text-danger">*</span></label>
+            <input type="text" id="inp-import-class" class="form-control text-uppercase" placeholder="VD: KN01">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Dán dữ liệu từ Excel (Hỗ trợ định dạng Tab, Phẩy, Gạch nối):</label>
+            <textarea id="txt-import-raw" class="form-control" rows="10" placeholder="01   2100001234   Nguyễn Văn An&#10;02   2100005678   Trần Thị Bình&#10;2280601111 - Lê Hoàng C"></textarea>
+            <small class="text-muted d-block mt-1">Giảng viên chỉ cần copy các cột (SBD, MSSV, Họ tên) từ file Excel và dán trực tiếp vào ô trên.</small>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="chk-import-overwrite">
+            <label class="form-check-label" for="chk-import-overwrite">Ghi đè hoàn toàn danh sách cũ của lớp này</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-success fw-bold" onclick="executeImportRoster()">Nhập danh sách</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    let allTeacherData = {};
+    let currentRosterClass = 'ALL';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTeacherData();
+      loadTeacherQuizQuestions();
+    });
+
+    async function loadTeacherData() {
+      try {
+        const res = await fetch('/api/teacher/data');
+        if (!res.ok) return;
+        allTeacherData = await res.json();
+        
+        renderSubmissionsTable(allTeacherData.submissions || []);
+        renderStats(allTeacherData);
+        updateTeacherSessionUI(allTeacherData.session_state || {});
+        renderClassDropdowns(allTeacherData.classes || [], allTeacherData.students_roster || {});
+        renderFilteredFraudLogs(allTeacherData.fraud_logs || []);
+        renderRosterTable(allTeacherData.students_roster || {});
+      } catch (err) {
+        console.error('Lỗi nạp dữ liệu Giảng viên:', err);
+      }
+    }
+
+    function renderStats(data) {
+      const subs = data.submissions || [];
+      const frauds = data.fraud_logs || [];
+      const roster = data.students_roster || {};
+      
+      let totalStudents = 0;
+      for (const k in roster) {
+        if (Array.isArray(roster[k])) totalStudents += roster[k].length;
+      }
+
+      document.getElementById('stat-total-submissions').innerText = subs.length;
+      document.getElementById('lbl-tab-sub-count').innerText = subs.length;
+      document.getElementById('stat-fraud-count').innerText = frauds.length;
+      document.getElementById('lbl-tab-fraud-count').innerText = frauds.length;
+      document.getElementById('stat-total-roster').innerText = totalStudents;
+      document.getElementById('lbl-tab-roster-count').innerText = totalStudents;
+      
+      const perfectCount = subs.filter(s => s.status && s.status.includes('100%')).length;
+      const rate = subs.length > 0 ? Math.round((perfectCount / subs.length) * 100) : 100;
+      document.getElementById('stat-perfect-rate').innerText = `${rate}%`;
+    }
+
+    function updateTeacherSessionUI(state) {
+      const badge = document.getElementById('badge-teacher-session-status');
+      const desc = document.getElementById('text-teacher-session-desc');
+      const btn = document.getElementById('btn-toggle-session');
+      const icon = document.getElementById('icon-session-status');
+      const card = document.getElementById('teacher-session-card');
+      const rosterBadge = document.getElementById('lbl-roster-status');
+      const activeDocSel = document.getElementById('teacher-sel-active-doc');
+
+      if (state.active_doc_type && activeDocSel && activeDocSel.value !== state.active_doc_type) {
+        activeDocSel.value = state.active_doc_type;
+      }
+
+      if (state.enforce_roster !== undefined) {
+        rosterBadge.innerText = state.enforce_roster ? 'BẮT BUỘC' : 'TỰ DO';
+        rosterBadge.className = state.enforce_roster ? 'text-success fw-bold' : 'text-secondary fw-bold';
+      }
+
+      if (state.is_open) {
+        badge.className = 'badge bg-success fs-6 px-3 py-1 rounded-pill shadow-sm';
+        badge.innerHTML = '<i class="fa-solid fa-lock-open me-1"></i> Đang Mở (Cho phép sinh viên làm bài)';
+        desc.innerText = state.message || 'Hệ thống đang mở cho sinh viên nhận đề, làm bài trắc nghiệm và thẩm định nộp bài.';
+        btn.className = 'btn btn-danger px-4 py-2 fw-bold shadow-sm text-nowrap';
+        btn.innerHTML = '<i class="fa-solid fa-lock me-2"></i> KHÓA: DỪNG LÀM BÀI ĐỂ GIẢNG LÝ THUYẾT';
+        icon.className = 'fa-solid fa-door-open';
+        card.style.borderColor = '#198754';
+      } else {
+        badge.className = 'badge bg-danger fs-6 px-3 py-1 rounded-pill shadow-sm';
+        badge.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Đang Khóa (Giảng lý thuyết)';
+        desc.innerText = state.message || 'Sinh viên đang tập trung nghe giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa.';
+        btn.className = 'btn btn-success px-4 py-2 fw-bold shadow-sm text-nowrap';
+        btn.innerHTML = '<i class="fa-solid fa-door-open me-2"></i> BẬT: CHO PHÉP LÀM BÀI';
+        icon.className = 'fa-solid fa-school-lock';
+        card.style.borderColor = '#dc3545';
+      }
+    }
+
+    async function toggleSessionState() {
+      const currentState = allTeacherData.session_state || {};
+      const newIsOpen = !currentState.is_open;
+      const confirmText = newIsOpen 
+        ? 'Bạn có chắc chắn muốn MỞ hệ thống cho sinh viên bắt đầu làm bài không?'
+        : 'Bạn có chắc muốn KHÓA hệ thống để sinh viên tập trung nghe giảng không?';
+
+      const result = await Swal.fire({
+        title: newIsOpen ? 'Mở cổng làm bài?' : 'Khóa cổng làm bài?',
+        text: confirmText,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: newIsOpen ? 'Mở làm bài' : 'Khóa hệ thống',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/session-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_open: newIsOpen })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Thành công',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể thay đổi trạng thái ca thi.', 'error');
+      }
+    }
+
+    async function onTeacherChangeActiveDocType() {
+      const sel = document.getElementById('teacher-sel-active-doc');
+      const docType = sel.value;
+      try {
+        const res = await fetch('/api/teacher/set-active-doc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doc_type: docType })
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã đổi bài tập giao',
+            text: `Đã chuyển văn bản thực hành mặc định sang: ${docType}`,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể cập nhật loại văn bản giao.', 'error');
+      }
+    }
+
+    async function toggleTeacherRosterMode() {
+      try {
+        const res = await fetch('/api/teacher/roster-toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Chế độ danh sách lớp',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể đổi chế độ kiểm tra danh sách.', 'error');
+      }
+    }
+
+    function renderClassDropdowns(classes, roster) {
+      const filterSel = document.getElementById('sel-filter-class');
+      const rosterSel = document.getElementById('sel-roster-class');
+      
+      const uniqueClasses = new Set(classes);
+      for (const k in roster) uniqueClasses.add(k);
+      
+      const arr = Array.from(uniqueClasses).sort();
+      
+      let filterOpts = '<option value="ALL">-- Tất cả các lớp --</option>';
+      let rosterOpts = '<option value="ALL">-- Chọn lớp quản lý --</option>';
+      
+      arr.forEach(c => {
+        filterOpts += `<option value="${c}">Lớp ${c}</option>`;
+        rosterOpts += `<option value="${c}">Lớp ${c}</option>`;
+      });
+
+      const curFilter = filterSel.value;
+      filterSel.innerHTML = filterOpts;
+      if (curFilter) filterSel.value = curFilter;
+
+      const curRoster = rosterSel.value;
+      rosterSel.innerHTML = rosterOpts;
+      if (curRoster) rosterSel.value = curRoster;
+    }
+
+    function renderSubmissionsTable(subs) {
+      const tbody = document.getElementById('tbl-submissions-body');
+      const filter = document.getElementById('sel-filter-class').value;
+      const search = document.getElementById('inp-search-submissions').value.toLowerCase().trim();
+
+      let list = subs;
+      if (filter !== 'ALL') {
+        list = list.filter(s => s.class_code === filter);
+      }
+      if (search) {
+        list = list.filter(s => (s.mssv && s.mssv.toLowerCase().includes(search)) || (s.name && s.name.toLowerCase().includes(search)));
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa-solid fa-inbox fa-2x mb-2 d-block opacity-50"></i>Không tìm thấy bài nộp nào phù hợp.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map((s, idx) => {
+        const flagBadge = s.is_suspicious_speed 
+          ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${s.elapsed_time} 🚩 Nộp quá nhanh</span>`
+          : `<span class="badge bg-light text-dark border">${s.elapsed_time || 'N/A'}</span>`;
+        return `
+          <tr>
+            <td><span class="badge bg-primary-subtle text-primary fw-bold">${s.class_code || 'Chung'}</span></td>
+            <td class="badge-mono">${s.sbd || '-'}</td>
+            <td class="badge-mono fw-bold text-dark">${s.mssv}</td>
+            <td class="fw-semibold">${s.name}</td>
+            <td><small class="fw-semibold text-secondary">${s.doc_name || s.doc_type}</small></td>
+            <td><small class="badge-mono text-muted">${s.filename}</small></td>
+            <td><small class="text-secondary">${s.submitted_at}</small></td>
+            <td>${flagBadge} <span class="badge bg-light text-secondary border ms-1">Thử: ${s.preview_count || 0} lần</span></td>
+            <td><span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-check me-1"></i>100% NĐ 30</span></td>
+            <td class="text-center">
+              <a href="/api/download/submitted/${s.filename}" class="btn btn-sm btn-outline-primary me-1" title="Tải bài Word">
+                <i class="fa-solid fa-download"></i>
+              </a>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission('${s.mssv}', '${s.doc_type}')" title="Xóa bài nộp">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function searchSubmissions() {
+      renderSubmissionsTable(allTeacherData.submissions || []);
+    }
+
+    function onClassFilterChange() {
+      renderSubmissionsTable(allTeacherData.submissions || []);
+    }
+
+    function exportSubmissionsCSV() {
+      const filter = document.getElementById('sel-filter-class').value;
+      window.location.href = `/api/teacher/export-csv?class_code=${filter}`;
+    }
+
+    async function deleteSubmission(mssv, docType) {
+      const res = await Swal.fire({
+        title: 'Xóa bài nộp?',
+        text: `Bạn có chắc muốn xóa bài nộp của MSSV ${mssv}? Sinh viên sẽ được phép làm lại từ đầu.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Đồng ý xóa'
+      });
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/submissions/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mssv: mssv, doc_type: docType })
+        });
+        const d = await resp.json();
+        if (d.success) {
+          Swal.fire('Đã xóa', d.message, 'success');
+          loadTeacherData();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa bài nộp.', 'error');
+      }
+    }
+
+    function renderRosterTable(roster) {
+      const selClass = document.getElementById('sel-roster-class').value;
+      const tbody = document.getElementById('tbl-roster-body');
+      
+      let students = [];
+      if (selClass === 'ALL' || !selClass) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Vui lòng chọn một lớp cụ thể từ danh sách để xem và quản lý sinh viên.</td></tr>`;
+        return;
+      }
+      
+      students = roster[selClass] || [];
+      if (students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Lớp [${selClass}] hiện chưa có sinh viên nào. Hãy bấm "Thêm sinh viên lẻ" hoặc "Dán danh sách Excel" để nạp sinh viên.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = students.map((s, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td class="badge-mono">${s.sbd || '-'}</td>
+          <td class="badge-mono fw-bold text-primary">${s.mssv}</td>
+          <td class="fw-semibold">${s.name}</td>
+          <td><span class="badge bg-light text-dark border">${selClass}</span></td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster('${selClass}', '${s.mssv}')" title="Xóa sinh viên">
+              <i class="fa-solid fa-user-xmark"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function onRosterClassChange() {
+      renderRosterTable(allTeacherData.students_roster || {});
+    }
+
+    function openAddStudentModal() {
+      const curClass = document.getElementById('sel-roster-class').value;
+      if (curClass && curClass !== 'ALL') {
+        document.getElementById('inp-add-student-class').value = curClass;
+      }
+      new bootstrap.Modal(document.getElementById('modal-add-student')).show();
+    }
+
+    async function saveSingleStudent() {
+      const c = document.getElementById('inp-add-student-class').value.trim().toUpperCase();
+      const sbd = document.getElementById('inp-add-student-sbd').value.trim();
+      const mssv = document.getElementById('inp-add-student-mssv').value.trim();
+      const name = document.getElementById('inp-add-student-name').value.trim();
+
+      if (!c || !mssv || !name) {
+        Swal.fire('Cảnh báo', 'Vui lòng nhập Mã lớp, MSSV và Họ tên!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/teacher/students/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: c, sbd: sbd, mssv: mssv, name: name })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modal-add-student')).hide();
+          Swal.fire('Thành công', data.message, 'success');
+          document.getElementById('sel-roster-class').value = c;
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể thêm sinh viên', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    function openImportRosterModal() {
+      const curClass = document.getElementById('sel-roster-class').value;
+      if (curClass && curClass !== 'ALL') {
+        document.getElementById('inp-import-class').value = curClass;
+      }
+      new bootstrap.Modal(document.getElementById('modal-import-roster')).show();
+    }
+
+    async function executeImportRoster() {
+      const c = document.getElementById('inp-import-class').value.trim().toUpperCase();
+      const raw = document.getElementById('txt-import-raw').value.trim();
+      const overwrite = document.getElementById('chk-import-overwrite').checked;
+
+      if (!c || !raw) {
+        Swal.fire('Cảnh báo', 'Vui lòng nhập Mã lớp và dán danh sách sinh viên!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/teacher/students/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: c, raw_text: raw, overwrite: overwrite })
+        });
+        const data = await res.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modal-import-roster')).hide();
+          Swal.fire('Thành công', data.message, 'success');
+          document.getElementById('sel-roster-class').value = c;
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể nhập danh sách', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ', 'error');
+      }
+    }
+
+    async function deleteStudentRoster(classCode, mssv) {
+      const res = await Swal.fire({
+        title: 'Xóa sinh viên?',
+        text: `Bạn có chắc muốn xóa sinh viên ${mssv} khỏi lớp ${classCode}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Đồng ý xóa'
+      });
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/students/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: classCode, mssv: mssv })
+        });
+        const d = await resp.json();
+        if (d.success) {
+          Swal.fire('Đã xóa', d.message, 'success');
+          loadTeacherData();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa sinh viên.', 'error');
+      }
+    }
+
+    async function clearClassRoster() {
+      const c = document.getElementById('sel-roster-class').value;
+      if (!c || c === 'ALL') {
+        Swal.fire('Cảnh báo', 'Vui lòng chọn một lớp cụ thể để làm trống!', 'warning');
+        return;
+      }
+
+      const res = await Swal.fire({
+        title: `Làm trống lớp ${c}?`,
+        text: `CẢNH BÁO: Toàn bộ danh sách sinh viên của lớp ${c} sẽ bị xóa!`,
+        icon: 'danger',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Xác nhận xóa hết'
+      });
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/students/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: c })
+        });
+        const d = await resp.json();
+        if (d.success) {
+          Swal.fire('Đã làm trống', d.message, 'success');
+          loadTeacherData();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể làm trống danh sách.', 'error');
+      }
+    }
+
+    function renderFilteredFraudLogs(logs) {
+      const container = document.getElementById('fraud-logs-container');
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-muted py-4">
+            <i class="fa-solid fa-circle-check text-success fa-2x mb-2 d-block"></i>
+            Không phát hiện trường hợp vi phạm gian lận nào.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = logs.map(l => {
+        const f = l.fraud_data || {};
+        const svA = f.student_a || {};
+        const svB = f.student_b || {};
+        return `
+          <div class="card p-3 border-danger shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-danger fs-6"><i class="fa-solid fa-shield-virus me-1"></i> ${f.reason || 'Phát hiện mã ẩn sao chép'}</span>
+              <div class="d-flex align-items-center gap-2">
+                <small class="text-muted">${l.timestamp || ''}</small>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteFraudLog('${l.id}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="row g-2 small">
+              <div class="col-md-6 border-end">
+                <strong class="text-danger">Sinh viên nộp (Người chép):</strong><br>
+                Họ tên: <b>${svA.name || 'N/A'}</b> - MSSV: <code>${svA.mssv || 'N/A'}</code> (Lớp: ${svA.class_code || l.class_code || 'Chung'})
+              </div>
+              <div class="col-md-6">
+                <strong class="text-primary">Nguồn gốc bài tập (Người cho chép):</strong><br>
+                Họ tên: <b>${svB.name || 'N/A'}</b> - MSSV: <code>${svB.mssv || 'N/A'}</code> (Lớp: ${svB.class_code || 'Chung'})
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function deleteFraudLog(logId) {
+      try {
+        const res = await fetch('/api/teacher/fraud/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: logId })
+        });
+        const d = await res.json();
+        if (d.success) {
+          Swal.fire('Đã xóa', d.message, 'success');
+          loadTeacherData();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa biên bản vi phạm.', 'error');
+      }
+    }
+
+    async function clearAllFraudLogs() {
+      const res = await Swal.fire({
+        title: 'Xóa toàn bộ nhật ký?',
+        text: 'Bạn có chắc muốn làm trống toàn bộ lịch sử vi phạm gian lận?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Đồng ý xóa'
+      });
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/fraud/clear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const d = await resp.json();
+        if (d.success) {
+          Swal.fire('Thành công', d.message, 'success');
+          loadTeacherData();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa nhật ký.', 'error');
+      }
+    }
+
+    async function onTeacherDocSelect() {
+      const docType = document.getElementById('teacher-doc-select').value;
+      try {
+        const res = await fetch('/api/teacher/templates');
+        const data = await res.json();
+        const tmpl = data[docType] || {};
+        document.getElementById('txt-teacher-header').value = tmpl.header_part || '';
+        document.getElementById('txt-teacher-body').value = tmpl.body_part || '';
+        document.getElementById('txt-teacher-footer').value = tmpl.footer_part || '';
+        document.getElementById('chk-teacher-blank-body').checked = bool(tmpl.is_body_blank);
+      } catch (e) {}
+    }
+
+    function onTeacherBlankToggle() {
+      const isBlank = document.getElementById('chk-teacher-blank-body').checked;
+      const bodyArea = document.getElementById('txt-teacher-body');
+      bodyArea.disabled = isBlank;
+      if (isBlank) bodyArea.classList.add('bg-light');
+      else bodyArea.classList.remove('bg-light');
+    }
+
+    async function saveTeacherTemplateConfig() {
+      const docType = document.getElementById('teacher-doc-select').value;
+      const isBlank = document.getElementById('chk-teacher-blank-body').checked;
+      const header = document.getElementById('txt-teacher-header').value;
+      const body = document.getElementById('txt-teacher-body').value;
+      const footer = document.getElementById('txt-teacher-footer').value;
+
+      try {
+        const res = await fetch('/api/teacher/templates/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doc_type: docType,
+            is_body_blank: isBlank,
+            header_part: header,
+            body_part: body,
+            footer_part: footer
+          })
+        });
+        const d = await res.json();
+        if (d.success) Swal.fire('Thành công', d.message, 'success');
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể lưu mẫu văn bản', 'error');
+      }
+    }
+
+    async function loadTeacherQuizQuestions() {
+      const docType = document.getElementById('sel-teacher-quiz-doc').value;
+      try {
+        const res = await fetch(`/api/teacher/quiz/${docType}`);
+        const data = await res.json();
+        renderTeacherQuizList(data.questions || []);
+      } catch (e) {}
+    }
+
+    function renderTeacherQuizList(questions) {
+      const container = document.getElementById('teacher-quiz-list');
+      if (questions.length === 0) {
+        container.innerHTML = `<div class="text-muted text-center py-4">Chưa có câu hỏi trắc nghiệm nào cho loại văn bản này.</div>`;
+        return;
+      }
+      container.innerHTML = questions.map((q, idx) => `
+        <div class="card p-3 border shadow-xs">
+          <div class="d-flex justify-content-between align-items-start">
+            <h6 class="fw-bold text-dark mb-2">Câu ${idx + 1}: ${q.question}</h6>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteTeacherQuestion(${q.id})"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <div class="ps-3 small text-secondary">
+            ${(q.options || []).map((opt, oIdx) => `
+              <div class="${oIdx === q.correct ? 'fw-bold text-success' : ''}">
+                ${String.fromCharCode(65 + oIdx)}. ${opt} ${oIdx === q.correct ? '✔ (Đáp án đúng)' : ''}
+              </div>
+            `).join('')}
+          </div>
+          <div class="mt-2 small text-muted fst-italic">Giải thích: ${q.explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP'}</div>
+        </div>
+      `).join('');
+    }
+
+    async function deleteTeacherQuestion(qId) {
+      const docType = document.getElementById('sel-teacher-quiz-doc').value;
+      const res = await Swal.fire({
+        title: 'Xóa câu hỏi?',
+        text: 'Bạn có chắc muốn xóa câu hỏi trắc nghiệm này?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Đồng ý xóa'
+      });
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/teacher/quiz/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doc_type: docType, id: qId })
+        });
+        const d = await resp.json();
+        if (d.success) {
+          Swal.fire('Đã xóa', d.message, 'success');
+          loadTeacherQuizQuestions();
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể xóa câu hỏi', 'error');
+      }
+    }
+  </script>
+</body>
+</html>
