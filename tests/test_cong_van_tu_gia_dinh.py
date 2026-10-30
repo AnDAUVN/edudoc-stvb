@@ -328,5 +328,51 @@ class TestCongVanTuGiaDinh(unittest.TestCase):
         indent_errors_ok = [e for e in box6_ok.get("errors", []) if "thụt vào 1 - 1.27 cm" in e.get("issue", "")]
         self.assertEqual(len(indent_errors_ok), 0, f"Đoạn văn chính chuẩn và bullet đã lùi vào không được báo lỗi thụt dòng!")
 
+    def test_06_punctuation_spacing_luu_vt(self):
+        """Bắt lỗi quy tắc khoảng cách trống khi viết dính liền sau dấu hai chấm: '- Lưu:VT.' thay vì '- Lưu: VT.'"""
+        doc_path = os.path.join(self.temp_dir, "test_cv_luu_vt_no_space.docx")
+        doc = Document()
+        ht = doc.add_table(rows=2, cols=2)
+        doc.add_paragraph("Kính gửi: Sở Công Thương quận Gò Vấp.")
+        doc.add_paragraph("Nội dung bài viết...")
+        ft = doc.add_table(rows=1, cols=2)
+        # Ô 9b cố tình viết dính liền Lưu:VT.
+        p_nn_title = ft.cell(0, 0).paragraphs[0]
+        p_nn_title.text = "Nơi nhận:"
+        p_nn_title.runs[0].italic = True
+        p_nn_title.runs[0].bold = True
+        p_nn_title.runs[0].font.size = Pt(12)
+
+        p_nn_item = ft.cell(0, 0).add_paragraph("- Lưu:VT.")
+        p_nn_item.runs[0].font.size = Pt(11)
+
+        p_cv = ft.cell(0, 1).paragraphs[0]
+        p_cv.text = "GIÁM ĐỐC"
+        p_cv.runs[0].bold = True
+        p_cv.runs[0].font.size = Pt(13)
+        for _ in range(3):
+            ft.cell(0, 1).add_paragraph()
+        p_name = ft.cell(0, 1).add_paragraph("Trần Thị Hiền")
+        p_name.runs[0].bold = True
+        p_name.runs[0].font.size = Pt(13)
+        doc.save(doc_path)
+
+        validator = Decree30Validator(doc_path, "cong_van_de_nghi", mssv="2100001234")
+        report = validator.validate_document()
+        box9b = next((b for b in report.get("checklist", []) if str(b.get("box_id")) == "9b"), None)
+        self.assertIsNotNone(box9b, "Phải có Ô 9b")
+        has_spacing_err = any("Dấu hai chấm" in e.get("issue", "") and "Lưu:VT" in e.get("issue", "") for e in box9b.get("errors", []))
+        self.assertTrue(has_spacing_err, "Phải bắt lỗi khoảng cách trống: Thiếu khoảng trắng sau dấu hai chấm trong 'Lưu:VT.'!")
+
+        # Khi sửa thành '- Lưu: VT.' -> Hết lỗi dấu hai chấm
+        p_nn_item.text = "- Lưu: VT."
+        p_nn_item.runs[0].font.size = Pt(11)
+        doc.save(doc_path)
+        v_fixed = Decree30Validator(doc_path, "cong_van_de_nghi", mssv="2100001234")
+        rep_fixed = v_fixed.validate_document()
+        box9b_fixed = next((b for b in rep_fixed.get("checklist", []) if str(b.get("box_id")) == "9b"), None)
+        has_spacing_err_fixed = any("Dấu hai chấm" in e.get("issue", "") and "Lưu:VT" in e.get("issue", "") for e in box9b_fixed.get("errors", []))
+        self.assertFalse(has_spacing_err_fixed, "Sau khi sửa thành '- Lưu: VT.' không còn bị báo lỗi dấu hai chấm!")
+
 if __name__ == "__main__":
     unittest.main()

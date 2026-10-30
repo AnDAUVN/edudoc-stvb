@@ -482,6 +482,18 @@ class Decree30Validator:
         elif not re.match(r"^Số\s*:", t):
             errors.append({"issue": "Số văn bản phải bắt đầu bằng từ 'Số:' và có dấu hai chấm ngay sau.", "fix": "Sửa thành 'Số: ...'."})
 
+        # Kiểm tra khoảng cách sau dấu hai chấm trong 'Số:'
+        if re.search(r"^Số:[^\s]", t):
+            errors.append({
+                "issue": "Ô 3: Quy tắc khoảng cách trống: Sau chữ 'Số:' phải có 1 khoảng trắng (dấu cách) (Đang viết: 'Số:...').",
+                "fix": "Thêm 1 dấu cách sau dấu hai chấm (Ví dụ: 'Số: 01/TB-ĐT' thay vì 'Số:01/TB-ĐT')."
+            })
+        elif re.search(r"^Số\s+:", t):
+            errors.append({
+                "issue": "Ô 3: Quy tắc khoảng cách trống: Không chừa khoảng trắng trước dấu hai chấm trong 'Số:'.",
+                "fix": "Xóa khoảng trắng trước dấu hai chấm: 'Số: ...'."
+            })
+
         if "/" not in t:
             errors.append({"issue": "Giữa số ban hành và ký hiệu văn bản phải có dấu gạch chéo (/).", "fix": "Thêm dấu '/' (Ví dụ: Số: 01/TB-ĐT hoặc Số: 01/HT)." })
 
@@ -980,6 +992,114 @@ class Decree30Validator:
         return errors
 
     # =========================================================================
+    # KIỂM TRA QUY TẮC KHOẢNG CÁCH TRỐNG KHI SOẠN THẢO (PUNCTUATION SPACING)
+    # Dựa trên bài giảng chính thức NTTU & Nghị định 30/2020/NĐ-CP
+    # =========================================================================
+    def check_decree30_punctuation_spacing(self, text, context_name):
+        """
+        Kiểm tra quy tắc khoảng cách trống:
+        1. Dấu hai chấm (:), dấu phẩy (,), dấu chấm phẩy (;): không cách trước, 1 cách sau.
+        2. Dấu chấm (.), dấu than (!), dấu hỏi (?): không cách trước, 1 cách sau.
+        3. Dấu ngoặc đơn ( ): không cách bên trong, 1 cách bên ngoài.
+        """
+        errors = []
+        if not text:
+            return errors
+
+        # Bỏ qua dòng thông báo hệ thống / placeholder
+        if "[Nội dung văn bản:" in text or "tự nhập theo nội dung" in text:
+            return errors
+
+        # 1. DẤU HAI CHẤM (:)
+        # 1.1. Thiếu khoảng trắng sau dấu hai chấm (ví dụ: 'Lưu:VT.', 'Số:01', 'Kính gửi:Ban')
+        # Loại trừ URL 'http:', 'https:'
+        m_col_no_space = re.search(r'(?<!https)(?<!http)\b([a-zA-ZÀ-ỹ]+):([^\s\.,;]{1,15})', text)
+        if m_col_no_space:
+            sample = m_col_no_space.group(0)
+            word_before = m_col_no_space.group(1)
+            word_after = m_col_no_space.group(2)
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu hai chấm): Sau dấu hai chấm (:) phải có 1 khoảng trắng (dấu cách) (Đang viết dính liền: '{sample}').",
+                "fix": f"Thêm dấu cách sau dấu hai chấm (Sửa thành: '{word_before}: {word_after}')."
+            })
+        # 1.2. Thừa khoảng trắng trước dấu hai chấm (ví dụ: 'Lưu : VT', 'Số : 01')
+        m_col_space_before = re.search(r'\b([a-zA-ZÀ-ỹ]+)\s+:', text)
+        if m_col_space_before:
+            word_before = m_col_space_before.group(1)
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu hai chấm): Không chừa khoảng trắng trước dấu hai chấm (:) (Đang viết: '{word_before} :').",
+                "fix": f"Xóa khoảng trắng trước dấu hai chấm (Sửa thành: '{word_before}:')."
+            })
+
+        # 2. DẤU PHẨY (,)
+        # 2.1. Thiếu khoảng trắng sau dấu phẩy (loại trừ số thập phân như 3,5 hoặc 15,5)
+        m_comma_no_space = re.search(r',([a-zA-ZÀ-ỹ][\wÀ-ỹ]*)', text)
+        if m_comma_no_space:
+            sample = m_comma_no_space.group(0)
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu phẩy): Sau dấu phẩy (,) phải có 1 khoảng trắng (dấu cách) (Đang viết dính liền: '{sample}').",
+                "fix": f"Thêm dấu cách sau dấu phẩy (Sửa thành: ', {m_comma_no_space.group(1)}')."
+            })
+        # 2.2. Thừa khoảng trắng trước dấu phẩy
+        m_comma_space_before = re.search(r'([a-zA-ZÀ-ỹ0-9%])\s+,', text)
+        if m_comma_space_before:
+            sample = m_comma_space_before.group(0)
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu phẩy): Không chừa khoảng trắng trước dấu phẩy (,) (Đang viết: '{sample}').",
+                "fix": "Đặt dấu phẩy sát ngay ký tự đứng trước, không chừa dấu cách phía trước."
+            })
+
+        # 3. DẤU CHẤM PHẨY (;)
+        # 3.1. Thiếu khoảng trắng sau dấu chấm phẩy
+        m_semi_no_space = re.search(r';([a-zA-ZÀ-ỹ][\wÀ-ỹ]*)', text)
+        if m_semi_no_space:
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu chấm phẩy): Sau dấu chấm phẩy (;) phải có 1 khoảng trắng (dấu cách).",
+                "fix": f"Thêm dấu cách sau dấu chấm phẩy (Sửa thành: '; {m_semi_no_space.group(1)}')."
+            })
+        # 3.2. Thừa khoảng trắng trước dấu chấm phẩy
+        if re.search(r'([a-zA-ZÀ-ỹ0-9])\s+;', text):
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu chấm phẩy): Không chừa khoảng trắng trước dấu chấm phẩy (;).",
+                "fix": "Đặt dấu chấm phẩy sát ngay chữ đứng trước, không chừa dấu cách phía trước."
+            })
+
+        # 4. DẤU CHẤM (.)
+        # 4.1. Thừa khoảng trắng trước dấu chấm
+        m_dot_space = re.search(r'([a-zA-ZÀ-ỹ0-9%])\s+\.', text)
+        if m_dot_space:
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống (Dấu chấm): Không chừa khoảng trắng trước dấu chấm (.).",
+                "fix": "Đặt dấu chấm sát ngay ký tự đứng trước, không chừa dấu cách phía trước."
+            })
+
+        # 5. DẤU CHẤM HỎI (?) VÀ CHẤM THAN (!)
+        if re.search(r'\s+[!?]', text):
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống: Không chừa khoảng trắng trước dấu chấm hỏi (?) hoặc chấm than (!).",
+                "fix": "Đặt dấu chấm hỏi/chấm than sát ngay ký tự đứng trước."
+            })
+
+        # 6. DẤU NGOẶC ĐƠN ( ... )
+        if re.search(r'\(\s+[a-zA-ZÀ-ỹ0-9]', text):
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống: Không chừa khoảng trắng sát phía trong mở ngoặc đơn '('.",
+                "fix": "Viết chữ liền sát sau dấu mở ngoặc '(' (Ví dụ: '(nếu có)' thay vì '( nếu có)')."
+            })
+        if re.search(r'[a-zA-ZÀ-ỹ0-9]\s+\)', text):
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống: Không chừa khoảng trắng sát phía trong đóng ngoặc đơn ')'.",
+                "fix": "Viết chữ liền sát trước dấu đóng ngoặc ')' (Ví dụ: '(nếu có)' thay vì '(nếu có )')."
+            })
+        if re.search(r'[a-zA-ZÀ-ỹ0-9]\(', text):
+            errors.append({
+                "issue": f"{context_name}: Quy tắc khoảng cách trống: Phía trước dấu mở ngoặc đơn '(' phải có 1 khoảng trắng (dấu cách).",
+                "fix": "Thêm dấu cách trước dấu mở ngoặc '('."
+            })
+
+        return errors
+
+    # =========================================================================
     # Ô 6: NỘI DUNG VĂN BẢN
     # =========================================================================
     def check_box_6_noi_dung(self, body_paragraphs):
@@ -1146,6 +1266,14 @@ class Decree30Validator:
                 continue
             cap_errs = self.check_decree30_capitalization(text_p, "Ô 6: Nội dung văn bản")
             errors.extend(cap_errs)
+
+        # 6.3. Kiểm tra quy tắc khoảng cách trống trong nội dung văn bản (Dấu hai chấm, phẩy, chấm phẩy, chấm, than, hỏi, ngoặc)
+        for p in body_paragraphs:
+            text_p = self._clean_text(p)
+            if len(text_p) < 5 or "[Nội dung văn bản:" in text_p:
+                continue
+            punc_errs = self.check_decree30_punctuation_spacing(text_p, "Ô 6: Nội dung văn bản")
+            errors.extend(punc_errs)
 
         return {
             "box_id": 6,
@@ -1402,6 +1530,9 @@ class Decree30Validator:
         elif t_kg.startswith("Kính Gửi"):
             errors.append({"issue": "Ô 9a: Chữ 'gửi' trong 'Kính gửi:' là chữ in thường, không viết hoa.", "fix": "Sửa thành 'Kính gửi: ...'."})
 
+        # Kiểm tra quy tắc khoảng cách trống ở dòng Kính gửi
+        errors.extend(self.check_decree30_punctuation_spacing(t_kg, "Ô 9a: Nơi nhận trực tiếp (Kính gửi)"))
+
         expected_kg_size = self.get_expected_size("kinh_gui")
 
         # TH1: CHỈ CÓ 1 CƠ QUAN NHẬN
@@ -1441,6 +1572,7 @@ class Decree30Validator:
 
             for idx, item_p in enumerate(kinh_gui_items):
                 t_item = self._clean_text(item_p)
+                errors.extend(self.check_decree30_punctuation_spacing(t_item, "Ô 9a: Nơi nhận trực tiếp (Kính gửi)"))
                 has_num_pr = item_p._element.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pPr/{http://schemas.openxmlformats.org/wordprocessingml/2006/main}numPr') is not None
                 starts_with_dash = t_item.startswith(("-", "–", "—"))
                 if not (has_num_pr or starts_with_dash):
@@ -1500,6 +1632,9 @@ class Decree30Validator:
         if not re.search(r"Nơi\s+nhận\s*:", t_nn, re.IGNORECASE):
             errors.append({"issue": "Dòng Nơi nhận phải có dấu hai chấm ':' ngay sau (Nơi nhận:).", "fix": "Ghi đúng: 'Nơi nhận:'."})
 
+        # Kiểm tra khoảng cách trống ở tiêu đề 'Nơi nhận:'
+        errors.extend(self.check_decree30_punctuation_spacing(t_nn, "Ô 9b: Nơi nhận"))
+
         # Dòng Nơi nhận cố định: 12pt, nghiêng, đậm
         font_n, size_n, bold_n, italic_n = self._get_dominant_font_and_size(p_noi_nhan_title)
         if not italic_n:
@@ -1523,6 +1658,9 @@ class Decree30Validator:
 
             if "Lưu:" in t_it or "Lưu :" in t_it or "VT" in t_it:
                 has_luu_vt = True
+
+            # Kiểm tra quy tắc khoảng cách trống trong từng dòng nơi nhận (ví dụ: 'Lưu:VT.', 'VT,VP')
+            errors.extend(self.check_decree30_punctuation_spacing(t_it, "Ô 9b: Nơi nhận"))
 
             # Kiểm tra viết hoa tên cơ quan trong nơi nhận (bỏ qua 'Như kính gửi' và 'Lưu: VT')
             clean_org = t_it.lstrip("-–—*•+ ").rstrip(";.").strip()
