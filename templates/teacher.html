@@ -356,18 +356,24 @@
               </h5>
               <small class="text-secondary">Chỉ các sinh viên có trong danh sách mới được hệ thống cấp quyền nhận đề và nộp bài thi.</small>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <select id="sel-roster-class" class="form-select form-select-sm fw-bold border-primary text-primary" style="width: auto;" onchange="onRosterClassChange(this)">
                 <option value="ALL">-- Chọn lớp quản lý --</option>
               </select>
-              <button class="btn btn-sm btn-primary fw-bold" onclick="openAddStudentModal()">
+              <button type="button" class="btn btn-sm btn-outline-primary fw-bold text-nowrap" onclick="openAddNewClassModal()" title="Thêm mã lớp học kỹ năng mới vào hệ thống">
+                <i class="fa-solid fa-folder-plus me-1"></i> Thêm lớp mới
+              </button>
+              <button type="button" class="btn btn-sm btn-primary fw-bold text-nowrap" onclick="openAddStudentModal()">
                 <i class="fa-solid fa-user-plus me-1"></i> Thêm sinh viên lẻ
               </button>
-              <button class="btn btn-sm btn-outline-success fw-bold" onclick="openImportRosterModal()">
+              <button type="button" class="btn btn-sm btn-outline-success fw-bold text-nowrap" onclick="openImportRosterModal()">
                 <i class="fa-solid fa-file-import me-1"></i> Dán danh sách Excel
               </button>
-              <button class="btn btn-sm btn-outline-danger fw-bold" onclick="clearClassRoster()">
-                <i class="fa-solid fa-trash-can me-1"></i> Làm trống lớp
+              <button type="button" class="btn btn-sm btn-outline-warning fw-bold text-dark text-nowrap" onclick="clearClassRoster()" title="Xóa toàn bộ sinh viên trong lớp này nhưng giữ lại mã lớp">
+                <i class="fa-solid fa-eraser me-1"></i> Làm trống lớp
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger fw-bold text-nowrap" id="btn-delete-class" onclick="deleteCurrentClass()" title="Xóa vĩnh viễn lớp này và danh sách sinh viên">
+                <i class="fa-solid fa-trash-can me-1"></i> Xóa lớp này
               </button>
             </div>
           </div>
@@ -1347,6 +1353,126 @@
         }
       } catch (e) {
         Swal.fire('Lỗi', 'Không thể làm trống danh sách.', 'error');
+      }
+    }
+
+    async function deleteCurrentClass() {
+      const sel = document.getElementById('sel-roster-class');
+      const classCode = sel ? sel.value : '';
+
+      if (!classCode || classCode === 'ALL') {
+        Swal.fire({
+          title: 'Vui lòng chọn lớp',
+          text: 'Hãy chọn một lớp cụ thể trong danh sách dropdown trước khi bấm nút "Xóa lớp này".',
+          icon: 'info',
+          confirmButtonColor: '#1e40af'
+        });
+        return;
+      }
+
+      const res = await Swal.fire({
+        title: `Xóa hoàn toàn lớp ${classCode}?`,
+        html: `
+          <div class="text-start">
+            <p class="text-danger fw-bold mb-2">
+              <i class="fa-solid fa-triangle-exclamation me-1"></i> CẢNH BÁO: HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC!
+            </p>
+            <ul class="text-secondary small mb-0 ps-3">
+              <li>Mã lớp <b>${classCode}</b> sẽ bị xóa khỏi danh sách lớp của hệ thống.</li>
+              <li>Toàn bộ sinh viên thuộc lớp <b>${classCode}</b> sẽ bị xóa vĩnh viễn.</li>
+              <li>Sinh viên sẽ không còn thấy mã lớp này ở Cổng Khảo thí.</li>
+            </ul>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa-solid fa-trash-can me-1"></i> Đồng ý xóa lớp này',
+        cancelButtonText: 'Hủy thao tác'
+      });
+
+      if (!res.isConfirmed) return;
+
+      try {
+        const resp = await fetch('/api/classes/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: classCode })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          Swal.fire({
+            title: 'Đã xóa lớp!',
+            text: data.message || `Đã xóa thành công mã lớp ${classCode}.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          await loadTeacherData();
+          const rSel = document.getElementById('sel-roster-class');
+          if (rSel) {
+            rSel.value = 'ALL';
+            onRosterClassChange();
+          }
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể xóa lớp.', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ khi xóa lớp.', 'error');
+      }
+    }
+
+    async function openAddNewClassModal() {
+      const { value: code } = await Swal.fire({
+        title: 'Thêm mã lớp học mới',
+        input: 'text',
+        inputLabel: 'Nhập mã lớp mới (Ví dụ: 22DTH03, KN06, K22_LUAT):',
+        inputPlaceholder: 'Mã lớp (viết liền, không dấu)...',
+        showCancelButton: true,
+        confirmButtonColor: '#1e40af',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa-solid fa-plus me-1"></i> Thêm mã lớp',
+        cancelButtonText: 'Hủy',
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return 'Vui lòng nhập mã lớp!';
+          }
+          if (value.trim().length < 2) {
+            return 'Mã lớp phải có ít nhất 2 ký tự!';
+          }
+        }
+      });
+
+      if (!code) return;
+      const cleanCode = code.trim().toUpperCase();
+
+      try {
+        const resp = await fetch('/api/classes/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ class_code: cleanCode })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          Swal.fire({
+            title: 'Đã thêm lớp mới!',
+            text: data.message || `Đã thêm thành công mã lớp ${cleanCode}.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          await loadTeacherData();
+          const rSel = document.getElementById('sel-roster-class');
+          if (rSel) {
+            rSel.value = cleanCode;
+            onRosterClassChange();
+          }
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể thêm lớp.', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
       }
     }
 

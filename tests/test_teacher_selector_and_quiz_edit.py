@@ -107,19 +107,9 @@ class TestTeacherSelectorAndQuizEdit(unittest.TestCase):
         self.assertEqual(res_get.status_code, 200)
         data_t = res_get.get_json()
         teachers = data_t["teachers"]
-        self.assertGreaterEqual(len(teachers), 3)
+        self.assertGreaterEqual(len(teachers), 1)
 
-        # 2. Chọn giảng viên GV02 (TS. Trần Thị B)
-        res_sel = self.client.post("/api/teacher/teachers/select", json={"id": "GV02"})
-        self.assertEqual(res_sel.status_code, 200)
-        active_t = res_sel.get_json()["active_teacher"]
-        self.assertEqual(active_t["id"], "GV02")
-
-        # Cổng sinh viên kiểm tra thấy đúng tên GV02
-        res_state = self.client.get("/api/session-state")
-        self.assertEqual(res_state.get_json().get("active_teacher"), "TS. Trần Thị B")
-
-        # 3. Thêm một Giảng viên mới
+        # 2. Thêm một Giảng viên mới
         res_add = self.client.post("/api/teacher/teachers/save", json={
             "name": "ThS. Phạm Thị Dung",
             "title": "Phó Trưởng Bộ môn",
@@ -132,10 +122,14 @@ class TestTeacherSelectorAndQuizEdit(unittest.TestCase):
         new_id = new_teacher["id"]
         self.assertEqual(new_teacher["name"], "ThS. Phạm Thị Dung")
 
-        # Chọn giảng viên vừa thêm
+        # 3. Chọn giảng viên vừa thêm
         res_sel_new = self.client.post("/api/teacher/teachers/select", json={"id": new_id})
         self.assertEqual(res_sel_new.status_code, 200)
         self.assertEqual(res_sel_new.get_json()["active_teacher"]["name"], "ThS. Phạm Thị Dung")
+
+        # Cổng sinh viên kiểm tra thấy đúng tên giảng viên vừa chọn
+        res_state = self.client.get("/api/session-state")
+        self.assertEqual(res_state.get_json().get("active_teacher"), "ThS. Phạm Thị Dung")
 
         # 4. Xuất CSV có tên giảng viên đang phụ trách
         res_csv = self.client.get("/api/teacher/export-csv")

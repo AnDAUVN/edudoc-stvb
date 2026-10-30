@@ -271,15 +271,29 @@ def add_class():
 
 @teacher_bp.route("/api/classes/delete", methods=["POST"])
 def delete_class():
-    """Xóa một mã lớp học kỹ năng"""
+    """Xóa một mã lớp học kỹ năng (bao gồm cả mã lớp và danh sách sinh viên của lớp)"""
     data = request.json or {}
     code = str(data.get("class_code", "")).strip().upper()
+    if not code:
+        return jsonify({"error": "Vui lòng cung cấp mã lớp cần xóa!"}), 400
+
     classes_data = load_json_file(CLASSES_FILE, {"classes": []})
     c_list = classes_data.get("classes", []) if isinstance(classes_data, dict) else classes_data
+    roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+
+    found = False
     if code in c_list:
         c_list.remove(code)
         save_json_file(CLASSES_FILE, {"classes": c_list})
-        return jsonify({"success": True, "classes": c_list, "message": f"Đã xóa lớp {code}!"})
+        found = True
+
+    if code in roster:
+        del roster[code]
+        save_json_file(STUDENTS_ROSTER_FILE, roster)
+        found = True
+
+    if found:
+        return jsonify({"success": True, "classes": c_list, "message": f"Đã xóa hoàn toàn lớp {code}!"})
     return jsonify({"error": f"Không tìm thấy lớp {code}!"}), 404
 
 @teacher_bp.route("/api/teacher/data", methods=["GET"])

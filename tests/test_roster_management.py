@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 from app import (
-    app, STUDENTS_ROSTER_FILE, SESSION_STATE_FILE,
+    app, STUDENTS_ROSTER_FILE, SESSION_STATE_FILE, CLASSES_FILE,
     load_json_file, save_json_file, parse_students_text,
     is_student_in_roster, get_student_from_roster
 )
@@ -23,14 +23,16 @@ from app import (
 class TestRosterManagement(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
-        # Sao lưu trạng thái và roster
+        # Sao lưu trạng thái, roster và danh sách lớp
         self.original_roster = load_json_file(STUDENTS_ROSTER_FILE, {})
         self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": True, "enforce_roster": True})
+        self.original_classes = load_json_file(CLASSES_FILE, {"classes": []})
 
     def tearDown(self):
         # Khôi phục dữ liệu gốc
         save_json_file(STUDENTS_ROSTER_FILE, self.original_roster)
         save_json_file(SESSION_STATE_FILE, self.original_state)
+        save_json_file(CLASSES_FILE, self.original_classes)
 
     def test_parse_students_text(self):
         """Kiểm tra thuật toán bóc tách danh sách từ Excel/Word/Sheets"""
@@ -215,6 +217,58 @@ class TestRosterManagement(unittest.TestCase):
             app.testing = True
             if old_env is not None:
                 os.environ["EDUDOC_TESTING"] = old_env
+
+    def test_delete_individual_class_and_cleanup_roster(self):
+        """Kiểm tra chức năng xóa từng lớp riêng lẻ: xóa mã lớp và dọn dẹp danh sách SV của lớp"""
+        test_cls = "TEST_XOA_LOP"
+        # 1. Thêm lớp mới
+        res_add = self.client.post("/api/classes/add", json={"class_code": test_cls})
+        self.assertEqual(res_add.status_code, 200)
+
+        # 2. Thêm sinh viên vào lớp này
+        res_stu = self.client.post("/api/teacher/students/add", json={
+            "class_code": test_cls,
+            "sbd": "01",
+            "mssv": "9988776655",
+            "name": "Sinh viên Kiểm thử Xóa Lớp"
+        })
+        self.assertEqual(res_stu.status_code, 200)
+
+        # Kiểm tra lớp và sinh viên đã có trong hệ thống
+        roster_now = load_json_file(STUDENTS_ROSTER_FILE, {})
+        self.assertIn(test_cls, roster_now)
+        classes_now = load_json_file(CLASSES_FILE, {}).get("classes", [])
+        self.assertIn(test_cls, classes_now)
+
+        # 3. Gọi API xóa từng lớp riêng lẻ POST /api/classes/delete
+        res_del = self.client.post("/api/classes/delete", json={"class_code": test_cls})
+        self.assertEqual(res_del.status_code, 200)
+        del_data = res_del.get_json()
+        self.assertTrue(del_data["success"])
+
+        # 4. Xác nhận mã lớp đã bị xóa khỏi classes.json
+        classes_after = load_json_file(CLASSES_FILE, {}).get("classes", [])
+        self.assertNotIn(test_cls, classes_after)
+
+        # 5. Xác nhận danh sách sinh viên lớp đó cũng đã bị dọn sạch khỏi students_roster.json
+        roster_after = load_json_file(STUDENTS_ROSTER_FILE, {})
+        self.assertNotIn(test_cls, roster_after)
+
+        # 6. Xóa lớp không tồn tại -> trả về 404
+        res_not_found = self.client.post("/api/classes/delete", json={"class_code": "KHONG_TON_TAI_999"})
+        self.assertEqual(res_not_found.status_code, 404)
+
+    def test_teacher_html_has_delete_class_button(self):
+        """Kiểm tra giao diện Bàn làm việc Giảng viên có nút Xóa lớp này và các hàm JS xử lý"""
+        res = self.client.get("/quan-tri")
+        self.assertEqual(res.status_code, 200)
+        html = res.get_data(as_text=True)
+
+        self.assertIn("btn-delete-class", html)
+        self.assertIn("deleteCurrentClass", html)
+        self.assertIn("Xóa lớp này", html)
+        self.assertIn("openAddNewClassModal", html)
+        self.assertIn("Thêm lớp mới", html)
 
 if __name__ == "__main__":
     unittest.main()
