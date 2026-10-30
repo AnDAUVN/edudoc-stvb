@@ -1015,15 +1015,23 @@ class Decree30Validator:
             if len(text) < 40 or "[Nội dung văn bản:" in text:
                 continue
 
+            # Nhận diện nếu là dòng danh sách liệt kê (Bullet / Numbered List / Gạch đầu dòng)
+            is_list_item = (
+                bool(p._p.xpath("./w:pPr/w:numPr")) or 
+                bool(p.style and ("List" in p.style.name or "Bullet" in p.style.name)) or
+                bool(re.match(r"^\s*([0-9]+[\.\)]|[a-zA-Z][\.\)]|[-•+*])\s+", text))
+            )
+
             # 1. Dàn đều cả hai lề (Justify: Ctrl + J)
             if p.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
                 not_justified_count += 1
 
-            # 2. Thụt đầu dòng 1 - 1.27 cm (First line indent)
-            indent = p.paragraph_format.first_line_indent
-            if indent is None or indent.inches < 0.35:
-                if not (text.startswith("    ") or text.startswith("\t")):
-                    no_indent_count += 1
+            # 2. Thụt đầu dòng 1 - 1.27 cm (First line indent) - chỉ áp dụng cho đoạn văn chính, không áp dụng cho danh sách liệt kê/bullet
+            if not is_list_item:
+                indent = p.paragraph_format.first_line_indent
+                if indent is None or indent.inches < 0.35:
+                    if not (text.startswith("    ") or text.startswith("\t")):
+                        no_indent_count += 1
 
             # 3. Font Times New Roman & Cỡ chữ thống nhất
             font, size, bold, italic = self._get_dominant_font_and_size(p)

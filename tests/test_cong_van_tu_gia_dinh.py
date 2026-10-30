@@ -255,5 +255,62 @@ class TestCongVanTuGiaDinh(unittest.TestCase):
         )
         self.assertFalse(has_false_5a_err, "Công văn có từ 'thông báo' trong câu thân bài KHÔNG ĐƯỢC báo lỗi Ô 5a!")
 
+    def test_05_bullet_points_in_body_do_not_trigger_first_line_indent_error(self):
+        """Các dòng gạch đầu dòng / bullet point / danh sách liệt kê trong thân bài (Ô 6) không bị phạt lỗi thụt lề 1-1.27cm"""
+        doc_path = os.path.join(self.temp_dir, "test_cv_bullets_in_body.docx")
+        doc = Document()
+        ht = doc.add_table(rows=2, cols=2)
+        ht.cell(0, 0).paragraphs[0].text = "CÔNG TY ÁNH DƯƠNG"
+        ht.cell(0, 1).paragraphs[0].text = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"
+        ht.cell(1, 0).paragraphs[0].text = "Số: 122/AD-HC"
+        ht.cell(1, 0).add_paragraph("V/v giải quyết kiến nghị mất điện")
+        ht.cell(1, 1).paragraphs[0].text = "Hà Nội, ngày 06 tháng 08 năm 2026"
+
+        # Ô 9a
+        doc.add_paragraph("Kính gửi: Sở Công Thương quận Gò Vấp;")
+        doc.add_paragraph("Công ty Điện Lực Gò Vấp.")
+
+        # Ô 6: Thân bài có đoạn văn thụt lề và các bullet points
+        p_narrative = doc.add_paragraph()
+        p_narrative.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_narrative.paragraph_format.first_line_indent = Inches(0.45)
+        p_narrative.add_run("Phòng Hành chính đề nghị Sở Công Thương quận Gò Vấp và Công ty Điện Lực Gò Vấp làm rõ nguyên nhân và tình trạng cúp điện như sau:")
+
+        # Bullet 1 (dùng ký tự •)
+        p_bullet1 = doc.add_paragraph()
+        p_bullet1.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_bullet1.paragraph_format.first_line_indent = None  # Bullet trong Word không có first line indent
+        p_bullet1.add_run("• Chấm dứt ngay tình trạng cắt điện đột ngột không thông báo trước cho các đơn vị kinh doanh.")
+
+        # Bullet 2 (dùng gạch đầu dòng -)
+        p_bullet2 = doc.add_paragraph()
+        p_bullet2.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_bullet2.paragraph_format.first_line_indent = None
+        p_bullet2.add_run("- Thực hiện nghiêm túc quy trình thông báo ngừng, giảm cung cấp điện qua các kênh liên lạc theo đúng luật.")
+
+        # Bullet 3 (dùng số 1.)
+        p_bullet3 = doc.add_paragraph()
+        p_bullet3.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_bullet3.paragraph_format.first_line_indent = None
+        p_bullet3.add_run("1. Kiểm tra, nâng cấp hệ thống hạ tầng kỹ thuật nhằm khắc phục triệt để các sự cố sụt áp trên địa bàn.")
+
+        p_close = doc.add_paragraph()
+        p_close.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_close.paragraph_format.first_line_indent = Inches(0.45)
+        p_close.add_run("Kính mong nhận được sự quan tâm và giúp đỡ của Quý cơ quan để vấn đề trên sớm được giải quyết thỏa đáng.")
+
+        ft = doc.add_table(rows=1, cols=2)
+        ft.cell(0, 0).paragraphs[0].text = "Nơi nhận:\n- Như trên;\n- Lưu: VT."
+        ft.cell(0, 1).paragraphs[0].text = "GIÁM ĐỐC\n\n\nTrần Thị Hiền"
+        doc.save(doc_path)
+
+        validator = Decree30Validator(doc_path, "cong_van_de_nghi", mssv="2100001234")
+        report = validator.validate_document()
+        box6 = next((b for b in report.get("checklist", []) if str(b.get("box_id")) == "6"), None)
+        self.assertIsNotNone(box6, "Phải tìm thấy kết quả kiểm tra Ô 6")
+        
+        indent_errors = [e for e in box6.get("errors", []) if "thụt vào 1 - 1.27 cm" in e.get("issue", "")]
+        self.assertEqual(len(indent_errors), 0, f"Các dòng bullet/liệt kê không được tính là lỗi thụt lề Ô 6! Lỗi: {indent_errors}")
+
 if __name__ == "__main__":
     unittest.main()
