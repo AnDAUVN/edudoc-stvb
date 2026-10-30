@@ -22,6 +22,7 @@ SESSION_STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
 STUDENT_SESSIONS_FILE = os.path.join(DATA_DIR, "student_sessions.json")
 STUDENTS_ROSTER_FILE = os.path.join(DATA_DIR, "students_roster.json")
 QUESTIONS_FILE = os.path.join(DATA_DIR, "questions.json")
+TEACHERS_FILE = os.path.join(DATA_DIR, "teachers.json")
 
 # Đảm bảo các thư mục luôn tồn tại
 for path in [STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED, DATA_DIR]:
@@ -207,3 +208,72 @@ def cleanup_old_uploads(max_age_seconds: int = 3600) -> int:
         except Exception:
             pass
     return deleted_count
+
+
+DEFAULT_TEACHERS = [
+    {
+        "id": "GV01",
+        "name": "ThS. Nguyễn Văn A",
+        "title": "Giảng viên chính",
+        "department": "Bộ môn Quản trị văn phòng",
+        "email": "nguyenvana@truong.edu.vn",
+        "phone": "0901234567"
+    },
+    {
+        "id": "GV02",
+        "name": "TS. Trần Thị B",
+        "title": "Trưởng Bộ môn",
+        "department": "Bộ môn Hành chính học",
+        "email": "tranthib@truong.edu.vn",
+        "phone": "0912345678"
+    },
+    {
+        "id": "GV03",
+        "name": "ThS. Lê Hoàng C",
+        "title": "Giảng viên",
+        "department": "Khoa Quản trị & Luật",
+        "email": "lehoangc@truong.edu.vn",
+        "phone": "0987654321"
+    }
+]
+
+def get_teachers_data() -> Dict[str, Any]:
+    """Lấy danh sách giảng viên và ID giảng viên đang hoạt động"""
+    data = load_json_file(TEACHERS_FILE, None)
+    if not data or not isinstance(data, dict) or "teachers" not in data or not data["teachers"]:
+        data = {
+            "teachers": list(DEFAULT_TEACHERS),
+            "active_teacher_id": "GV01"
+        }
+        save_json_file(TEACHERS_FILE, data)
+    return data
+
+def get_active_teacher() -> Dict[str, Any]:
+    """Lấy thông tin chi tiết của giảng viên đang làm việc"""
+    t_data = get_teachers_data()
+    active_id = t_data.get("active_teacher_id", "GV01")
+    for t in t_data.get("teachers", []):
+        if t.get("id") == active_id:
+            return t
+    if t_data.get("teachers"):
+        return t_data["teachers"][0]
+    return DEFAULT_TEACHERS[0]
+
+def set_active_teacher(teacher_id: str) -> Optional[Dict[str, Any]]:
+    """Chọn giảng viên làm việc hiện tại"""
+    t_data = get_teachers_data()
+    found = None
+    for t in t_data.get("teachers", []):
+        if t.get("id") == teacher_id:
+            found = t
+            break
+    if found:
+        t_data["active_teacher_id"] = teacher_id
+        save_json_file(TEACHERS_FILE, t_data)
+        # Đồng bộ vào session_state
+        state = get_session_state()
+        state["active_teacher"] = found.get("name", "")
+        state["active_teacher_id"] = teacher_id
+        save_session_state(state)
+        return found
+    return None

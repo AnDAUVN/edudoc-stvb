@@ -14,8 +14,9 @@ from flask import Blueprint, request, jsonify, render_template, send_file, Respo
 
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
-    CLASSES_FILE, SESSION_STATE_FILE, STUDENTS_ROSTER_FILE, QUESTIONS_FILE,
-    load_json_file, save_json_file, get_session_state, save_session_state, parse_students_text
+    CLASSES_FILE, SESSION_STATE_FILE, STUDENTS_ROSTER_FILE, QUESTIONS_FILE, TEACHERS_FILE,
+    load_json_file, save_json_file, get_session_state, save_session_state, parse_students_text,
+    get_teachers_data, get_active_teacher, set_active_teacher
 )
 from engine.db import (
     get_all_submissions, delete_submission_by_mssv,
@@ -292,13 +293,19 @@ def teacher_data():
     roster = load_json_file(STUDENTS_ROSTER_FILE, {})
     total_roster_students = sum(len(s_list) for s_list in roster.values())
 
+    t_data = get_teachers_data()
+    active_teacher = get_active_teacher()
+
     return jsonify({
         "submissions": submissions,
         "fraud_logs": fraud_logs,
         "classes": classes,
         "session_state": session_state,
         "students_roster": roster,
-        "total_roster_students": total_roster_students
+        "total_roster_students": total_roster_students,
+        "teachers": t_data.get("teachers", []),
+        "active_teacher": active_teacher,
+        "active_teacher_id": t_data.get("active_teacher_id", active_teacher.get("id"))
     })
 
 @teacher_bp.route("/api/download/submitted/<filename>")
@@ -319,6 +326,14 @@ def export_csv():
     output = io.StringIO()
     output.write('\ufeff')
     writer = csv.writer(output)
+    
+    active_teacher = get_active_teacher()
+    teacher_name = active_teacher.get("name", "Giảng viên bộ môn")
+    dept = active_teacher.get("department", "Quản trị văn phòng")
+    
+    writer.writerow(["BẢNG ĐIỂM BÀI TẬP SOẠN THẢO VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP)"])
+    writer.writerow([f"Giảng viên phụ trách: {teacher_name} ({dept})", f"Lớp: {class_filter}", f"Thời gian xuất: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    writer.writerow([])
     writer.writerow([
         "STT", "Mã lớp KN", "Số báo danh (SBD)", "Mã số sinh viên (MSSV)", "Họ và tên",
         "Loại văn bản bài tập", "Tên file nộp", "Thời gian nộp", "Thời gian làm bài", "Số lần kiểm tra thử", "Cảnh báo gian lận / đối phó", "Kết quả thẩm định", "Điểm số quy đổi"
@@ -504,3 +519,144 @@ def delete_teacher_quiz():
         return jsonify({"success": True, "message": "Đã xóa câu hỏi!", "questions": all_questions[doc_type]})
 
     return jsonify({"error": "Không tìm thấy loại văn bản này!"}), 404
+
+
+# =========================================================================
+# API QUẢN LÝ DANH SÁCH & HỒ SƠ GIẢNG VIÊN (MULTI-TEACHER SUPPORT)
+# =========================================================================
+@teacher_bp.route("/api/teacher/teachers", methods=["GET"])
+def api_get_teachers():
+    """Lấy danh sách tất cả giảng viên và giảng viên đang làm việc"""
+    t_data = get_teachers_data()
+    active_teacher = get_active_teacher()
+    return jsonify({
+        "teachers": t_data.get("teachers", []),
+        "active_teacher": active_teacher,
+        "active_teacher_id": t_data.get("active_teacher_id", active_teacher.get("id"))
+    })
+
+@teacher_bp.route("/api/teacher/teachers/select", methods=["POST"])
+def api_select_teacher():
+    """Giảng viên chọn hồ sơ / tài khoản làm việc hiện tại"""
+    data = request.json or {}
+    teacher_id = str(data.get("id", "")).strip()
+    if not teacher_id:
+        return jsonify({"error": "Vui lòng chọn Giảng viên!"}), 400
+    
+    teacher = set_active_teacher(teacher_id)
+    if teacher:
+        return jsonify({
+            "success": True,
+            "message": f"Đã chuyển sang giảng viên: {teacher.get('name')}",
+            "active_teacher": teacher
+        })
+    return jsonify({"error": f"Không tìm thấy giảng viên có mã {teacher_id}!"}), 404
+
+@teacher_bp.route("/api/teacher/teachers/save", methods=["POST"])
+def api_save_teacher():
+    """Thêm mới hoặc cập nhật thông tin giảng viên"""
+    data = request.json or {}
+    t_id = str(data.get("id", "")).strip()
+    name = str(data.get("name", "")).strip()
+    title = str(data.get("title", "")).strip()
+    department = str(data.get("department", "")).strip()
+    email = str(data.get("email", "")).strip()
+    phone = str(data.get("phone", "")).strip()
+
+    if not name:
+        return jsonify({"error": "Vui lòng nhập Họ và tên Giảng viên!"}), 400
+
+    t_data = get_teachers_data()
+    t_list = t_data.get("teachers", [])
+
+    if t_id:
+        found = False
+        for t in t_list:
+            if t["id"] == t_id:
+                t["name"] = name
+                t["title"] = title
+                t["department"] = department
+                t["email"] = email
+                t["phone"] = phone
+                found = True
+                saved_teacher = t
+                break
+        if not found:
+            saved_teacher = {
+                "id": t_id,
+                "name": name,
+                "title": title,
+                "department": department,
+                "email": email,
+                "phone": phone
+            }
+            t_list.append(saved_teacher)
+    else:
+        # Tự động sinh ID mới: GV01, GV02, ...
+        existing_nums = []
+        for t in t_list:
+            match = re.search(r"\d+", t.get("id", ""))
+            if match:
+                existing_nums.append(int(match.group()))
+        next_num = max(existing_nums, default=0) + 1
+        new_id = f"GV{next_num:02d}"
+        saved_teacher = {
+            "id": new_id,
+            "name": name,
+            "title": title,
+            "department": department,
+            "email": email,
+            "phone": phone
+        }
+        t_list.append(saved_teacher)
+
+    t_data["teachers"] = t_list
+    save_json_file(TEACHERS_FILE, t_data)
+    
+    # Nếu đang chọn giảng viên này thì cập nhật luôn session_state
+    if t_data.get("active_teacher_id") == saved_teacher["id"]:
+        state = get_session_state()
+        state["active_teacher"] = saved_teacher["name"]
+        save_session_state(state)
+
+    return jsonify({
+        "success": True,
+        "message": f"Đã lưu giảng viên {name} thành công!",
+        "teacher": saved_teacher,
+        "teachers": t_list
+    })
+
+@teacher_bp.route("/api/teacher/teachers/delete", methods=["POST"])
+def api_delete_teacher():
+    """Xóa giảng viên khỏi danh sách"""
+    data = request.json or {}
+    t_id = str(data.get("id", "")).strip()
+    if not t_id:
+        return jsonify({"error": "Thiếu mã giảng viên cần xóa!"}), 400
+
+    t_data = get_teachers_data()
+    t_list = t_data.get("teachers", [])
+
+    if len(t_list) <= 1:
+        return jsonify({"error": "Hệ thống cần tối thiểu 1 Giảng viên, không thể xóa giảng viên cuối cùng!"}), 400
+
+    new_list = [t for t in t_list if t.get("id") != t_id]
+    if len(new_list) == len(t_list):
+        return jsonify({"error": "Không tìm thấy giảng viên cần xóa!"}), 404
+
+    t_data["teachers"] = new_list
+    # Nếu xóa đúng giảng viên đang active thì chọn người đầu tiên
+    if t_data.get("active_teacher_id") == t_id:
+        t_data["active_teacher_id"] = new_list[0]["id"]
+        state = get_session_state()
+        state["active_teacher"] = new_list[0]["name"]
+        state["active_teacher_id"] = new_list[0]["id"]
+        save_session_state(state)
+
+    save_json_file(TEACHERS_FILE, t_data)
+    return jsonify({
+        "success": True,
+        "message": "Đã xóa giảng viên!",
+        "teachers": new_list,
+        "active_teacher_id": t_data.get("active_teacher_id")
+    })

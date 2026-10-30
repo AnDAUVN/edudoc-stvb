@@ -57,7 +57,8 @@ def create_clean_package():
         "document_templates.json",
         "questions.json",
         "session_state.json",
-        "students_roster.json"
+        "students_roster.json",
+        "teachers.json"
     ]
 
     exclude_patterns = [

@@ -123,6 +123,20 @@
         </div>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">
+        <!-- BỘ CHỌN GIẢNG VIÊN ĐANG LÀM VIỆC (MULTI-TEACHER SELECTOR) -->
+        <div class="d-flex align-items-center gap-2 bg-white text-dark px-3 py-1 rounded-pill shadow-sm border border-primary border-opacity-25" style="min-height: 42px;">
+          <i class="fa-solid fa-user-tie text-primary fa-lg"></i>
+          <div class="text-start">
+            <span class="d-block text-secondary text-uppercase fw-bold" style="font-size: 0.62rem; letter-spacing: 0.05em;">Giảng viên đang làm việc:</span>
+            <select id="sel-active-teacher" class="form-select form-select-sm fw-bold border-0 p-0 text-primary bg-transparent" style="font-size: 0.85rem; cursor: pointer; box-shadow: none; min-width: 170px;" onchange="onChangeActiveTeacher(this.value)">
+              <!-- Nạp danh sách Giảng viên bằng JS -->
+            </select>
+          </div>
+          <button class="btn btn-sm btn-light rounded-circle text-secondary p-1 ms-1 hover-primary" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;" onclick="openManageTeachersModal()" title="Quản lý & Thêm danh sách Giảng viên">
+            <i class="fa-solid fa-user-gear"></i>
+          </button>
+        </div>
+
         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fw-bold">
           <i class="fa-solid fa-database me-1"></i> SQLite WAL Mode
         </span>
@@ -146,10 +160,13 @@
             <i class="fa-solid fa-school-lock" id="icon-session-status"></i>
           </div>
           <div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <h5 class="fw-bold mb-0 text-dark">ĐIỀU KHIỂN CA THI / BÀI TẬP:</h5>
               <span class="badge bg-danger fs-6 px-3 py-1 rounded-pill shadow-sm" id="badge-teacher-session-status">
                 <i class="fa-solid fa-lock me-1"></i> Đang Khóa (Giảng lý thuyết)
+              </span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill" id="badge-card-teacher">
+                <i class="fa-solid fa-user-tie me-1"></i> GV phụ trách: <strong id="lbl-card-active-teacher">ThS. Nguyễn Văn A</strong>
               </span>
             </div>
             <div class="text-secondary small mt-1" id="text-teacher-session-desc">
@@ -703,8 +720,167 @@
     </div>
   </div>
 
+  <!-- MODAL SỬA & THÊM CÂU HỎI TRẮC NGHIỆM -->
+  <div class="modal fade" id="modal-quiz-editor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold" id="modal-quiz-title">
+            <i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi trắc nghiệm
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="quiz-edit-id">
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nội dung câu hỏi: <span class="text-danger">*</span></label>
+            <textarea id="quiz-edit-question" class="form-control" rows="3" placeholder="Nhập nội dung câu hỏi về thể thức Nghị định 30..."></textarea>
+          </div>
+
+          <label class="form-label fw-bold">Các phương án lựa chọn: <span class="text-danger">*</span></label>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">A</span>
+                <input type="text" id="quiz-edit-opt-0" class="form-control" placeholder="Phương án A">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">B</span>
+                <input type="text" id="quiz-edit-opt-1" class="form-control" placeholder="Phương án B">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">C</span>
+                <input type="text" id="quiz-edit-opt-2" class="form-control" placeholder="Phương án C">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text fw-bold bg-light">D</span>
+                <input type="text" id="quiz-edit-opt-3" class="form-control" placeholder="Phương án D">
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold text-success">
+              <i class="fa-solid fa-check-circle me-1"></i> Đáp án ĐÚNG: <span class="text-danger">*</span>
+            </label>
+            <select id="quiz-edit-correct" class="form-select fw-bold border-success text-success">
+              <option value="0">Phương án A</option>
+              <option value="1">Phương án B</option>
+              <option value="2">Phương án C</option>
+              <option value="3">Phương án D</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Giải thích chi tiết chuẩn Nghị định 30:</label>
+            <textarea id="quiz-edit-explanation" class="form-control" rows="3" placeholder="Giải thích căn cứ Nghị định 30 (hiển thị khi sinh viên nộp bài trắc nghiệm)..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+          <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveTeacherQuestion()">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu câu hỏi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL QUẢN LÝ DANH SÁCH GIẢNG VIÊN -->
+  <div class="modal fade" id="modal-manage-teachers" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fw-bold">
+            <i class="fa-solid fa-users-gear me-2"></i> Danh Sách & Quản Lý Giảng Viên
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">Chọn giảng viên đang trực tiếp phụ trách ca học hoặc thêm mới giảng viên vào hệ thống:</span>
+            <button class="btn btn-sm btn-success fw-bold text-nowrap" onclick="openAddTeacherForm()">
+              <i class="fa-solid fa-user-plus me-1"></i> Thêm Giảng viên
+            </button>
+          </div>
+
+          <!-- BẢNG DANH SÁCH GIẢNG VIÊN -->
+          <div class="table-responsive mb-3">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 70px;" class="text-center">Mã GV</th>
+                  <th>Họ và tên</th>
+                  <th>Học vị / Chức danh</th>
+                  <th>Bộ môn / Khoa</th>
+                  <th>Liên hệ</th>
+                  <th style="width: 140px;" class="text-center">Trạng thái</th>
+                  <th style="width: 110px;" class="text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-teachers-list-body">
+                <!-- Render by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- FORM THÊM / SỬA GIẢNG VIÊN (TOGGLED) -->
+          <div id="form-teacher-editor" class="card border border-primary p-3 bg-light d-none">
+            <h6 class="fw-bold text-primary mb-3" id="form-teacher-title">
+              <i class="fa-solid fa-user-pen me-1"></i> Thông Tin Giảng Viên
+            </h6>
+            <input type="hidden" id="inp-teacher-id">
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold mb-1">Họ và tên <span class="text-danger">*</span></label>
+                <input type="text" id="inp-teacher-name" class="form-control form-control-sm" placeholder="VD: ThS. Nguyễn Văn A">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold mb-1">Học vị / Chức danh</label>
+                <input type="text" id="inp-teacher-title" class="form-control form-control-sm" placeholder="VD: Giảng viên chính / ThS / TS">
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold mb-1">Bộ môn / Khoa</label>
+                <input type="text" id="inp-teacher-dept" class="form-control form-control-sm" placeholder="VD: Bộ môn Quản trị văn phòng">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold mb-1">Email</label>
+                <input type="email" id="inp-teacher-email" class="form-control form-control-sm" placeholder="VD: gv@truong.edu.vn">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold mb-1">Số điện thoại</label>
+                <input type="text" id="inp-teacher-phone" class="form-control form-control-sm" placeholder="VD: 0901234567">
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-sm btn-secondary" onclick="closeTeacherForm()">Hủy</button>
+              <button type="button" class="btn btn-sm btn-primary fw-bold px-3" onclick="saveTeacherFromModal()">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Lưu giảng viên
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
     let currentAnalyticsClass = 'ALL';
 
     function onAnalyticsClassChange(val) {
@@ -1053,6 +1229,7 @@
     let currentRosterClass = 'ALL';
 
     document.addEventListener('DOMContentLoaded', () => {
+      loadTeachers();
       loadTeacherData();
       loadTeacherQuizQuestions();
     });
@@ -1637,37 +1814,365 @@
       }
     }
 
+    let currentTeacherQuizList = [];
+    let quizEditorModal = null;
+    let manageTeachersModal = null;
+    let allTeachersList = [];
+    let currentActiveTeacherId = 'GV01';
+
+    // ==========================================
+    // 1. QUẢN LÝ VÀ CHỌN GIẢNG VIÊN (MULTI-TEACHER)
+    // ==========================================
+    async function loadTeachers() {
+      try {
+        const res = await fetch('/api/teacher/teachers');
+        if (!res.ok) return;
+        const data = await res.json();
+        allTeachersList = data.teachers || [];
+        currentActiveTeacherId = data.active_teacher_id || (data.active_teacher ? data.active_teacher.id : 'GV01');
+        renderTeacherSelector();
+        if (data.active_teacher) {
+          const lbl = document.getElementById('lbl-card-active-teacher');
+          if (lbl) lbl.innerText = data.active_teacher.name || '';
+        }
+      } catch (err) {
+        console.error('Lỗi nạp danh sách giảng viên:', err);
+      }
+    }
+
+    function renderTeacherSelector() {
+      const sel = document.getElementById('sel-active-teacher');
+      if (!sel) return;
+      sel.innerHTML = allTeachersList.map(t => `
+        <option value="${t.id}" ${t.id === currentActiveTeacherId ? 'selected' : ''}>
+          ${t.name} (${t.title || 'GV'})
+        </option>
+      `).join('');
+    }
+
+    async function onChangeActiveTeacher(teacherId) {
+      try {
+        const res = await fetch('/api/teacher/teachers/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: teacherId })
+        });
+        const d = await res.json();
+        if (d.success) {
+          currentActiveTeacherId = teacherId;
+          const lbl = document.getElementById('lbl-card-active-teacher');
+          if (lbl && d.active_teacher) lbl.innerText = d.active_teacher.name;
+
+          Swal.fire({
+            icon: 'success',
+            title: 'ĐÃ CHỌN GIẢNG VIÊN',
+            text: `Bàn làm việc hiện đang thuộc về: ${d.active_teacher.name}`,
+            timer: 1600,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể đổi giảng viên', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    function openManageTeachersModal() {
+      renderTeachersTable();
+      closeTeacherForm();
+      if (!manageTeachersModal) {
+        manageTeachersModal = new bootstrap.Modal(document.getElementById('modal-manage-teachers'));
+      }
+      manageTeachersModal.show();
+    }
+
+    function renderTeachersTable() {
+      const tbody = document.getElementById('tbl-teachers-list-body');
+      if (!tbody) return;
+      if (allTeachersList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">Chưa có giảng viên nào.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = allTeachersList.map(t => {
+        const isActive = (t.id === currentActiveTeacherId);
+        return `
+          <tr class="${isActive ? 'table-primary bg-opacity-10 fw-semibold' : ''}">
+            <td class="text-center"><span class="badge bg-secondary">${t.id}</span></td>
+            <td><strong class="text-dark">${t.name}</strong></td>
+            <td>${t.title || '-'}</td>
+            <td>${t.department || '-'}</td>
+            <td class="small text-muted">${t.email || ''}${t.phone ? ' (' + t.phone + ')' : ''}</td>
+            <td class="text-center">
+              ${isActive 
+                ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Đang chọn</span>' 
+                : `<button class="btn btn-sm btn-outline-success py-0 px-2 fw-bold" onclick="selectTeacherFromTable('${t.id}')"><i class="fa-solid fa-check me-1"></i> Chọn</button>`
+              }
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openEditTeacherForm('${t.id}')" title="Sửa thông tin"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteTeacher('${t.id}')" title="Xóa giảng viên"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function selectTeacherFromTable(teacherId) {
+      await onChangeActiveTeacher(teacherId);
+      renderTeacherSelector();
+      renderTeachersTable();
+    }
+
+    function openAddTeacherForm() {
+      document.getElementById('form-teacher-title').innerHTML = '<i class="fa-solid fa-user-plus me-1"></i> Thêm Giảng Viên Mới';
+      document.getElementById('inp-teacher-id').value = '';
+      document.getElementById('inp-teacher-name').value = '';
+      document.getElementById('inp-teacher-title').value = '';
+      document.getElementById('inp-teacher-dept').value = '';
+      document.getElementById('inp-teacher-email').value = '';
+      document.getElementById('inp-teacher-phone').value = '';
+      document.getElementById('form-teacher-editor').classList.remove('d-none');
+    }
+
+    function openEditTeacherForm(teacherId) {
+      const t = allTeachersList.find(x => x.id === teacherId);
+      if (!t) return;
+      document.getElementById('form-teacher-title').innerHTML = `<i class="fa-solid fa-user-pen me-1"></i> Chỉnh Sửa Thông Tin: ${t.name}`;
+      document.getElementById('inp-teacher-id').value = t.id;
+      document.getElementById('inp-teacher-name').value = t.name || '';
+      document.getElementById('inp-teacher-title').value = t.title || '';
+      document.getElementById('inp-teacher-dept').value = t.department || '';
+      document.getElementById('inp-teacher-email').value = t.email || '';
+      document.getElementById('inp-teacher-phone').value = t.phone || '';
+      document.getElementById('form-teacher-editor').classList.remove('d-none');
+    }
+
+    function closeTeacherForm() {
+      const f = document.getElementById('form-teacher-editor');
+      if (f) f.classList.add('d-none');
+    }
+
+    async function saveTeacherFromModal() {
+      const id = document.getElementById('inp-teacher-id').value.trim();
+      const name = document.getElementById('inp-teacher-name').value.trim();
+      const title = document.getElementById('inp-teacher-title').value.trim();
+      const dept = document.getElementById('inp-teacher-dept').value.trim();
+      const email = document.getElementById('inp-teacher-email').value.trim();
+      const phone = document.getElementById('inp-teacher-phone').value.trim();
+
+      if (!name) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập Họ và tên Giảng viên!', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/teacher/teachers/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, title, department: dept, email, phone })
+        });
+        const d = await res.json();
+        if (d.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Thành công',
+            text: d.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          closeTeacherForm();
+          await loadTeachers();
+          renderTeachersTable();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể lưu giảng viên', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    async function deleteTeacher(teacherId) {
+      if (allTeachersList.length <= 1) {
+        Swal.fire('Không thể xóa', 'Hệ thống cần tối thiểu 1 Giảng viên!', 'warning');
+        return;
+      }
+      const conf = await Swal.fire({
+        title: 'Xóa giảng viên?',
+        text: 'Bạn có chắc chắn muốn xóa giảng viên này khỏi hệ thống?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Đồng ý xóa'
+      });
+      if (!conf.isConfirmed) return;
+
+      try {
+        const res = await fetch('/api/teacher/teachers/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: teacherId })
+        });
+        const d = await res.json();
+        if (d.success) {
+          Swal.fire('Đã xóa', d.message, 'success');
+          await loadTeachers();
+          renderTeachersTable();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể xóa giảng viên', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Lỗi kết nối máy chủ: ' + e, 'error');
+      }
+    }
+
+    // ==========================================
+    // 2. QUẢN LÝ & SỬA CÂU HỎI TRẮC NGHIỆM (QUIZ BANK)
+    // ==========================================
     async function loadTeacherQuizQuestions() {
       const docType = document.getElementById('sel-teacher-quiz-doc').value;
       try {
         const res = await fetch(`/api/teacher/quiz/${docType}`);
         const data = await res.json();
-        renderTeacherQuizList(data.questions || []);
-      } catch (e) {}
+        currentTeacherQuizList = data.questions || [];
+        renderTeacherQuizList(currentTeacherQuizList);
+      } catch (e) {
+        console.error('Lỗi tải câu hỏi trắc nghiệm:', e);
+      }
     }
 
     function renderTeacherQuizList(questions) {
+      currentTeacherQuizList = questions || [];
       const container = document.getElementById('teacher-quiz-list');
       if (questions.length === 0) {
-        container.innerHTML = `<div class="text-muted text-center py-4">Chưa có câu hỏi trắc nghiệm nào cho loại văn bản này.</div>`;
+        container.innerHTML = `<div class="text-muted text-center py-4"><i class="fa-solid fa-clipboard-question fa-2x text-secondary opacity-50 mb-2 d-block"></i>Chưa có câu hỏi trắc nghiệm nào cho loại văn bản này. Bấm "+ Thêm câu hỏi" để bổ sung.</div>`;
         return;
       }
       container.innerHTML = questions.map((q, idx) => `
         <div class="card p-3 border shadow-xs">
-          <div class="d-flex justify-content-between align-items-start">
-            <h6 class="fw-bold text-dark mb-2">Câu ${idx + 1}: ${q.question}</h6>
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteTeacherQuestion(${q.id})"><i class="fa-solid fa-trash"></i></button>
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <h6 class="fw-bold text-dark mb-0">
+              <span class="badge bg-primary-subtle text-primary border me-1">Câu ${idx + 1}</span>
+              ${q.question}
+            </h6>
+            <div class="d-flex align-items-center gap-1 text-nowrap">
+              <button class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="openEditQuestionModal(${idx})" title="Chỉnh sửa câu hỏi này">
+                <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
+              </button>
+              <button class="btn btn-sm btn-outline-danger fw-bold px-2 py-1" onclick="deleteTeacherQuestion(${q.id})" title="Xóa câu hỏi">
+                <i class="fa-solid fa-trash me-1"></i> Xóa
+              </button>
+            </div>
           </div>
           <div class="ps-3 small text-secondary">
             ${(q.options || []).map((opt, oIdx) => `
-              <div class="${oIdx === q.correct ? 'fw-bold text-success' : ''}">
-                ${String.fromCharCode(65 + oIdx)}. ${opt} ${oIdx === q.correct ? '✔ (Đáp án đúng)' : ''}
+              <div class="py-1 ${oIdx === q.correct ? 'fw-bold text-success' : ''}">
+                <span class="badge ${oIdx === q.correct ? 'bg-success text-white' : 'bg-light text-secondary border'} me-1">${String.fromCharCode(65 + oIdx)}</span>
+                ${opt} ${oIdx === q.correct ? '✔ <span class="badge bg-success-subtle text-success ms-1">Đáp án đúng</span>' : ''}
               </div>
             `).join('')}
           </div>
-          <div class="mt-2 small text-muted fst-italic">Giải thích: ${q.explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP'}</div>
+          <div class="mt-2 p-2 rounded bg-light small text-muted">
+            <i class="fa-solid fa-circle-info text-primary me-1"></i><strong>Giải thích NĐ 30:</strong> ${q.explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP'}
+          </div>
         </div>
       `).join('');
+    }
+
+    function openAddQuestionModal() {
+      document.getElementById('modal-quiz-title').innerHTML = '<i class="fa-solid fa-circle-plus me-2"></i> Thêm câu hỏi trắc nghiệm mới';
+      document.getElementById('quiz-edit-id').value = '';
+      document.getElementById('quiz-edit-question').value = '';
+      document.getElementById('quiz-edit-opt-0').value = '';
+      document.getElementById('quiz-edit-opt-1').value = '';
+      document.getElementById('quiz-edit-opt-2').value = '';
+      document.getElementById('quiz-edit-opt-3').value = '';
+      document.getElementById('quiz-edit-correct').value = '0';
+      document.getElementById('quiz-edit-explanation').value = '';
+
+      if (!quizEditorModal) {
+        quizEditorModal = new bootstrap.Modal(document.getElementById('modal-quiz-editor'));
+      }
+      quizEditorModal.show();
+    }
+
+    function openEditQuestionModal(idx) {
+      const q = currentTeacherQuizList[idx];
+      if (!q) return;
+
+      document.getElementById('modal-quiz-title').innerHTML = `<i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi ${idx + 1} (ID: ${q.id})`;
+      document.getElementById('quiz-edit-id').value = q.id;
+      document.getElementById('quiz-edit-question').value = q.question || '';
+      document.getElementById('quiz-edit-opt-0').value = (q.options && q.options[0]) || '';
+      document.getElementById('quiz-edit-opt-1').value = (q.options && q.options[1]) || '';
+      document.getElementById('quiz-edit-opt-2').value = (q.options && q.options[2]) || '';
+      document.getElementById('quiz-edit-opt-3').value = (q.options && q.options[3]) || '';
+      document.getElementById('quiz-edit-correct').value = (q.correct !== undefined ? q.correct : 0);
+      document.getElementById('quiz-edit-explanation').value = q.explanation || '';
+
+      if (!quizEditorModal) {
+        quizEditorModal = new bootstrap.Modal(document.getElementById('modal-quiz-editor'));
+      }
+      quizEditorModal.show();
+    }
+
+    async function saveTeacherQuestion() {
+      const docType = document.getElementById('sel-teacher-quiz-doc').value;
+      const qIdStr = document.getElementById('quiz-edit-id').value;
+      const question = document.getElementById('quiz-edit-question').value.trim();
+      const opt0 = document.getElementById('quiz-edit-opt-0').value.trim();
+      const opt1 = document.getElementById('quiz-edit-opt-1').value.trim();
+      const opt2 = document.getElementById('quiz-edit-opt-2').value.trim();
+      const opt3 = document.getElementById('quiz-edit-opt-3').value.trim();
+      const correct = parseInt(document.getElementById('quiz-edit-correct').value);
+      const explanation = document.getElementById('quiz-edit-explanation').value.trim();
+
+      if (!question) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập nội dung câu hỏi!', 'warning');
+        return;
+      }
+      if (!opt0 || !opt1) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng điền tối thiểu 2 phương án A và B!', 'warning');
+        return;
+      }
+      const options = [opt0, opt1];
+      if (opt2) options.push(opt2);
+      if (opt3) options.push(opt3);
+
+      const payload = {
+        doc_type: docType,
+        id: qIdStr ? parseInt(qIdStr) : null,
+        question: question,
+        options: options,
+        correct: correct,
+        explanation: explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP'
+      };
+
+      try {
+        const res = await fetch('/api/teacher/quiz/save', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (quizEditorModal) quizEditorModal.hide();
+          Swal.fire({
+            icon: 'success',
+            title: 'LƯU THÀNH CÔNG!',
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false
+          });
+          await loadTeacherQuizQuestions();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể lưu câu hỏi!', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+      }
     }
 
     async function deleteTeacherQuestion(qId) {

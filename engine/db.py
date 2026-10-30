@@ -20,6 +20,7 @@ SUBMISSIONS_JSON = os.path.join(DATA_DIR, "submissions.json")
 FRAUD_LOGS_JSON = os.path.join(DATA_DIR, "fraud_logs.json")
 STUDENT_SESSIONS_JSON = os.path.join(DATA_DIR, "student_sessions.json")
 SESSION_STATE_JSON = os.path.join(DATA_DIR, "session_state.json")
+TEACHERS_JSON = os.path.join(DATA_DIR, "teachers.json")
 
 def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """
@@ -104,6 +105,29 @@ def init_db(db_path: Optional[str] = None) -> None:
             updated_at TEXT
         );
         """)
+            # 5. BẢNG DANH SÁCH GIẢNG VIÊN (TEACHERS)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS teachers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            title TEXT,
+            department TEXT,
+            email TEXT,
+            phone TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_teachers_name ON teachers(name);");
+        
+        # Đảm bảo cột active_teacher và active_teacher_id tồn tại trong session_state
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher TEXT DEFAULT 'ThS. Nguyễn Văn A';")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher_id TEXT DEFAULT 'GV01';")
+        except Exception:
+            pass
     conn.close()
 
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
@@ -239,6 +263,29 @@ def migrate_json_to_sqlite(db_path: Optional[str] = None) -> None:
                         old_st.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     ))
                     conn.commit()
+            except Exception:
+                pass
+        # 5. Migrate Teachers
+        cursor.execute("SELECT COUNT(*) FROM teachers;")
+        teacher_count = cursor.fetchone()[0]
+        if teacher_count == 0 and os.path.exists(TEACHERS_JSON):
+            try:
+                with open(TEACHERS_JSON, "r", encoding="utf-8") as f:
+                    t_data = json.load(f)
+                t_list = t_data.get("teachers", []) if isinstance(t_data, dict) else t_data
+                for t in t_list:
+                    conn.execute("""
+                        INSERT OR REPLACE INTO teachers (id, name, title, department, email, phone)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (
+                        t.get("id"),
+                        t.get("name"),
+                        t.get("title", ""),
+                        t.get("department", ""),
+                        t.get("email", ""),
+                        t.get("phone", "")
+                    ))
+                conn.commit()
             except Exception:
                 pass
     finally:
@@ -471,11 +518,16 @@ def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
     try:
         row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
         if row:
+            keys = row.keys()
+            act_teacher = row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A"
+            act_teacher_id = row["active_teacher_id"] if "active_teacher_id" in keys and row["active_teacher_id"] else "GV01"
             return {
                 "is_open": bool(row["is_open"]),
                 "enforce_roster": bool(row["enforce_roster"]),
                 "active_doc_type": row["active_doc_type"] or "cong_van_de_nghi",
                 "message": row["message"] or "",
+                "active_teacher": act_teacher,
+                "active_teacher_id": act_teacher_id,
                 "updated_at": row["updated_at"] or ""
             }
         return {
@@ -483,6 +535,8 @@ def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
             "enforce_roster": True,
             "active_doc_type": "cong_van_de_nghi",
             "message": "Phòng làm bài đang mở.",
+            "active_teacher": "ThS. Nguyễn Văn A",
+            "active_teacher_id": "GV01",
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
     finally:
@@ -493,26 +547,33 @@ def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) 
     conn = get_db_connection(db_path)
     try:
         row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+        keys = row.keys() if row else []
         cur_is_open = bool(row["is_open"]) if row else True
         cur_enforce = bool(row["enforce_roster"]) if row else True
         cur_active = (row["active_doc_type"] or "cong_van_de_nghi") if row else "cong_van_de_nghi"
         cur_msg = (row["message"] or "") if row else "Phòng làm bài đang mở."
+        cur_teacher = (row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A") if row else "ThS. Nguyễn Văn A"
+        cur_teacher_id = (row["active_teacher_id"] if "active_teacher_id" in keys and row["active_teacher_id"] else "GV01") if row else "GV01"
 
         is_open = state["is_open"] if "is_open" in state else cur_is_open
         enforce_roster = state["enforce_roster"] if "enforce_roster" in state else cur_enforce
         active_doc_type = state["active_doc_type"] if "active_doc_type" in state else cur_active
         message = state["message"] if "message" in state else cur_msg
+        active_teacher = state["active_teacher"] if "active_teacher" in state else cur_teacher
+        active_teacher_id = state["active_teacher_id"] if "active_teacher_id" in state else cur_teacher_id
         updated_at = state.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         with conn:
             conn.execute("""
-                INSERT OR REPLACE INTO session_state (key, is_open, enforce_roster, active_doc_type, message, updated_at)
-                VALUES ('current_session', ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO session_state (key, is_open, enforce_roster, active_doc_type, message, active_teacher, active_teacher_id, updated_at)
+                VALUES ('current_session', ?, ?, ?, ?, ?, ?, ?)
             """, (
                 1 if is_open else 0,
                 1 if enforce_roster else 0,
                 active_doc_type,
                 message,
+                active_teacher,
+                active_teacher_id,
                 updated_at
             ))
     finally:
@@ -523,12 +584,56 @@ def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) 
             "enforce_roster": bool(enforce_roster),
             "active_doc_type": active_doc_type,
             "message": message,
+            "active_teacher": active_teacher,
+            "active_teacher_id": active_teacher_id,
             "updated_at": updated_at
         }
         with open(SESSION_STATE_JSON, "w", encoding="utf-8") as f:
             json.dump(merged_dict, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+# =========================================================================
+# API QUẢN LÝ GIẢNG VIÊN (TEACHERS SQLITE WAL)
+# =========================================================================
+def get_all_teachers_db(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Lấy danh sách tất cả giảng viên từ SQLite"""
+    conn = get_db_connection(db_path)
+    try:
+        rows = conn.execute("SELECT * FROM teachers ORDER BY id ASC;").fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+def save_teacher_db(t: Dict[str, Any], db_path: Optional[str] = None) -> None:
+    """Thêm hoặc cập nhật giảng viên vào SQLite"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO teachers (id, name, title, department, email, phone)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                t.get("id"),
+                t.get("name"),
+                t.get("title", ""),
+                t.get("department", ""),
+                t.get("email", ""),
+                t.get("phone", "")
+            ))
+    finally:
+        conn.close()
+
+def delete_teacher_db(teacher_id: str, db_path: Optional[str] = None) -> bool:
+    """Xóa giảng viên theo ID"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("DELETE FROM teachers WHERE id = ?;", (teacher_id,))
+        return True
+    finally:
+        conn.close()
 
 # Khởi tạo database tự động khi import
 init_db()
