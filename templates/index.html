@@ -915,6 +915,7 @@
     let allClassesList = [];
     let allSubmissionsList = [];
     let allFraudLogsList = [];
+    let studentSessionIsOpen = true;
 
     function updateStepIndicator(step) {
       for (let i = 1; i <= 4; i++) {
@@ -1177,7 +1178,9 @@
 
     // BƯỚC 1: Bắt đầu lấy trắc nghiệm
     async function startQuiz() {
-      if (studentSessionIsOpen === false) {
+      console.log('startQuiz() invoked');
+      try {
+        if (typeof studentSessionIsOpen !== 'undefined' && studentSessionIsOpen === false) {
         Swal.fire({
           icon: 'warning',
           title: 'ĐANG TRONG GIỜ NGHE GIẢNG LÝ THUYẾT',
@@ -1209,6 +1212,12 @@
       if (!mssv) {
         Swal.fire('Chưa nhập MSSV', 'Vui lòng nhập Mã số sinh viên (MSSV) của bạn!', 'warning');
         return;
+      }
+      if (!name && classCode && mssv) {
+        try {
+          await onStudentClassOrMssvChanged();
+        } catch(e) {}
+        name = document.getElementById('inp-name') ? document.getElementById('inp-name').value.trim() : '';
       }
       if (!name) {
         Swal.fire('Chưa có Họ tên', 'Vui lòng nhập đầy đủ Họ và tên sinh viên!', 'warning');
@@ -1293,24 +1302,41 @@
         const secQuiz = document.getElementById('section-quiz');
         if (secQuiz) {
           secQuiz.classList.remove('d-none');
-          secQuiz.scrollIntoView({ behavior: 'smooth' });
+          setTimeout(() => {
+            secQuiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        }
+        if (btnStart) {
+          btnStart.className = 'btn btn-success px-4 fw-bold';
+          btnStart.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i> Đang làm bài Trắc nghiệm (Xem đề bên dưới)';
         }
         Swal.fire({
           icon: 'success',
           title: 'BẮT ĐẦU PHẦN TRẮC NGHIỆM',
-          text: `Đã nạp ${data.total} câu hỏi trắc nghiệm thể thức NĐ 30. Bạn có 5 phút để hoàn thành!`,
-          timer: 2500,
+          text: `Đã nạp ${data.total} câu hỏi trắc nghiệm thể thức NĐ 30. Thời gian làm bài: 5 phút!`,
+          timer: 2000,
           showConfirmButton: false
         });
       } catch (e) {
+        console.error('Lỗi khi tải câu hỏi trắc nghiệm:', e);
         Swal.fire('Lỗi', 'Không thể tải câu hỏi trắc nghiệm: ' + e, 'error');
       } finally {
         if (btnStart) {
           btnStart.disabled = false;
-          btnStart.innerHTML = origBtnHtml;
+          const secQuizActive = document.getElementById('section-quiz');
+          if (secQuizActive && !secQuizActive.classList.contains('d-none')) {
+            btnStart.className = 'btn btn-success px-4 fw-bold';
+            btnStart.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i> Đang làm bài Trắc nghiệm (Xem đề bên dưới)';
+          } else {
+            btnStart.innerHTML = origBtnHtml;
+          }
         }
       }
+    } catch(globalErr) {
+      console.error('Lỗi nghiêm trọng tại startQuiz:', globalErr);
+      alert('Lỗi hệ thống: ' + (globalErr.message || globalErr));
     }
+  }
 
     function updateQuizTimerUI(seconds) {
       const timerBox = document.getElementById('quiz-timer-box');
@@ -2057,10 +2083,11 @@
     }
 
     // Khởi tạo Cổng Sinh viên (/thi)
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       onDocTypeChanged();
-      loadClasses();
-      checkStudentSessionState();
+      await loadClasses();
+      await onStudentClassOrMssvChanged();
+      await checkStudentSessionState();
       setInterval(checkStudentSessionState, 3000);
     });
   </script>
