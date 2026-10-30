@@ -125,7 +125,16 @@ def get_student_from_roster(class_code: str, mssv: str) -> Optional[Dict[str, An
     return None
 
 def parse_students_text(raw_text: str) -> List[Dict[str, str]]:
-    """Phân tích danh sách sinh viên nhập dạng văn bản (Excel copy, Tab, Phẩy, Gạch ngang)"""
+    """Phân tích danh sách sinh viên nhập dạng văn bản (Excel copy, Tab, Phẩy, Gạch ngang).
+    Hỗ trợ linh hoạt:
+    - 4 cột: SBD <tab> MSSV <tab> Họ và tên <tab> Lớp
+    - 3 cột: MSSV <tab> Họ và tên <tab> Lớp  (hoặc SBD <tab> MSSV <tab> Họ tên)
+    - 2 cột: MSSV <tab> Họ tên (nếu họ tên chứa mã lớp ở đuôi sẽ tự tách riêng)
+    - 1 cột: MSSV
+    """
+    cls_pattern = re.compile(r'^[0-9]{2}[A-Za-z0-9_-]+$')
+    name_cls_split = re.compile(r'^(.*?)\s+([0-9]{2}[A-Za-z0-9_-]+)$')
+
     students = []
     lines = raw_text.strip().splitlines()
     for line in lines:
@@ -143,8 +152,9 @@ def parse_students_text(raw_text: str) -> List[Dict[str, str]]:
             continue
 
         mssv = None
-        name = None
+        name = ""
         sbd = ""
+        st_cls = ""
 
         if len(parts) == 1:
             mssv = parts[0]
@@ -156,38 +166,47 @@ def parse_students_text(raw_text: str) -> List[Dict[str, str]]:
                 name, mssv = parts[0], parts[1]
             else:
                 mssv, name = parts[0], parts[1]
-        elif len(parts) >= 3:
-            mssv_idx = -1
-            for idx, p in enumerate(parts):
-                if len(p) >= 6 and any(c.isdigit() for c in p):
-                    mssv_idx = idx
-                    break
-            if mssv_idx == -1:
-                for idx, p in enumerate(parts):
-                    if any(c.isdigit() for c in p) and len(p) >= 3:
-                        mssv_idx = idx
-                        break
-
-            if mssv_idx != -1:
-                mssv = parts[mssv_idx]
-                if mssv_idx > 0:
-                    sbd = parts[0]
-                name_parts = parts[mssv_idx + 1:]
-                name = " ".join(name_parts)
+        elif len(parts) == 3:
+            p0, p1, p2 = parts[0], parts[1], parts[2]
+            if cls_pattern.match(p2):
+                # Định dạng MSSV <tab> Họ và tên <tab> Lớp
+                mssv, name, st_cls = p0, p1, p2
+            elif len(p0) <= 4 and p0.isdigit() and (len(p1) >= 6 or any(c.isdigit() for c in p1)):
+                # Định dạng SBD <tab> MSSV <tab> Họ và tên
+                sbd, mssv, name = p0, p1, p2
             else:
-                sbd = parts[0]
-                mssv = parts[1]
+                if len(p0) >= 6 and any(c.isdigit() for c in p0):
+                    mssv, name, st_cls = p0, p1, p2
+                else:
+                    sbd, mssv, name = p0, p1, p2
+        elif len(parts) >= 4:
+            sbd = parts[0]
+            mssv = parts[1]
+            last_part = parts[-1]
+            if cls_pattern.match(last_part):
+                st_cls = last_part
+                name = " ".join(parts[2:-1])
+            else:
                 name = " ".join(parts[2:])
+
+        # Tự động tách mã lớp nếu còn dính ở cuối tên
+        if not st_cls and name:
+            m = name_cls_split.match(name)
+            if m:
+                name = m.group(1).strip()
+                st_cls = m.group(2).strip().upper()
 
         if mssv:
             mssv = re.sub(r'[^a-zA-Z0-9]', '', mssv).strip().upper()
             name = re.sub(r'\s+', ' ', name or '').strip()
             sbd = str(sbd).strip()
+            st_cls = str(st_cls).strip().upper()
             if mssv:
                 students.append({
                     "sbd": sbd,
                     "mssv": mssv,
-                    "name": name or f"Sinh viên {mssv}"
+                    "name": name or f"Sinh viên {mssv}",
+                    "student_class": st_cls
                 })
     return students
 

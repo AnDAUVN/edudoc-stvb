@@ -526,7 +526,7 @@
           <span class="step-badge">1</span> Đăng nhập Khảo thí & Chọn Loại Văn bản làm bài
         </h5>
         <div class="row g-3">
-          <div class="col-md-2">
+          <div class="col-md-2 col-sm-6">
             <label class="form-label fw-semibold text-danger">
               <i class="fa-solid fa-graduation-cap me-1"></i> Mã lớp KN
             </label>
@@ -534,23 +534,28 @@
               <!-- Nạp động từ /api/classes -->
             </select>
           </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Số báo danh (SBD)</label>
-            <input type="text" id="inp-sbd" class="form-control" placeholder="Ví dụ: 01" value="01">
+          <div class="col-md-1 col-sm-6">
+            <label class="form-label fw-semibold" title="Số báo danh (nếu có)">SBD</label>
+            <input type="text" id="inp-sbd" class="form-control" placeholder="VD: 01" value="01">
           </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Mã số sinh viên (MSSV)</label>
-            <input type="text" id="inp-mssv" class="form-control font-monospace fw-bold" placeholder="Ví dụ: 2100001234" value="2100001234" oninput="onStudentMssvInput()" onchange="onStudentClassOrMssvChanged()">
+          <div class="col-md-2 col-sm-6">
+            <label class="form-label fw-semibold">MSSV</label>
+            <input type="text" id="inp-mssv" class="form-control font-monospace fw-bold" placeholder="VD: 2311557766" value="2311557766" oninput="onStudentMssvInput()" onchange="onStudentClassOrMssvChanged()">
             <div id="student-roster-feedback" class="mt-1 small"></div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3 col-sm-6">
             <label class="form-label fw-semibold">Họ và tên</label>
-            <input type="text" id="inp-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" value="Nguyễn Văn A">
+            <input type="text" id="inp-name" class="form-control" placeholder="Ví dụ: Nguyễn Thị Phương Anh" value="">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2 col-sm-6">
+            <label class="form-label fw-semibold text-primary">
+              <i class="fa-solid fa-users-rectangle me-1"></i> Lớp
+            </label>
+            <input type="text" id="inp-student-class" class="form-control fw-bold font-monospace text-primary border-primary-subtle" placeholder="VD: 23DKQT1A" value="">
+          </div>
+          <div class="col-md-2 col-sm-6">
             <label class="form-label fw-bold text-primary small d-flex align-items-center justify-content-between">
-              <span><i class="fa-solid fa-file-signature me-1"></i> Loại văn bản bài tập <span class="text-danger">*</span></span>
-              <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.7rem;"><i class="fa-solid fa-chalkboard-user me-1"></i> Theo bài Giảng viên giao</span>
+              <span><i class="fa-solid fa-file-signature me-1"></i> Loại bài tập <span class="text-danger">*</span></span>
             </label>
             <select id="sel-doc-type" class="form-select fw-bold text-primary border-primary-subtle" onchange="onDocTypeChanged()">
               <option value="bai_thu_hoach" {% if active_doc_type == 'bai_thu_hoach' %}selected{% endif %}>1. Bài thu hoạch</option>
@@ -1176,21 +1181,45 @@
         Swal.fire({
           icon: 'warning',
           title: 'ĐANG TRONG GIỜ NGHE GIẢNG LÝ THUYẾT',
-          html: 'Thầy/Cô đang giảng bài lý thuyết tại lớp.<br>Hệ thống làm bài tập <strong>đang tạm khóa</strong> để cả lớp tập trung nghe giảng.<br><br><span class="text-danger fw-bold"><i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Hệ thống sẽ tự động mở khóa ngay khi Thầy/Cô phát lệnh!</span>',
+          html: `
+            <div class="text-start">
+              <p>Thầy/Cô đang giảng bài lý thuyết tại lớp. Hệ thống làm bài tập (Trắc nghiệm, Nhận file mẫu, Nộp bài) <strong>đang tạm khóa</strong> để các bạn tập trung nghe giảng.</p>
+              <p class="text-danger fw-bold mb-2"><i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Hệ thống sẽ tự động mở khóa ngay khi Thầy/Cô phát lệnh!</p>
+              <div class="mt-2 p-2 bg-light rounded small text-secondary border">
+                <i class="fa-solid fa-circle-info text-primary me-1"></i> <strong>Dành cho Giảng viên:</strong> Để mở phòng cho sinh viên làm bài, Thầy/Cô hãy vào trang <a href="/quan-tri" target="_blank" class="fw-bold text-primary">Bàn làm việc Giảng viên (/quan-tri)</a> và nhấn nút <strong>"BẬT: CHO PHÉP LÀM BÀI"</strong>.
+              </div>
+            </div>
+          `,
           confirmButtonText: 'Đã hiểu'
         });
         return;
       }
 
-      const classCode = document.getElementById('inp-class-code').value.trim();
-      const sbd = document.getElementById('inp-sbd').value.trim();
-      const mssv = document.getElementById('inp-mssv').value.trim();
-      const name = document.getElementById('inp-name').value.trim();
-      const docType = document.getElementById('sel-doc-type').value;
+      const classCode = document.getElementById('inp-class-code') ? document.getElementById('inp-class-code').value.trim() : '';
+      const sbd = document.getElementById('inp-sbd') ? (document.getElementById('inp-sbd').value.trim() || '-') : '-';
+      const mssv = document.getElementById('inp-mssv') ? document.getElementById('inp-mssv').value.trim() : '';
+      const name = document.getElementById('inp-name') ? document.getElementById('inp-name').value.trim() : '';
+      const studentClass = document.getElementById('inp-student-class') ? document.getElementById('inp-student-class').value.trim() : '';
+      const docType = document.getElementById('sel-doc-type') ? document.getElementById('sel-doc-type').value : 'bai_thu_hoach';
 
-      if (!classCode || !sbd || !mssv || !name) {
-        Swal.fire('Thiếu thông tin', 'Vui lòng chọn Mã lớp KN, nhập đầy đủ SBD, MSSV và Họ tên!', 'warning');
+      if (!classCode) {
+        Swal.fire('Chưa chọn Mã lớp', 'Vui lòng chọn Mã lớp KN trong ô danh sách lớp!', 'warning');
         return;
+      }
+      if (!mssv) {
+        Swal.fire('Chưa nhập MSSV', 'Vui lòng nhập Mã số sinh viên (MSSV) của bạn!', 'warning');
+        return;
+      }
+      if (!name) {
+        Swal.fire('Chưa có Họ tên', 'Vui lòng nhập đầy đủ Họ và tên sinh viên!', 'warning');
+        return;
+      }
+
+      const btnStart = document.getElementById('btn-start-quiz');
+      const origBtnHtml = btnStart ? btnStart.innerHTML : '';
+      if (btnStart) {
+        btnStart.disabled = true;
+        btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang tải câu hỏi trắc nghiệm...';
       }
 
       try {
@@ -1225,6 +1254,12 @@
           }
           return;
         }
+
+        if (!data.questions || data.questions.length === 0) {
+          Swal.fire('Thông báo', 'Hiện chưa có câu hỏi trắc nghiệm nào cho loại văn bản này. Vui lòng báo Giảng viên!', 'info');
+          return;
+        }
+
         currentQuizQuestions = data.questions;
         if (document.getElementById('lbl-quiz-total-q')) {
           document.getElementById('lbl-quiz-total-q').innerText = data.total;
@@ -1255,10 +1290,25 @@
 
         renderQuiz(currentQuizQuestions);
         updateStepIndicator(2);
-        document.getElementById('section-quiz').classList.remove('d-none');
-        document.getElementById('section-quiz').scrollIntoView({ behavior: 'smooth' });
+        const secQuiz = document.getElementById('section-quiz');
+        if (secQuiz) {
+          secQuiz.classList.remove('d-none');
+          secQuiz.scrollIntoView({ behavior: 'smooth' });
+        }
+        Swal.fire({
+          icon: 'success',
+          title: 'BẮT ĐẦU PHẦN TRẮC NGHIỆM',
+          text: `Đã nạp ${data.total} câu hỏi trắc nghiệm thể thức NĐ 30. Bạn có 5 phút để hoàn thành!`,
+          timer: 2500,
+          showConfirmButton: false
+        });
       } catch (e) {
         Swal.fire('Lỗi', 'Không thể tải câu hỏi trắc nghiệm: ' + e, 'error');
+      } finally {
+        if (btnStart) {
+          btnStart.disabled = false;
+          btnStart.innerHTML = origBtnHtml;
+        }
       }
     }
 
@@ -1907,9 +1957,9 @@
         // ĐANG KHÓA (GIẢNG LÝ THUYẾT)
         if (overlay) overlay.classList.remove('d-none');
         if (btnStart) {
-          btnStart.setAttribute('disabled', 'true');
+          btnStart.removeAttribute('disabled');
           btnStart.className = 'btn btn-secondary px-4 fw-bold opacity-75';
-          btnStart.innerHTML = '<i class="fa-solid fa-lock me-2"></i> Đang nghe giảng - Chờ Thầy/Cô cho phép bắt đầu...';
+          btnStart.innerHTML = '<i class="fa-solid fa-lock me-2"></i> Đang nghe giảng - Bấm để xem thông báo';
         }
 
         if (stateChanged) {
@@ -1986,11 +2036,15 @@
         const data = await res.json();
         if (data.valid) {
           if (data.student) {
-            feedbackEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Hợp lệ: ${escapeHtml(data.student.name)} (SBD: ${escapeHtml(data.student.sbd || 'Chưa gán')})</span>`;
             const nameEl = document.getElementById('inp-name');
             const sbdEl = document.getElementById('inp-sbd');
+            const classStEl = document.getElementById('inp-student-class');
             if (nameEl && data.student.name) nameEl.value = data.student.name;
             if (sbdEl && data.student.sbd) sbdEl.value = data.student.sbd;
+            if (classStEl && data.student.student_class) classStEl.value = data.student.student_class;
+
+            const clsText = data.student.student_class ? ` - Lớp: ${escapeHtml(data.student.student_class)}` : '';
+            feedbackEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Hợp lệ: ${escapeHtml(data.student.name)}${clsText} (SBD: ${escapeHtml(data.student.sbd || 'Chưa gán')})</span>`;
           } else {
             feedbackEl.innerHTML = `<span class="text-secondary small"><i class="fa-solid fa-circle-info me-1"></i> Lớp đang ở chế độ mở tự do (không bắt buộc danh sách).</span>`;
           }

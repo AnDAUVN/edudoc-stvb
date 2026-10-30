@@ -63,6 +63,30 @@ class TestRosterManagement(unittest.TestCase):
         res_mixed = parse_students_text(text_mixed)
         self.assertEqual(len(res_mixed), 1)
 
+        # 5. Định dạng 4 cột: SBD <tab> MSSV <tab> Họ tên <tab> Lớp
+        text_4col = "03\t2311557766\tNguyễn Thị Phương Anh\t23DKQT1A"
+        res_4col = parse_students_text(text_4col)
+        self.assertEqual(len(res_4col), 1)
+        self.assertEqual(res_4col[0]["sbd"], "03")
+        self.assertEqual(res_4col[0]["mssv"], "2311557766")
+        self.assertEqual(res_4col[0]["name"], "Nguyễn Thị Phương Anh")
+        self.assertEqual(res_4col[0]["student_class"], "23DKQT1A")
+
+        # 6. Định dạng 3 cột: MSSV <tab> Họ tên <tab> Lớp
+        text_3col = "2311557766\tNguyễn Thị Phương Anh\t23DKQT1A"
+        res_3col = parse_students_text(text_3col)
+        self.assertEqual(len(res_3col), 1)
+        self.assertEqual(res_3col[0]["mssv"], "2311557766")
+        self.assertEqual(res_3col[0]["name"], "Nguyễn Thị Phương Anh")
+        self.assertEqual(res_3col[0]["student_class"], "23DKQT1A")
+
+        # 7. Tự động tách mã lớp ở đuôi tên nếu dán gộp
+        text_suffix = "2311557766\tNguyễn Thị Phương Anh 23DKQT1A"
+        res_suffix = parse_students_text(text_suffix)
+        self.assertEqual(len(res_suffix), 1)
+        self.assertEqual(res_suffix[0]["name"], "Nguyễn Thị Phương Anh")
+        self.assertEqual(res_suffix[0]["student_class"], "23DKQT1A")
+
     def test_student_verify_api(self):
         """API /api/student/verify xác thực sinh viên có trong danh sách hay không"""
         # Chuẩn bị roster lớp TEST_CLS
@@ -259,7 +283,7 @@ class TestRosterManagement(unittest.TestCase):
         self.assertEqual(res_not_found.status_code, 404)
 
     def test_teacher_html_has_delete_class_button(self):
-        """Kiểm tra giao diện Bàn làm việc Giảng viên có nút Xóa lớp này và các hàm JS xử lý"""
+        """Kiểm tra giao diện Bàn làm việc Giảng viên có nút Xóa lớp này, cột Lớp và các hàm JS xử lý"""
         res = self.client.get("/quan-tri")
         self.assertEqual(res.status_code, 200)
         html = res.get_data(as_text=True)
@@ -269,6 +293,19 @@ class TestRosterManagement(unittest.TestCase):
         self.assertIn("Xóa lớp này", html)
         self.assertIn("openAddNewClassModal", html)
         self.assertIn("Thêm lớp mới", html)
+        # Kiểm tra cột Lớp trong bảng Roster
+        self.assertIn("Lớp", html)
+        self.assertIn("inp-add-student-st-class", html)
+
+    def test_student_portal_has_class_column_and_start_quiz(self):
+        """Kiểm tra Cổng sinh viên (/thi) có cột Lớp cạnh Họ tên và nút Bắt đầu trắc nghiệm"""
+        res = self.client.get("/thi")
+        self.assertEqual(res.status_code, 200)
+        html = res.get_data(as_text=True)
+
+        self.assertIn("inp-student-class", html)
+        self.assertIn("btn-start-quiz", html)
+        self.assertIn("startQuiz", html)
 
 if __name__ == "__main__":
     unittest.main()

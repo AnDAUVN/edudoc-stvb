@@ -382,17 +382,18 @@
             <table class="table table-hover align-middle table-custom">
               <thead>
                 <tr>
-                  <th style="width: 80px;">STT</th>
-                  <th style="width: 100px;">SBD</th>
-                  <th style="width: 160px;">Mã số sinh viên (MSSV)</th>
+                  <th style="width: 60px;">STT</th>
+                  <th style="width: 80px;">SBD</th>
+                  <th style="width: 150px;">Mã số sinh viên (MSSV)</th>
                   <th>Họ và tên</th>
-                  <th style="width: 140px;">Mã lớp KN</th>
-                  <th style="width: 120px;" class="text-center">Thao tác</th>
+                  <th style="width: 140px;"><i class="fa-solid fa-users-rectangle me-1 text-primary"></i>Lớp</th>
+                  <th style="width: 130px;">Mã lớp KN</th>
+                  <th style="width: 100px;" class="text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="tbl-roster-body">
                 <tr>
-                  <td colspan="6" class="text-center text-muted py-4">
+                  <td colspan="7" class="text-center text-muted py-4">
                     Vui lòng chọn lớp học để xem danh sách sinh viên.
                   </td>
                 </tr>
@@ -686,6 +687,10 @@
             <label class="form-label fw-bold">Họ và tên sinh viên <span class="text-danger">*</span></label>
             <input type="text" id="inp-add-student-name" class="form-control" placeholder="VD: Nguyễn Văn An">
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Lớp sinh viên (Lớp chính khóa)</label>
+            <input type="text" id="inp-add-student-st-class" class="form-control text-uppercase font-monospace" placeholder="VD: 23DKQT1A, 24DTMDT1A">
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -711,7 +716,7 @@
           <div class="mb-3">
             <label class="form-label fw-bold">Dán dữ liệu từ Excel (Hỗ trợ định dạng Tab, Phẩy, Gạch nối):</label>
             <textarea id="txt-import-raw" class="form-control" rows="10" placeholder="01   2100001234   Nguyễn Văn An&#10;02   2100005678   Trần Thị Bình&#10;2280601111 - Lê Hoàng C"></textarea>
-            <small class="text-muted d-block mt-1">Giảng viên chỉ cần copy các cột (SBD, MSSV, Họ tên) từ file Excel và dán trực tiếp vào ô trên.</small>
+            <small class="text-muted d-block mt-1">Giảng viên copy các cột từ Excel (4 cột: SBD, MSSV, Họ tên, Lớp hoặc 3 cột: MSSV, Họ tên, Lớp) và dán trực tiếp vào ô trên.</small>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="chk-import-overwrite">
@@ -1189,13 +1194,13 @@
       
       let students = [];
       if (selClass === 'ALL' || !selClass) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Vui lòng chọn một lớp cụ thể từ danh sách để xem và quản lý sinh viên.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Vui lòng chọn một lớp cụ thể từ danh sách để xem và quản lý sinh viên.</td></tr>`;
         return;
       }
       
       students = roster[selClass] || [];
       if (students.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Lớp [${selClass}] hiện chưa có sinh viên nào. Hãy bấm "Thêm sinh viên lẻ" hoặc "Dán danh sách Excel" để nạp sinh viên.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Lớp [${selClass}] hiện chưa có sinh viên nào. Hãy bấm "Thêm sinh viên lẻ" hoặc "Dán danh sách Excel" để nạp sinh viên.</td></tr>`;
         return;
       }
 
@@ -1205,6 +1210,7 @@
           <td class="badge-mono">${s.sbd || '-'}</td>
           <td class="badge-mono fw-bold text-primary">${s.mssv}</td>
           <td class="fw-semibold">${s.name}</td>
+          <td><span class="badge bg-secondary-subtle text-secondary border font-monospace">${s.student_class || '-'}</span></td>
           <td><span class="badge bg-light text-dark border">${selClass}</span></td>
           <td class="text-center">
             <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster('${selClass}', '${s.mssv}')" title="Xóa sinh viên">
@@ -1224,6 +1230,9 @@
       if (curClass && curClass !== 'ALL') {
         document.getElementById('inp-add-student-class').value = curClass;
       }
+      if (document.getElementById('inp-add-student-st-class')) {
+        document.getElementById('inp-add-student-st-class').value = '';
+      }
       new bootstrap.Modal(document.getElementById('modal-add-student')).show();
     }
 
@@ -1232,6 +1241,7 @@
       const sbd = document.getElementById('inp-add-student-sbd').value.trim();
       const mssv = document.getElementById('inp-add-student-mssv').value.trim();
       const name = document.getElementById('inp-add-student-name').value.trim();
+      const stClass = document.getElementById('inp-add-student-st-class') ? document.getElementById('inp-add-student-st-class').value.trim().toUpperCase() : '';
 
       if (!c || !mssv || !name) {
         Swal.fire('Cảnh báo', 'Vui lòng nhập Mã lớp, MSSV và Họ tên!', 'warning');
@@ -1242,7 +1252,7 @@
         const res = await fetch('/api/teacher/students/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ class_code: c, sbd: sbd, mssv: mssv, name: name })
+          body: JSON.stringify({ class_code: c, sbd: sbd, mssv: mssv, name: name, student_class: stClass })
         });
         const data = await res.json();
         if (data.success) {

@@ -122,6 +122,7 @@ def add_student_to_roster():
     sbd = str(data.get("sbd", "")).strip()
     mssv = str(data.get("mssv", "")).strip()
     name = str(data.get("name", "")).strip()
+    student_class = str(data.get("student_class", "")).strip().upper()
 
     if not class_code or not mssv or not name:
         return jsonify({"error": "Vui lòng nhập đầy đủ Mã lớp, MSSV và Họ và tên sinh viên!"}), 400
@@ -135,6 +136,8 @@ def add_student_to_roster():
         if s.get("mssv", "").strip().upper() == mssv:
             s["sbd"] = sbd or s.get("sbd", "")
             s["name"] = name
+            if student_class:
+                s["student_class"] = student_class
             save_json_file(STUDENTS_ROSTER_FILE, roster)
             return jsonify({
                 "success": True,
@@ -146,7 +149,8 @@ def add_student_to_roster():
     new_student = {
         "sbd": sbd,
         "mssv": mssv,
-        "name": name
+        "name": name,
+        "student_class": student_class
     }
     roster[class_code].append(new_student)
     save_json_file(STUDENTS_ROSTER_FILE, roster)
@@ -186,6 +190,8 @@ def import_students_batch():
             existing_mssvs[m]["name"] = item["name"]
             if item["sbd"]:
                 existing_mssvs[m]["sbd"] = item["sbd"]
+            if item.get("student_class"):
+                existing_mssvs[m]["student_class"] = item["student_class"]
             updated_count += 1
         else:
             roster[class_code].append(item)
