@@ -2173,5 +2173,895 @@
     }
 
   </script>
+
+  <div class="modal fade" id="modal-decree30-guide" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-dark text-white">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-scale-balanced text-warning fa-lg"></i>
+            <h5 class="modal-title fw-bold">CẨM NANG TRA CỨU THỂ THỨC VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP)</h5>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+          <!-- NAV TABS -->
+          <ul class="nav nav-pills nav-fill mb-3 bg-white p-2 rounded shadow-sm" id="guideTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active fw-bold small" id="tab-font-rules" data-bs-toggle="pill" data-bs-target="#content-font-rules">
+                <i class="fa-solid fa-text-height me-1"></i> 1. Quy ước Cỡ chữ (Số trước / Số sau)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-doc-compare" data-bs-toggle="pill" data-bs-target="#content-doc-compare">
+                <i class="fa-solid fa-code-compare me-1"></i> 2. Công văn vs Có tên loại
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-sign-rules" data-bs-toggle="pill" data-bs-target="#content-sign-rules">
+                <i class="fa-solid fa-signature me-1"></i> 3. Thể thức Đề ký (7a)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-cap-rules" data-bs-toggle="pill" data-bs-target="#content-cap-rules">
+                <i class="fa-solid fa-font me-1"></i> 4. Viết hoa chuẩn (Phụ lục II)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small" id="tab-margin-rules" data-bs-toggle="pill" data-bs-target="#content-margin-rules">
+                <i class="fa-solid fa-ruler-combined me-1"></i> 5. Căn lề & Bảng 2x2, 1x2
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small text-danger" id="tab-box6-guide" data-bs-toggle="pill" data-bs-target="#content-box6-guide">
+                <i class="fa-solid fa-graduation-cap me-1"></i> 6. Cấu trúc Ô 6 Thông Báo (Bài 7 & 8)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small text-primary" id="tab-schemas" data-bs-toggle="pill" data-bs-target="#content-schemas">
+                <i class="fa-solid fa-diagram-project me-1"></i> 7. Sơ đồ Bố trí Chuẩn (3 Nhóm VB NĐ 30)
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link fw-bold small text-success" id="tab-spacing-rules" data-bs-toggle="pill" data-bs-target="#content-spacing-rules">
+                <i class="fa-solid fa-arrows-left-right me-1"></i> 8. Quy tắc Khoảng cách trống
+              </button>
+            </li>
+          </ul>
+
+          <!-- TAB CONTENTS -->
+          <div class="tab-content bg-white p-4 rounded shadow-sm">
+            <!-- TAB 1: CỠ CHỮ -->
+            <div class="tab-pane fade show active" id="content-font-rules">
+              <div class="alert alert-info border-0 mb-3 small">
+                <i class="fa-solid fa-circle-info me-1"></i> <strong>Nguyên tắc đồng nhất thẩm mỹ:</strong> Nghị định 30 đưa ra khoảng cỡ chữ (Ví dụ: 12-13pt hoặc 13-14pt). Người soạn thảo phải chọn thống nhất <strong>Bộ Số trước (Bộ nhỏ)</strong> HOẶC <strong>Bộ Số sau (Bộ lớn)</strong> xuyên suốt toàn bộ văn bản.
+              </div>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle small mb-0">
+                  <thead class="table-primary text-center">
+                    <tr>
+                      <th>Vị trí Ô Thể thức</th>
+                      <th>Quy định Nghị định 30</th>
+                      <th>Bộ "Số trước" (Nhỏ)</th>
+                      <th>Bộ "Số sau" (Lớn)</th>
+                      <th>Kiểu chữ & Căn lề</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Ô 1: Quốc hiệu</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 1: Tiêu ngữ</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Đậm, Canh giữa (Shape line phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 2: CQ ban hành</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa (Line dài 1/3-1/2 phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 2: CQ chủ quản</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>IN HOA, Đứng, <strong>Không đậm</strong>, Canh giữa</td>
+                    </tr>
+                    <tr class="table-warning">
+                      <td><strong>Ô 3: Số và ký hiệu</strong></td>
+                      <td class="text-center fw-bold text-danger">Chỉ có 1 cỡ chữ 13 pt</td>
+                      <td class="text-center fw-bold text-danger">13 pt</td>
+                      <td class="text-center fw-bold text-danger">13 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm, Canh giữa (Chỉ duy nhất một cỡ chữ 13)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 4: Địa danh ngày tháng</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, <strong>In nghiêng</strong>, Không đậm, Canh giữa</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5a: Tên loại văn bản</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa trang (ngoài bảng)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5a: Trích yếu văn bản</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Đậm, Canh giữa (Line dài 1/3-1/2 phía dưới)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 5b: Trích yếu Công văn (V/v)</strong></td>
+                      <td class="text-center">12 - 13 pt</td>
+                      <td class="text-center fw-bold text-primary">12 pt</td>
+                      <td class="text-center fw-bold text-success">13 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm, Canh giữa (trong bảng dưới Ô 3)</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 6: Nội dung (Thân bài)</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Times New Roman, Đứng, Căn đều 2 lề (Justify), Lùi 1.27cm, Spacing 6pt</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 7a: Chức vụ người ký</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>IN HOA, Đứng, Đậm, Canh giữa ô</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 7b: Họ tên người ký</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường viết hoa chữ đầu, Đứng, Đậm, Canh giữa ô</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Ô 9a: Kính gửi (Trực tiếp)</strong></td>
+                      <td class="text-center">13 - 14 pt</td>
+                      <td class="text-center fw-bold text-primary">13 pt</td>
+                      <td class="text-center fw-bold text-success">14 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm</td>
+                    </tr>
+                    <tr class="table-light">
+                      <td><strong>Ô 9b: Dòng "Nơi nhận:"</strong></td>
+                      <td class="text-center">Cố định 12 pt</td>
+                      <td class="text-center fw-bold text-danger">12 pt</td>
+                      <td class="text-center fw-bold text-danger">12 pt</td>
+                      <td>Chữ thường, <strong>In nghiêng, In đậm</strong></td>
+                    </tr>
+                    <tr class="table-light">
+                      <td><strong>Ô 9b: Danh sách nơi nhận con</strong></td>
+                      <td class="text-center">Cố định 11 pt</td>
+                      <td class="text-center fw-bold text-danger">11 pt</td>
+                      <td class="text-center fw-bold text-danger">11 pt</td>
+                      <td>Chữ thường, Đứng, Không đậm. Dòng cuối: "Lưu: VT."</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 2: SO SÁNH CÔNG VĂN VS VĂN BẢN CÓ TÊN LOẠI -->
+            <div class="tab-pane fade" id="content-doc-compare">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card border-primary p-3 h-100">
+                    <h6 class="fw-bold text-primary border-bottom pb-2">
+                      <i class="fa-solid fa-file-lines me-1"></i> 1. CÔNG VĂN HÀNH CHÍNH (Văn bản không có tên loại)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Ô 3 (Số & Ký hiệu):</strong> Có dạng <code>Số: 12/ĐHNTT-ĐT</code>. <strong>TUYỆT ĐỐI KHÔNG CÓ</strong> chữ viết tắt tên loại 'CV' trong ký hiệu.</li>
+                      <li class="mb-2"><strong>Ô 5b (Trích yếu V/v):</strong> Bắt đầu bằng <code>V/v ...</code> (chữ thường, đứng, không đậm, cỡ 12-13pt). <strong>Nằm TRONG BẢNG đầu trang</strong> tại Dòng 2 Cột 1 ngay dưới Ô 3, cách dòng 6pt.</li>
+                      <li class="mb-2"><strong>Ô 9a (Kính gửi):</strong> <strong>Bắt buộc có</strong> dòng <code>Kính gửi: &lt;Tên cơ quan&gt;.</code> đặt trước phần nội dung văn bản.</li>
+                      <li><strong>Không có Ô 5a:</strong> Không có tên loại in hoa đặt ở giữa trang giấy.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-success p-3 h-100">
+                    <h6 class="fw-bold text-success border-bottom pb-2">
+                      <i class="fa-solid fa-file-shield me-1"></i> 2. VĂN BẢN CÓ TÊN LOẠI (Thông báo, Tờ trình, Báo cáo...)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Ô 3 (Số & Ký hiệu):</strong> <strong>Bắt buộc có</strong> tên loại viết tắt đứng đầu ký hiệu (Ví dụ: <code>Số: 45/TB-ĐT</code> cho Thông báo, <code>Số: 15/TTr-CNTT</code> cho Tờ trình).</li>
+                      <li class="mb-2"><strong>Ô 5a (Tên loại & Trích yếu):</strong> <strong>Nằm NGOÀI BẢNG</strong> đầu trang, canh giữa trang giấy:
+                        <ul>
+                          <li>Dòng trên: <strong>TÊN LOẠI VĂN BẢN</strong> (IN HOA, đậm, đứng, cỡ 13-14pt).</li>
+                          <li>Dòng dưới: <strong>Trích yếu nội dung</strong> (in thường, đậm, đứng, cỡ 13-14pt). Phía dưới có đường kẻ ngang bằng 1/3 đến 1/2 dòng chữ.</li>
+                        </ul>
+                      </li>
+                      <li class="mb-2"><strong>Ô 9a (Kính gửi):</strong> 
+                        <ul>
+                          <li>Đối với <strong>Tờ trình</strong> và <strong>Báo cáo</strong>: Bắt buộc có Ô 9a Kính gửi đặt dưới Trích yếu.</li>
+                          <li>Đối với <strong>Thông báo</strong> thông thường: Không có Ô 9a (chỉ có Ô 9b ở cuối trang).</li>
+                        </ul>
+                      </li>
+                      <li><strong>Không có Ô 5b:</strong> Dòng 2 Cột 1 Bảng đầu trang chỉ chứa Ô 3.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: THỂ THỨC ĐỀ KÝ -->
+            <div class="tab-pane fade" id="content-sign-rules">
+              <h6 class="fw-bold text-dark mb-2">Các thể thức đề ký áp dụng trong bài tập theo Nghị định 30:</h6>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-primary mb-1">1. Ký trực tiếp (Người đứng đầu cơ quan, tổ chức)</h6>
+                    <p class="small text-secondary mb-2">Áp dụng khi cấp trưởng (Hiệu trưởng, Giám đốc, Bí thư Đoàn) trực tiếp ký văn bản (1 dòng chức vụ).</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      HIỆU TRƯỞNG<br><br><br>Trần Ái Cầm
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-danger mb-1">2. Ký thay - Viết tắt 'KT.' (Cấp phó ký thay cấp trưởng)</h6>
+                    <p class="small text-secondary mb-2">Bắt buộc có dấu chấm 'KT.' và gồm đúng 2 dòng: Dòng 1 là chức vụ cấp trưởng, Dòng 2 là chức vụ cấp phó.</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      KT. GIÁM ĐỐC<br>PHÓ GIÁM ĐỐC<br><br><br>Võ Thị Kim Anh
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-warning-emphasis mb-1">3. Thừa lệnh - Viết tắt 'TL.' (Cấp phòng ký thừa lệnh)</h6>
+                    <p class="small text-secondary mb-2">Bắt buộc có dấu chấm 'TL.' và gồm 2 dòng: Dòng 1 là TL. Cấp trưởng cơ quan, Dòng 2 là Chức vụ cấp phòng.</p>
+                    <div class="bg-white p-2 border rounded font-monospace small text-center fw-bold">
+                      TL. HIỆU TRƯỞNG<br>TRƯỞNG PHÒNG ĐÀO TẠO<br><br><br>Nguyễn Văn An
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: VIẾT HOA CHUẨN PHỤ LỤC II -->
+            <div class="tab-pane fade" id="content-cap-rules">
+              <h6 class="fw-bold text-dark mb-2">Quy chuẩn Viết hoa theo Phụ lục II Nghị định 30/2020/NĐ-CP:</h6>
+              <div class="alert alert-warning small border-0 mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> <strong>Lưu ý quan trọng từ Giảng viên:</strong> Lỗi viết hoa tên cơ quan, tổ chức thường xuyên xuất hiện tại <strong>Ô 9a (Kính gửi)</strong>, <strong>Ô 6 (Nội dung bài tập)</strong> và <strong>Ô 9b (Nơi nhận)</strong>.
+              </div>
+              <ul class="small ps-3 mb-0">
+                <li class="mb-2"><strong>Quy tắc từ nối 'và' (Mục IV.1):</strong> Trong tên các Bộ, Sở, Cơ quan, từ chỉ loại hình viết hoa nhưng từ nối 'và' <strong>TUYỆT ĐỐI VIẾT THƯỜNG</strong>:
+                  <ul class="mt-1">
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Khoa học và Công nghệ</code> (Không viết: <code>Bộ Khoa học Và Công nghệ</code>)</li>
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Giáo dục và Đào tạo</code> (Không viết: <code>Bộ Giáo dục Và Đào tạo</code>)</li>
+                    <li><i class="fa-solid fa-check text-success me-1"></i> <code>Bộ Tài nguyên và Môi trường</code> (Không viết: <code>Bộ Tài nguyên Và Môi trường</code>)</li>
+                  </ul>
+                </li>
+                <li class="mb-2"><strong>Tên các cơ quan hành chính & tổ chức:</strong>
+                  <ul class="mt-1">
+                    <li><code>Ủy ban nhân dân Phường 13</code> (Từ chỉ loại hình 'Ủy ban nhân dân' viết hoa chữ cái đầu).</li>
+                    <li><code>Công an Phường An Phú Đông</code> (Từ chỉ loại hình 'Công an' viết hoa chữ cái đầu).</li>
+                    <li><code>Trường Đại học Nguyễn Tất Thành</code>, <code>Ban Giám hiệu</code>, <code>Phòng Đào tạo</code>, <code>Khoa Công nghệ thông tin</code>, <code>Đoàn Thanh niên</code>.</li>
+                  </ul>
+                </li>
+                <li class="mb-2"><strong>Địa danh hành chính (Mục III):</strong>
+                  <ul class="mt-1">
+                    <li>Chữ 'Tp.' được phép viết tắt, nhưng địa danh 'Hồ Chí Minh' <strong>không được viết tắt</strong>: <code>Tp. Hồ Chí Minh</code> hoặc <code>Thành phố Hồ Chí Minh</code> (Không viết: <code>Tp.HCM</code>, <code>TP.HCM</code>).</li>
+                  </ul>
+                </li>
+                <li><strong>Viết hoa vì phép đặt câu (Mục I):</strong> Viết hoa chữ cái đầu khi xuống dòng, đầu mục, đầu gạch ngang bullet <code>-</code> và sau các dấu chấm câu <code>. </code>.</li>
+              </ul>
+            </div>
+
+            <!-- TAB 5: CĂN LỀ & BẢNG -->
+            <div class="tab-pane fade" id="content-margin-rules">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="border rounded p-3 h-100">
+                    <h6 class="fw-bold text-primary border-bottom pb-2">
+                      <i class="fa-solid fa-ruler me-1"></i> Căn lề Trang giấy chuẩn A4 (Điều 8 & Phụ lục I)
+                    </h6>
+                    <table class="table table-sm small mb-0">
+                      <tr><td><strong>Khổ giấy:</strong></td><td class="text-danger fw-bold">A4 (210 x 297 mm)</td></tr>
+                      <tr><td><strong>Lề trên (Top):</strong></td><td>20 - 25 mm (2.0 - 2.5 cm)</td></tr>
+                      <tr><td><strong>Lề dưới (Bottom):</strong></td><td>20 - 25 mm (2.0 - 2.5 cm)</td></tr>
+                      <tr><td><strong>Lề trái (Left):</strong></td><td>30 - 35 mm (3.0 - 3.5 cm)</td></tr>
+                      <tr><td><strong>Lề phải (Right):</strong></td><td>15 - 20 mm (1.5 - 2.0 cm)</td></tr>
+                    </table>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="border rounded p-3 h-100">
+                    <h6 class="fw-bold text-success border-bottom pb-2">
+                      <i class="fa-solid fa-table me-1"></i> Cấu trúc 2 Bảng vô hình (Helper Tables)
+                    </h6>
+                    <ul class="small mb-0 ps-3">
+                      <li class="mb-2"><strong>Bảng đầu trang:</strong> Bắt buộc là bảng gồm đúng <strong>2 CỘT x 2 DÒNG</strong> (Hàng 1: [Ô 2 / Ô 1]; Hàng 2: [Ô 3 (+5b) / Ô 4]).</li>
+                      <li class="mb-2"><strong>Bảng cuối trang:</strong> Bắt buộc là bảng gồm đúng <strong>2 CỘT x 1 DÒNG</strong> (Cột 1: Ô 9b Nơi nhận; Cột 2: Ô 7a, 8, 7b Chức vụ, chữ ký, họ tên).</li>
+                      <li><strong>Viền bảng:</strong> Chọn <code>No Border</code> (Không kẻ viền) trong Word.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 6: KHUNG CHUẨN ĐỐI CHIẾU Ô 6 THÔNG BÁO (BÀI 7 & 8) -->
+            <div class="tab-pane fade" id="content-box6-guide">
+              <div class="alert alert-primary border-0 d-flex gap-3 align-items-center mb-3">
+                <i class="fa-solid fa-graduation-cap fa-2x text-primary"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">MÔ HÌNH SƯ PHẠM CHUẨN HÓA Ô 6 (THÂN BÀI THÔNG BÁO)</h6>
+                  <p class="mb-0 small text-secondary">
+                    Hành chính - Văn thư quy định Thân bài Thông báo (Ô 6) gồm <strong>3 Tầng kết cấu</strong> (Mở đầu - Nội dung - Kết thúc) và chia làm <strong>2 Dạng tư duy nghiệp vụ</strong>:
+                    <span class="badge bg-primary">Dạng 1: Nhiệm vụ được giao (Quy định / Phân công việc)</span>
+                    <span class="badge bg-success ms-1">Dạng 2: Thông tin hoạt động (Sự kiện / Phong trào / Hội thao)</span>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- MA TRẬN ĐỐI CHIẾU 3 CỘT -->
+              <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                <i class="fa-solid fa-table-columns me-1 text-primary"></i> BẢNG MA TRẬN ĐỐI CHIẾU: LÝ THUYẾT VS BÀI TẬP 7 & BÀI TẬP 8
+              </h6>
+              <div class="table-responsive mb-4">
+                <table class="table table-bordered table-hover align-top small">
+                  <thead class="table-dark text-center">
+                    <tr>
+                      <th style="width: 18%;">Tầng kết cấu Ô 6</th>
+                      <th style="width: 27%;">Khung Cấu Trúc Chuẩn (Lý thuyết)</th>
+                      <th style="width: 27%;" class="bg-primary text-white">BÀI TẬP 7: NHIỆM VỤ ĐƯỢC GIAO<br><small class="fw-normal">Quy định sử dụng máy photocopy</small></th>
+                      <th style="width: 28%;" class="bg-success text-white">BÀI TẬP 8: THÔNG TIN HOẠT ĐỘNG<br><small class="fw-normal">Chuẩn bị tổ chức hội thao</small></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-danger me-1">TẦNG 1</span><br>
+                        MỞ ĐẦU<br>
+                        <small class="text-secondary fw-normal">(Đủ 4 yếu tố bắt buộc)</small>
+                      </td>
+                      <td>
+                        <strong>1. Mục đích:</strong> Để làm gì?<br>
+                        <strong>2. Chủ thể ban hành:</strong> Ai thông báo?<br>
+                        <strong>3. Sơ lược nội dung:</strong> Sự việc gì?<br>
+                        <strong>4. Đối tượng nhận:</strong> Gửi đến ai?
+                      </td>
+                      <td class="bg-light-subtle">
+                        <span class="text-danger fw-bold">[1] Mục đích:</span> Nhằm bảo quản máy photocopy và theo dõi việc sao chụp tài liệu của các bộ phận,<br>
+                        <span class="text-primary fw-bold">[2] Chủ thể:</span> thực hiện chỉ đạo của Ban Giám đốc, Phòng Hành chính<br>
+                        <span class="text-success fw-bold">[4] Đối tượng:</span> thông báo đến toàn thể nhân viên<br>
+                        <span class="text-dark fw-bold">[3] Nội dung:</span> thực hiện quy định sử dụng máy photocopy.
+                      </td>
+                      <td class="bg-light-subtle">
+                        <span class="text-danger fw-bold">[1] Mục đích:</span> Nhằm tạo không khí thi đua sôi nổi, tăng cường giao lưu và rèn luyện sức khỏe, chào mừng kỷ niệm 10 năm thành lập công ty,<br>
+                        <span class="text-primary fw-bold">[2] Chủ thể:</span> Ban Giám đốc<br>
+                        <span class="text-success fw-bold">[4] Đối tượng:</span> thông báo đến toàn thể nhân viên<br>
+                        <span class="text-dark fw-bold">[3] Nội dung:</span> về việc tổ chức hội thao.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">CÂU DẪN BẢN LỀ</td>
+                      <td>Câu chuyển tiếp sang phần chi tiết.</td>
+                      <td class="fst-italic text-primary">"Nhân viên có nhu cầu sử dụng máy photocopy phải thực hiện các yêu cầu sau:"</td>
+                      <td class="fst-italic text-success">"Chương trình hội thao với các nội dung sau:"</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-warning text-dark me-1">TẦNG 2</span><br>
+                        NỘI DUNG CHÍNH
+                      </td>
+                      <td>
+                        <strong>• Dạng Nhiệm vụ:</strong><br>
+                        - Phân công rõ người, rõ việc, rõ quy trình xử sự.<br>
+                        - Đánh số <code>1.</code>, <code>2.</code>, <code>3.</code>.<br><br>
+                        <strong>• Dạng Hoạt động:</strong><br>
+                        - Nhóm theo các mốc thông tin 5W1H (Thời gian, Địa điểm, Hoạt động, Giải thưởng, Đăng ký).
+                      </td>
+                      <td>
+                        <strong>1. Trước khi sử dụng máy:</strong> nhân viên phải ghi đầy đủ vào sổ theo dõi: họ và tên, chức vụ, phòng ban, nội dung tóm tắt của tài liệu, số bản sao chụp và số tờ giấy cần sử dụng.<br>
+                        <strong>2. Khi sử dụng:</strong> Sử dụng máy theo hướng dẫn; giữ gìn vệ sinh và sắp xếp tài liệu, giấy sau khi sử dụng.<br>
+                        <strong>3. Khi phát hiện máy có sự cố:</strong> nhân viên phải ngừng sử dụng và báo ngay cho Tổ Kỹ thuật; không tự ý tháo lắp hoặc sửa chữa máy.
+                      </td>
+                      <td>
+                        <strong>• Thời gian:</strong> 15/11/2026.<br>
+                        <strong>• Địa điểm:</strong> Sân vận động Phú Thọ.<br>
+                        <strong>• Môn thi đấu:</strong> Bóng đá, Đi bộ, Chạy cự ly 400m.<br>
+                        <strong>• Giải thưởng:</strong><br>
+                        &nbsp;&nbsp;- Giải 1: 5.000.000đ<br>
+                        &nbsp;&nbsp;- Giải 2: 4.000.000đ<br>
+                        &nbsp;&nbsp;- Giải 3: 1.000.000đ<br>
+                        <strong>• Thời hạn đăng ký:</strong> Chậm nhất ngày 05 tháng 11 năm 2026, gửi danh sách về Phòng Hành chính.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold bg-light">
+                        <span class="badge bg-info text-dark me-1">TẦNG 3</span><br>
+                        KẾT THÚC<br>
+                        <small class="text-secondary fw-normal">(Hiệu lực / Kêu gọi)</small>
+                      </td>
+                      <td>
+                        <strong>• Dạng Nhiệm vụ:</strong><br>
+                        Xác định thời gian hiệu lực + Chế tài xử lý vi phạm.<br><br>
+                        <strong>• Dạng Hoạt động:</strong><br>
+                        Kêu gọi hưởng ứng + Lời chúc thành công, đoàn kết.<br><br>
+                        <strong>• Câu chốt:</strong><br>
+                        <code>Trân trọng thông báo./.</code>
+                      </td>
+                      <td>
+                        Yêu cầu toàn thể nhân viên nghiêm túc thực hiện các nội dung trên kể từ ngày ban hành thông báo. Trường hợp vi phạm được xem xét, xử lý theo nội quy, quy định của công ty và đúng thẩm quyền.<br><br>
+                        <span class="fw-bold text-danger">Trân trọng thông báo./.</span>
+                      </td>
+                      <td>
+                        Kính mong nhận được sự hưởng ứng của nhân viên để hội thao diễn ra vui tươi, đoàn kết và đạt kết quả tốt.<br><br>
+                        <span class="fw-bold text-danger">Trân trọng thông báo./.</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- KHỐI CÔNG THỨC LEGO & QUY CHUẨN KỸ THUẬT WORD -->
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white fw-bold small py-2">
+                      <i class="fa-solid fa-puzzle-piece me-1"></i> CÔNG THỨC "LẮP RÁP CÂU CHỮ HÀNH CHÍNH" (LEGO FORMULA)
+                    </div>
+                    <div class="card-body small p-3">
+                      <p class="fw-bold text-primary mb-1">1. Khung câu Mở đầu vạn năng:</p>
+                      <div class="p-2 bg-light rounded border mb-2 fst-italic">
+                        "Nhằm / Để [Mục đích trích từ đề bài], [thực hiện chỉ đạo của Cấp trên (nếu có)], [Chủ thể ban hành] thông báo đến [Đối tượng nhận] về việc [Sơ lược nội dung] cụ thể như sau:"
+                      </div>
+
+                      <p class="fw-bold text-primary mb-1">2. Khung câu Kết thúc Dạng Nhiệm vụ (Quy định):</p>
+                      <div class="p-2 bg-light rounded border mb-2 fst-italic">
+                        "Yêu cầu [Đối tượng] nghiêm túc thực hiện thông báo này kể từ ngày ban hành. Mọi trường hợp vi phạm sẽ được xem xét, xử lý theo nội quy, quy chế của cơ quan/doanh nghiệp."
+                      </div>
+
+                      <p class="fw-bold text-primary mb-1">3. Khung câu Kết thúc Dạng Hoạt động (Sự kiện):</p>
+                      <div class="p-2 bg-light rounded border fst-italic">
+                        "Kính mong nhận được sự quan tâm, tham gia nhiệt tình của [Đối tượng] để [hoạt động/hội thao] diễn ra sôi nổi, đoàn kết và đạt kết quả tốt đẹp."
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white fw-bold small py-2">
+                      <i class="fa-solid fa-file-word me-1"></i> TIÊU CHUẨN ĐỊNH DẠNG WORD THEO NGHỊ ĐỊNH 30
+                    </div>
+                    <div class="card-body small p-3">
+                      <table class="table table-sm table-borderless mb-2">
+                        <tr><td><strong>Phông chữ:</strong></td><td class="text-danger fw-bold">Times New Roman</td></tr>
+                        <tr><td><strong>Cỡ chữ:</strong></td><td><strong>13pt</strong> (nếu chọn Bộ Số trước) hoặc <strong>14pt</strong> (Bộ Số sau)</td></tr>
+                        <tr><td><strong>Căn lề:</strong></td><td class="text-primary fw-bold">Justify (Căn đều 2 bên - Ctrl + J)</td></tr>
+                        <tr><td><strong>Lùi đầu dòng:</strong></td><td>First line indent: <strong>1.0 - 1.27 cm</strong> (đoạn văn)</td></tr>
+                        <tr><td><strong>Giãn đoạn:</strong></td><td>Space After: <strong>6pt</strong> (Before: 0pt)</td></tr>
+                        <tr><td><strong>Giãn dòng:</strong></td><td>Line spacing: <strong>1.15 - 1.5 lines</strong></td></tr>
+                        <tr><td><strong>Chốt văn bản:</strong></td><td>Dòng chữ <code>Trân trọng thông báo./.</code> đặt riêng 1 dòng</td></tr>
+                      </table>
+
+                      <div class="alert alert-success py-2 px-3 mb-0 small">
+                        <i class="fa-solid fa-circle-check me-1"></i>
+                        <strong>Quy tắc viết hoa:</strong> Viết hoa đầu câu, đầu gạch đầu dòng, viết hoa đúng tên cơ quan (Ban Giám đốc, Phòng Hành chính, Tổ Kỹ thuật...).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 7: SƠ ĐỒ BỐ TRÍ THỂ THỨC CHUẨN NGHỊ ĐỊNH 30 -->
+            <div class="tab-pane fade" id="content-schemas">
+              <div class="alert alert-primary d-flex align-items-center mb-4">
+                <i class="fa-solid fa-circle-info fa-2x me-3"></i>
+                <div>
+                  <h6 class="fw-bold mb-1">QUY TẮC BẮT BUỘC VỀ SƠ ĐỒ BỐ TRÍ CÁC THÀNH PHẦN THỂ THỨC (PHỤ LỤC I NĐ 30/2020/NĐ-CP)</h6>
+                  <small>Khi làm bài tập Word, sinh viên phải tuân thủ đúng sơ đồ bố trí của từng nhóm văn bản: vị trí Ô 1 đến Ô 9, sự khác biệt giữa Ô 5a và Ô 5b, và mục Ô 9a (Kính gửi).</small>
+                </div>
+              </div>
+
+              <!-- SUB TABS CHO 3 SƠ ĐỒ -->
+              <ul class="nav nav-tabs mb-3" id="schemaSubTabs" role="tablist">
+                <li class="nav-item">
+                  <button class="nav-link active fw-bold" id="subtab-schema-totrinh" data-bs-toggle="tab" data-bs-target="#subcontent-totrinh">
+                    <i class="fa-solid fa-file-invoice text-warning me-1"></i> Sơ đồ 1: Tờ trình & Báo cáo
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link fw-bold" id="subtab-schema-congvan" data-bs-toggle="tab" data-bs-target="#subcontent-congvan">
+                    <i class="fa-solid fa-envelope-open-text text-primary me-1"></i> Sơ đồ 2: Công văn hành chính
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link fw-bold" id="subtab-schema-thongbao" data-bs-toggle="tab" data-bs-target="#subcontent-thongbao">
+                    <i class="fa-solid fa-bullhorn text-danger me-1"></i> Sơ đồ 3: Thông báo
+                  </button>
+                </li>
+              </ul>
+
+              <div class="tab-content" id="schemaSubContent">
+                <!-- SƠ ĐỒ 1: TỜ TRÌNH, BÁO CÁO -->
+                <div class="tab-pane fade show active" id="subcontent-totrinh">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_to_trinh_bao_cao.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Tờ trình, Báo cáo" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-warning text-dark mt-2 fs-6">SƠ ĐỒ BỐ TRÍ TỜ TRÌNH, BÁO CÁO</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-warning h-100">
+                        <div class="card-header bg-warning text-dark fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong>5. Tờ trình xin kinh phí</strong></li>
+                            <li><strong>6. Tờ trình xin bổ sung nhân sự</strong></li>
+                            <li><strong>7. Tờ trình xin máy móc thiết bị</strong></li>
+                            <li><strong>8. Báo cáo</strong></li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li>Hàng 2: [Ô 3: Số, ký hiệu] | [Ô 4: Địa danh, ngày tháng năm]</li>
+                              </ul>
+                            </li>
+                            <li><strong>Ô 5a (Tên loại & Trích yếu):</strong> Đặt ở giữa trang giấy ngoài bảng (TÊN LOẠI in hoa đậm, Trích yếu in thường đậm kèm gạch ngang dưới).</li>
+                            <li><strong class="text-danger">Ô 9a (Nơi nhận: Kính gửi):</strong> <strong>BẮT BUỘC CÓ</strong> trước khi vào phần nội dung văn bản.</li>
+                            <li><strong>Ô 6 (Nội dung văn bản):</strong> Thân bài trình bày các căn cứ, lý do, đề xuất kinh phí/nhân sự/thiết bị...</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Như kính gửi; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 (Con dấu) / 7c (Chữ ký), Ô 7b (Họ tên người ký).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-warning py-2 mb-0 small">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            <strong>Lưu ý quan trọng:</strong> Tờ trình và Báo cáo <strong>bắt buộc phải có cả 2 mục nơi nhận</strong>: Ô 9a (Kính gửi) ở phần trên VÀ Ô 9b (Nơi nhận) ở bảng cuối trang.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SƠ ĐỒ 2: CÔNG VĂN -->
+                <div class="tab-pane fade" id="subcontent-congvan">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_cong_van.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Công văn" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-primary mt-2 fs-6">SƠ ĐỒ BỐ TRÍ CỦA CÔNG VĂN</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-primary h-100">
+                        <div class="card-header bg-primary text-white fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong class="text-primary">1. Bài thu hoạch (Mẫu Công văn đề nghị - Tự giả định)</strong></li>
+                            <li><strong>2. Công văn đề nghị</strong></li>
+                            <li>Các loại công văn hành chính (xin ý kiến, trao đổi, hướng dẫn...)</li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li><strong class="text-danger">Hàng 2 Cột 1:</strong> Chứa cả <strong>Ô 3 (Số ký hiệu)</strong> VÀ <strong class="text-danger">Ô 5b (Trích yếu V/v)</strong> ngay bên dưới Ô 3, cách dòng 6pt!</li>
+                                <li>Hàng 2 Cột 2: [Ô 4: Địa danh, ngày tháng năm].</li>
+                              </ul>
+                            </li>
+                            <li><strong class="text-danger">KHÔNG CÓ Ô 5a:</strong> Công văn không có tên loại in hoa ở giữa trang.</li>
+                            <li><strong class="text-primary">Ô 9a (Nơi nhận: Kính gửi):</strong> Đặt ngay sau Bảng đầu trang, trước Ô 6.</li>
+                            <li><strong>Ô 6 (Nội dung công văn):</strong> Phần nội dung đề nghị, trao đổi...</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Như kính gửi; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 (Con dấu) / 7c (Chữ ký), Ô 7b (Họ tên người ký).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-primary py-2 mb-0 small">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            <strong>Sai lầm sinh viên hay mắc:</strong> Đưa dòng trích yếu V/v ra giữa trang ngoài bảng là sai hoàn toàn! Ô 5b bắt buộc phải nằm ở ô Cột 1 Hàng 2 trong Bảng đầu trang.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SƠ ĐỒ 3: THÔNG BÁO -->
+                <div class="tab-pane fade" id="subcontent-thongbao">
+                  <div class="row g-3 align-items-start">
+                    <div class="col-lg-7 text-center">
+                      <div class="p-2 border rounded bg-light shadow-sm">
+                        <img src="/static/schemas/so_do_thong_bao.png" class="img-fluid rounded border" alt="Sơ đồ bố trí Thông báo" style="max-height: 520px; object-fit: contain;">
+                      </div>
+                      <span class="badge bg-danger mt-2 fs-6">SƠ ĐỒ BỐ TRÍ THÔNG BÁO</span>
+                    </div>
+                    <div class="col-lg-5">
+                      <div class="card border-danger h-100">
+                        <div class="card-header bg-danger text-white fw-bold">
+                          <i class="fa-solid fa-list-check me-1"></i> CÁC VĂN BẢN ÁP DỤNG & ĐẶC ĐIỂM
+                        </div>
+                        <div class="card-body small">
+                          <p class="fw-bold text-dark mb-1">Văn bản áp dụng trong hệ thống:</p>
+                          <ul class="mb-3 ps-3">
+                            <li><strong>3. Thông báo nhiệm vụ được giao</strong></li>
+                            <li><strong>4. Thông báo thông tin hoạt động</strong></li>
+                          </ul>
+
+                          <p class="fw-bold text-dark mb-1">Trình tự bố trí các Ô Thể thức:</p>
+                          <ol class="ps-3 mb-3">
+                            <li><strong>Bảng đầu trang (Table 2x2):</strong>
+                              <ul>
+                                <li>Hàng 1: [Ô 2: Cơ quan ban hành] | [Ô 1: Quốc hiệu, tiêu ngữ]</li>
+                                <li>Hàng 2: [Ô 3: Số, ký hiệu (Số: .../TB-...)] | [Ô 4: Địa danh, ngày tháng năm]</li>
+                              </ul>
+                            </li>
+                            <li><strong>Ô 5a (Tên loại & Trích yếu):</strong> Đặt ở giữa trang giấy:
+                              <ul>
+                                <li>Dòng 1: <strong>THÔNG BÁO</strong> (IN HOA, đậm, đứng, cỡ 13-14pt).</li>
+                                <li>Dòng 2: Trích yếu (in thường, đậm, đứng, kèm gạch ngang dưới).</li>
+                              </ul>
+                            </li>
+                            <li><strong class="text-danger fs-6">TUYỆT ĐỐI KHÔNG CÓ Ô 9a (KHÔNG CÓ KÍNH GỬI):</strong> Ngay sau Ô 5a là bắt đầu trực tiếp vào <strong>Ô 6 (Nội dung văn bản)</strong>!</li>
+                            <li><strong>Ô 6 (Nội dung thông báo):</strong> Mở đầu ➔ Thân bài ➔ Kết thúc thông báo ("Trân trọng thông báo./.").</li>
+                            <li><strong>Bảng cuối trang (Table 1x2):</strong>
+                              <ul>
+                                <li>Cột trái: Ô 9b (Nơi nhận: - Ban Giám hiệu (để b/c); - Các đơn vị; - Lưu: VT...)</li>
+                                <li>Cột phải: Ô 7a (Chức vụ người ký), Ô 8 / 7c, Ô 7b (Họ tên).</li>
+                              </ul>
+                            </li>
+                          </ol>
+
+                          <div class="alert alert-danger py-2 mb-0 small">
+                            <i class="fa-solid fa-skull-crossbones me-1"></i>
+                            <strong>Lỗi trừ điểm nặng nhất:</strong> Sinh viên quen tay ghi "Kính gửi: ..." trong Thông báo. Hệ thống chấm sẽ phát hiện và bắt lỗi vi phạm sơ đồ Thông báo ngay lập tức!
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 8: QUY TẮC KHOẢNG CÁCH TRỐNG KHI SOẠN THẢO (THEO BÀI GIẢNG NTTU & NĐ 30) -->
+            <div class="tab-pane fade" id="content-spacing-rules">
+              <div class="alert alert-success border-0 d-flex align-items-center mb-4 shadow-xs">
+                <i class="fa-solid fa-book-open-reader fa-2x me-3 text-success"></i>
+                <div>
+                  <h6 class="fw-bold mb-1 text-success">QUY TẮC KHOẢNG CÁCH TRỐNG KHI SOẠN THẢO VĂN BẢN (TRƯỜNG ĐH NGUYỄN TẤT THÀNH)</h6>
+                  <small class="text-dark">Khoảng trắng (phím Space) và khoảng cách giữa các thành phần thể thức là tiêu chuẩn thẩm mỹ bắt buộc khi trình bày văn bản hành chính theo Nghị định 30/2020/NĐ-CP.</small>
+                </div>
+              </div>
+
+              <!-- 1. DẤU CHẤM VÀ DẤU PHẨY -->
+              <div class="card border-0 shadow-xs mb-3">
+                <div class="card-header bg-light fw-bold text-dark d-flex justify-content-between align-items-center">
+                  <span><i class="fa-solid fa-circle-dot text-primary me-2"></i>1. Dấu chấm (.) và Dấu phẩy (,)</span>
+                  <span class="badge bg-primary">0 cách trước • 1 cách sau</span>
+                </div>
+                <div class="card-body small">
+                  <p class="mb-2"><strong>Quy tắc chuẩn:</strong> <u>Không có khoảng trắng trước</u>, <u>có một khoảng trắng sau</u> khi còn nội dung tiếp theo.</p>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-success-subtle border-success text-dark">
+                        <strong class="text-success"><i class="fa-solid fa-check me-1"></i>MẪU ĐÚNG CHUẨN:</strong><br>
+                        <code>Câu cần rõ ràng, chính xác. Độ dài câu tùy nội dung, không giới hạn cứng 10–15 từ.</code>
+                        <div class="text-muted mt-1" style="font-size: 11px;">
+                          Phân tích: <code>rõ ràng,<b>[space]</b>chính xác.<b>[space]</b>Độ dài...</code>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-danger-subtle border-danger text-dark">
+                        <strong class="text-danger"><i class="fa-solid fa-xmark me-1"></i>LỖI SAI THƯỜNG GẶP:</strong><br>
+                        <code class="text-decoration-line-through">Câu cần rõ ràng , chính xác .Độ dài câu</code>
+                        <div class="text-danger mt-1" style="font-size: 11px;">
+                          Sai lầm: Cách trước dấu phẩy/chấm <code>rõ ràng<b>[space],</b></code> hoặc dính liền sau dấu <code>chính xác.Độ dài</code>.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="p-2 bg-light rounded border border-info-subtle">
+                    <strong class="text-primary"><i class="fa-solid fa-percent me-1"></i>Lưu ý về ký hiệu phần trăm (%):</strong>
+                    Ký hiệu <code>%</code> biểu thị phần trăm, <strong>không phải là dấu câu</strong> &rarr; Viết liền với số phía trước, có khoảng trắng sau.
+                    <div class="mt-1">
+                      <span class="text-success fw-bold">✔ Đúng:</span> <code>Lợi nhuận được chia cho bên A 30%, bên B 70%, theo tỷ lệ góp vốn.</code> | 
+                      <span class="text-danger fw-bold">✖ Sai:</span> <code>30 %</code> hoặc <code>30% ,</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. DẤU HAI CHẤM, CHẤM PHẨY, CHẤM HỎI, CHẤM THAN -->
+              <div class="card border-0 shadow-xs mb-3">
+                <div class="card-header bg-light fw-bold text-dark d-flex justify-content-between align-items-center">
+                  <span><i class="fa-solid fa-colon text-warning me-2"></i>2. Dấu hỏi (?), Chấm phẩy (;), Hai chấm (:), Chấm than (!)</span>
+                  <span class="badge bg-warning text-dark">0 cách trước • 1 cách sau</span>
+                </div>
+                <div class="card-body small">
+                  <p class="mb-2"><strong>Quy tắc chuẩn:</strong> Đối với dấu chấm hỏi (<code>?</code>), dấu chấm phẩy (<code>;</code>), dấu hai chấm (<code>:</code>), dấu chấm than (<code>!</code>) &rarr; <u>Không cách trước</u>, <u>có đúng một khoảng cách sau</u>.</p>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-success-subtle border-success text-dark">
+                        <strong class="text-success"><i class="fa-solid fa-check me-1"></i>MẪU ĐÚNG CHUẨN:</strong><br>
+                        • Về diễn đạt: trang trọng; lịch sự.<br>
+                        • Chúng tôi rất lấy làm tiếc về sự cố vừa qua! Chúng tôi sẽ thực hiện biện pháp để sai sót không tái diễn.
+                        <div class="text-muted mt-1" style="font-size: 11px;">
+                          Phân tích: <code>diễn đạt:<b>[space]</b>trang trọng;<b>[space]</b>lịch sự.</code>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-danger-subtle border-danger text-dark">
+                        <strong class="text-danger"><i class="fa-solid fa-xmark me-1"></i>LỖI SAI THƯỜNG GẶP:</strong><br>
+                        • <span class="text-decoration-line-through">Về diễn đạt : trang trọng ; lịch sự .</span><br>
+                        • <span class="text-decoration-line-through">Về diễn đạt:trang trọng;lịch sự.</span>
+                        <div class="text-danger mt-1" style="font-size: 11px;">
+                          Sai lầm: Chừa khoảng trắng trước dấu <code>diễn đạt :</code> hoặc viết dính liền <code>diễn đạt:trang</code>.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. DẤU NGOẶC ĐƠN, NGOẶC VUÔNG, NGOẶC KÉP -->
+              <div class="card border-0 shadow-xs mb-3">
+                <div class="card-header bg-light fw-bold text-dark d-flex justify-content-between align-items-center">
+                  <span><i class="fa-solid fa-brackets-round text-info me-2"></i>3. Dấu ngoặc đơn (...), Ngoặc kép "...", Ngoặc vuông [...]</span>
+                  <span class="badge bg-info text-dark">0 cách bên trong • 1 cách bên ngoài</span>
+                </div>
+                <div class="card-body small">
+                  <p class="mb-2"><strong>Quy tắc chuẩn:</strong></p>
+                  <ul class="mb-2 ps-3">
+                    <li><strong>Không có khoảng trắng sát phía trong ngoặc</strong> (ngay sau mở ngoặc và ngay trước đóng ngoặc).</li>
+                    <li><strong>Phía ngoài đặt khoảng trắng theo quan hệ với từ và dấu câu:</strong> Cách 1 khoảng trắng với chữ đứng trước.</li>
+                    <li><strong class="text-danger">Đặc biệt:</strong> Ngoặc đóng đứng trước dấu chấm (<code>.</code>) hoặc dấu phẩy (<code>,</code>) thì <strong>KHÔNG chèn khoảng trắng giữa hai dấu</strong>.</li>
+                  </ul>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-success-subtle border-success text-dark">
+                        <strong class="text-success"><i class="fa-solid fa-check me-1"></i>MẪU ĐÚNG CHUẨN:</strong><br>
+                        <code>Đề nghị bổ sung hồ sơ (nếu có).</code><br>
+                        <code>Theo Nghị định số 30/2020/NĐ-CP (sau đây gọi tắt là "NĐ 30"), thể thức...</code>
+                        <div class="text-muted mt-1" style="font-size: 11px;">
+                          Phân tích: <code>hồ sơ<b>[space]</b>(nếu có).</code> (Không có dấu cách giữa <code>)</code> và <code>.</code>)
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="p-2 border rounded bg-danger-subtle border-danger text-dark">
+                        <strong class="text-danger"><i class="fa-solid fa-xmark me-1"></i>LỖI SAI THƯỜNG GẶP:</strong><br>
+                        • <span class="text-decoration-line-through">Đề nghị bổ sung hồ sơ ( nếu có ) .</span><br>
+                        • <span class="text-decoration-line-through">Đề nghị bổ sung hồ sơ(nếu có).</span>
+                        <div class="text-danger mt-1" style="font-size: 11px;">
+                          Sai lầm: Cách bên trong ngoặc <code>( nếu có )</code>, cách trước dấu chấm <code>) .</code> hoặc dính từ mở ngoặc <code>sơ(nếu</code>.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. HỖN SỐ VÀ CÁC DẤU NỐI / GẠCH CHÉO TRONG THỂ THỨC NĐ 30 -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-xs h-100">
+                    <div class="card-header bg-light fw-bold text-dark">
+                      <i class="fa-solid fa-calculator text-danger me-2"></i>4. Cách viết Hỗn số
+                    </div>
+                    <div class="card-body small">
+                      <p class="mb-2"><strong>Quy tắc chuẩn:</strong> Trong cách viết hỗn số, <u>có khoảng cách giữa phần nguyên và phần phân số</u>.</p>
+                      <div class="p-2 border rounded bg-light">
+                        <div class="mb-1"><span class="text-success fw-bold">✔ Mẫu đúng:</span> <code>5 ½</code> (năm và một phần hai)</div>
+                        <div><span class="text-danger fw-bold">✖ Lỗi sai:</span> <code class="text-decoration-line-through">5½</code> (viết dính liền) hoặc <code class="text-decoration-line-through">5 / 2</code></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-xs h-100">
+                    <div class="card-header bg-light fw-bold text-dark">
+                      <i class="fa-solid fa-minus text-secondary me-2"></i>5. Dấu gạch nối (-), gạch chéo (/) trong NĐ 30
+                    </div>
+                    <div class="card-body small">
+                      <ul class="mb-0 ps-3">
+                        <li class="mb-1"><strong>Tiêu ngữ (Ô 1):</strong> <u>Có khoảng cách</u> 2 bên dấu gạch nối: <code>Độc lập - Tự do - Hạnh phúc</code>.</li>
+                        <li class="mb-1"><strong>Số ký hiệu (Ô 3):</strong> <u>KHÔNG CÓ khoảng cách</u> quanh dấu gạch nối và gạch chéo: <code>Số: 45/TB-ĐT</code> (Sai: <code>Số: 45 / TB - ĐT</code>).</li>
+                        <li><strong>Khoảng thời gian/số:</strong> Gạch en-dash liền hoặc cách đều: <code>10–15 từ</code>, <code>2025 - 2026</code>.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. KHOẢNG CÁCH DÒNG, ĐOẠN & VỊ TRÍ KÝ ĐÓNG DẤU (NGHỊ ĐỊNH 30) -->
+              <div class="card border-0 shadow-xs">
+                <div class="card-header bg-primary text-white fw-bold">
+                  <i class="fa-solid fa-arrows-up-down me-2"></i>6. Khoảng cách Dòng, Đoạn văn bản & Vị trí ký tên (Nghị định 30)
+                </div>
+                <div class="card-body small">
+                  <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle mb-0 text-center">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Hạng mục khoảng cách</th>
+                          <th>Quy chuẩn Nghị định 30</th>
+                          <th>Cách thiết lập trong Microsoft Word</th>
+                          <th>Ý nghĩa & Ghi chú</th>
+                        </tr>
+                      </thead>
+                      <tbody class="text-start">
+                        <tr>
+                          <td class="fw-bold">Khoảng cách giữa các dòng (Line spacing)</td>
+                          <td class="text-center text-primary fw-bold">Single đến 1.5 lines</td>
+                          <td>Hộp thoại Paragraph &rarr; <code>Line spacing: Single</code> hoặc <code>1.15 - 1.5</code></td>
+                          <td>Đảm bảo các dòng chữ không bị dính sát vào nhau và không quá thưa thớt.</td>
+                        </tr>
+                        <tr>
+                          <td class="fw-bold">Khoảng cách giữa các đoạn (Paragraph spacing)</td>
+                          <td class="text-center text-success fw-bold">Tối thiểu 6pt</td>
+                          <td>Hộp thoại Paragraph &rarr; <code>Spacing After: 6pt</code> (hoặc Before 6pt)</td>
+                          <td>Phân tách rõ ràng giữa các phần mở đầu, các điều khoản và kết luận.</td>
+                        </tr>
+                        <tr>
+                          <td class="fw-bold">Khoảng cách chừa ký tên & đóng dấu (Ô 7a &rarr; Ô 7b)</td>
+                          <td class="text-center text-danger fw-bold">2.0 cm - 2.5 cm</td>
+                          <td>Nhấn phím Enter 3 - 4 lần (cỡ 13-14pt) giữa Chức vụ và Họ tên</td>
+                          <td>Khoảng trống hình chữ nhật đủ để người có thẩm quyền ký mực xanh và đóng con dấu cơ quan trùm lên 1/3 chữ ký.</td>
+                        </tr>
+                        <tr>
+                          <td class="fw-bold">Khoảng cách Thụt đầu dòng (First line indent)</td>
+                          <td class="text-center text-dark fw-bold">1.0 cm - 1.27 cm</td>
+                          <td>Hộp thoại Paragraph &rarr; <code>Special: First line</code> đặt <code>1.27 cm</code> (hoặc 1 phím Tab)</td>
+                          <td>Đoạn văn thân bài (Ô 6) bắt buộc phải thụt đầu dòng để phân biệt các đoạn.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Đóng cẩm nang</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
