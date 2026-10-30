@@ -2,27 +2,11 @@
   "teachers": [
     {
       "id": "GV01",
-      "name": "ThS. Nguyễn Văn A",
+      "name": "ThS. Cao Thành Trung",
       "title": "Giảng viên chính",
       "department": "Bộ môn Quản trị văn phòng",
-      "email": "nguyenvana@truong.edu.vn",
-      "phone": "0901234567"
-    },
-    {
-      "id": "GV02",
-      "name": "TS. Trần Thị B",
-      "title": "Trưởng Bộ môn",
-      "department": "Bộ môn Hành chính học",
-      "email": "tranthib@truong.edu.vn",
-      "phone": "0912345678"
-    },
-    {
-      "id": "GV03",
-      "name": "ThS. Lê Hoàng C",
-      "title": "Giảng viên",
-      "department": "Khoa Quản trị & Luật",
-      "email": "lehoangc@truong.edu.vn",
-      "phone": "0987654321"
+      "email": "cttrung@ntt.edu.vn",
+      "phone": ""
     }
   ],
   "active_teacher_id": "GV01"

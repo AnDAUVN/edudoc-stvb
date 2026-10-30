@@ -2,7 +2,7 @@
   "bai_thu_hoach": [
     {
       "id": 1,
-      "question": "Trong Bài thu hoạch (áp dụng theo Sơ đồ Công văn - Hình 2 Nghị định 30/2020/NĐ-CP), phần Tên loại văn bản (Ô 5a) có được trình bày không?",
+      "question": "Trong văn bản Công văn (Sơ đồ Công văn - Hình 2 Nghị định 30/2020/NĐ-CP), phần Tên loại văn bản (Ô 5a) có được trình bày không?",
       "options": [
         "Tuyệt đối KHÔNG có Ô 5a (tên loại in hoa ở giữa trang); công văn chỉ có Ô 5b (Trích yếu V/v) trong bảng đầu trang",
         "Có Ô 5a in hoa, in đậm, đặt canh giữa trang",
@@ -14,7 +14,7 @@
     },
     {
       "id": 2,
-      "question": "Trong Bài thu hoạch (mẫu Công văn đề nghị), phần Trích yếu nội dung văn bản (Ô 5b) được bố trí ở vị trí nào theo sơ đồ chuẩn?",
+      "question": "Trong văn bản Công văn đề nghị, phần Trích yếu nội dung văn bản (Ô 5b) được bố trí ở vị trí nào theo sơ đồ chuẩn?",
       "options": [
         "Nằm tại Dòng 2, Cột 1 trong Bảng đầu trang, ngay bên dưới Số và ký hiệu (Ô 3), cách dòng 6pt",
         "Đặt ở giữa trang giấy, ngoài bảng, bên dưới Quốc hiệu và Tiêu ngữ",
@@ -26,7 +26,7 @@
     },
     {
       "id": 3,
-      "question": "Trong Bài thu hoạch (mẫu Công văn), phần Kính gửi: (Ô 9a - Nơi nhận trực tiếp) được bố trí như thế nào theo Nghị định 30?",
+      "question": "Trong văn bản Công văn, Tờ trình, Báo cáo, phần Kính gửi: (Ô 9a - Nơi nhận trực tiếp) được bố trí như thế nào theo Nghị định 30?",
       "options": [
         "Bắt buộc có Ô 9a (Kính gửi), đặt ngay sau Bảng đầu trang và trước khi vào phần Nội dung (Ô 6)",
         "Tuyệt đối không được có mục Kính gửi",
@@ -296,7 +296,7 @@
   "thong_bao_hoat_dong": [
     {
       "id": 1,
-      "question": "Tại Ô 2 của Thông báo hoạt động (của Đoàn Thanh niên trực thuộc Trường), cách trình bày 2 cơ quan nào là ĐÚNG?",
+      "question": "Tại Ô 2 của Thông báo (của Đoàn Thanh niên trực thuộc Trường), cách trình bày 2 cơ quan nào là ĐÚNG?",
       "options": [
         "Dòng 1: TRƯỜNG ĐH NGUYỄN TẤT THÀNH (đậm); Dòng 2: ĐOÀN THANH NIÊN (không đậm)",
         "Dòng 1: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH (in hoa, đứng, không đậm); Dòng 2: ĐOÀN THANH NIÊN (in hoa, đứng, đậm)",
@@ -320,7 +320,7 @@
     },
     {
       "id": 3,
-      "question": "Ký hiệu của Thông báo hoạt động do Đoàn Thanh niên ban hành được viết chuẩn là gì?",
+      "question": "Ký hiệu của do Đoàn Thanh niên ban hành được viết chuẩn là gì?",
       "options": [
         "Số: 08/TB-ĐTN (hoặc /TB-DTN)",
         "Số: 08 / TB - ĐTN (có khoảng trắng)",
@@ -394,7 +394,7 @@
   "to_trinh_xin_kinh_phi": [
     {
       "id": 1,
-      "question": "Ký hiệu văn bản Ô 3 của Tờ trình xin kinh phí do Đoàn Thanh niên trường ban hành được viết như thế nào là ĐÚNG?",
+      "question": "Ký hiệu văn bản Ô 3 của Tờ trình do Đoàn Thanh niên trường ban hành được viết như thế nào là ĐÚNG?",
       "options": [
         "Số: 35/TTr-ĐTN",
         "Số: 35/TT-ĐTN",
@@ -406,7 +406,7 @@
     },
     {
       "id": 2,
-      "question": "Trong Tờ trình xin kinh phí, Tên loại văn bản ('TỜ TRÌNH') và Trích yếu nội dung (Ô 5a) được đặt ở vị trí nào?",
+      "question": "Trong Tờ trình xin , Tên loại văn bản ('TỜ TRÌNH') và Trích yếu nội dung (Ô 5a) được đặt ở vị trí nào?",
       "options": [
         "Đặt ở ngoài Bảng đầu trang, canh giữa trang giấy",
         "Đặt ở trong Bảng đầu trang (Dòng 2 Cột 1 dưới Số ký hiệu)",
@@ -418,7 +418,7 @@
     },
     {
       "id": 3,
-      "question": "Mục nơi nhận trực tiếp Kính gửi (Ô 9a) trong Tờ trình xin cấp kinh phí được trình bày như thế nào?",
+      "question": "Mục nơi nhận trực tiếp Kính gửi (Ô 9a) trong Tờ trình được trình bày như thế nào?",
       "options": [
         "Kính gửi: Ban Giám hiệu Trường Đại học Nguyễn Tất Thành. (cỡ 13-14, chữ đứng thường)",
         "KÍNH GỬI: BAN GIÁM HIỆU (in hoa, in đậm, gạch chân)",
@@ -442,7 +442,7 @@
     },
     {
       "id": 5,
-      "question": "Đường kẻ phụ nằm dưới Trích yếu nội dung của Tờ trình xin kinh phí có đặc điểm gì theo Nghị định 30?",
+      "question": "Đường kẻ phụ nằm dưới Trích yếu nội dung của Tờ trình có đặc điểm gì theo Nghị định 30?",
       "options": [
         "Nét liền, có độ dài bằng 1/3 đến 1/2 độ dài dòng chữ trích yếu và đặt cân đối",
         "Nét liền có độ dài bằng toàn bộ dòng chữ trích yếu",
@@ -451,18 +451,6 @@
       ],
       "correct": 0,
       "explanation": "Đường kẻ phụ dưới trích yếu của văn bản có tên loại là nét liền, dài từ 1/3 đến 1/2 độ dài dòng chữ và đặt cân đối so với dòng chữ."
-    },
-    {
-      "id": 6,
-      "question": "Các đoạn trích dẫn 'Căn cứ...' trong phần mở đầu của Tờ trình (Ô 6) được trình bày với kiểu chữ nào?",
-      "options": [
-        "Chữ in hoa, kiểu chữ đứng, đậm",
-        "Chữ in thường, kiểu chữ nghiêng, cỡ chữ từ 13 đến 14, cuối mỗi dòng căn cứ kết thúc bằng dấu chấm phẩy (;)",
-        "Chữ in thường, kiểu chữ đứng, cỡ 11",
-        "Chữ in nghiêng, cỡ 10, đặt trong dấu ngoặc kép"
-      ],
-      "correct": 1,
-      "explanation": "Các đoạn căn cứ ban hành văn bản được trình bày bằng chữ in thường, kiểu chữ nghiêng, cỡ chữ 13-14, cuối dòng có dấu chấm phẩy (;), căn cứ cuối có dấu phẩy (,)."
     },
     {
       "id": 7,
@@ -487,12 +475,48 @@
       ],
       "correct": 1,
       "explanation": "Mục Nơi nhận ở chân trang văn bản bắt buộc phải có nơi nhận để thực hiện/báo cáo và dòng cuối cùng là nơi lưu: '- Lưu: VT, [Đơn vị soạn thảo].'"
+    },
+    {
+      "id": 9,
+      "question": "Thẩm quyền ban hành Tờ trình gồm?",
+      "options": [
+        "Cấp trên cho cấp dưới",
+        "Ngang cấp gởi cho nhau",
+        "Cấp dưới gởi cho cấp trên",
+        "Tất cả đều đúng"
+      ],
+      "correct": 2,
+      "explanation": "Theo quy định Nghị định 30/2020/NĐ-CP"
+    },
+    {
+      "id": 10,
+      "question": "Chọn đáp án đúng",
+      "options": [
+        "a)\tTờ trình dùng để trao đổi công tác qua lại giữa các cơ quan tổ chức",
+        "b)\tTờ trình là loại văn bản thông tin về các hoạt động của tổ chức",
+        "c)\tTờ trình dùng để đề xuất với cấp trên một vấn đề mới, xin cấp trên phê duyệt",
+        "d)\tCả a và b đều đúng"
+      ],
+      "correct": 2,
+      "explanation": "Theo quy định Nghị định 30/2020/NĐ-CP"
+    },
+    {
+      "id": 11,
+      "question": "Hãy chọn đáp án đúng theo quy định về cách viết hoa tên cơ quan, tổ chức:",
+      "options": [
+        "Cục quản lý dược",
+        "Cục Quản Lý Dược",
+        "CỤC QUẢN LÝ DƯỢC",
+        "Cục Quản lý Dược"
+      ],
+      "correct": 3,
+      "explanation": "Căn cứ theo Nghị định số 30 (Phụ lục II: Viết hoa trong văn bản hành chính). Viết hoa tên cơ quan tổ chức, tên cơ quan tổ chức Việt Nam (viết hoa các chữ cái đầu các từ, cụm từ chỉ loại hình cơ quan tổ chức, chức năng và lĩnh vực hoạt động của cơ quan tổ chức)"
     }
   ],
   "to_trinh_nhan_su": [
     {
       "id": 1,
-      "question": "Trong Tờ trình bổ sung nhân sự, nơi nhận tại Ô 9a (phần Kính gửi) được đặt ở vị trí nào?",
+      "question": "Trong Tờ trình bổ sung, nơi nhận tại Ô 9a (phần Kính gửi) được đặt ở vị trí nào?",
       "options": [
         "Ở góc dưới bên trái văn bản",
         "Dưới trích yếu nội dung văn bản, trước phần nội dung chính",
@@ -551,18 +575,6 @@
       "explanation": "Giữa chức vụ và họ tên người ký để trống khoảng 3-4 dòng để có không gian cho chữ ký trực tiếp và đóng dấu cơ quan (Ô 8)."
     },
     {
-      "id": 6,
-      "question": "Quyền hạn ký 'TM.' (Thay mặt) được áp dụng đối với cơ quan, tổ chức nào?",
-      "options": [
-        "Cơ quan làm việc theo chế độ thủ trưởng một người",
-        "Cơ quan, tổ chức làm việc theo chế độ tập thể (như Ban Thường vụ, Hội đồng quản trị, Hội đồng trường)",
-        "Cá nhân người lao động",
-        "Tất cả các cơ quan nhà nước"
-      ],
-      "correct": 1,
-      "explanation": "Ký thay mặt (TM.) áp dụng đối với cơ quan, tổ chức làm việc theo chế độ tập thể như Ủy ban nhân dân, Hội đồng trường, Ban Thường vụ Đoàn."
-    },
-    {
       "id": 7,
       "question": "Trong Tiêu ngữ 'Độc lập - Tự do - Hạnh phúc', quy cách viết hoa các chữ cái như thế nào là ĐÚNG?",
       "options": [
@@ -573,18 +585,6 @@
       ],
       "correct": 0,
       "explanation": "Viết hoa các chữ cái đầu của các từ: Độc, Tự, Hạnh. Giữa các cụm từ có dấu gạch nối (-), có khoảng cách chữ ở hai bên."
-    },
-    {
-      "id": 8,
-      "question": "Theo Nghị định 30/2020/NĐ-CP, số trang của văn bản (Ô 14) được đánh tại vị trí nào?",
-      "options": [
-        "Góc dưới cùng bên phải của trang giấy",
-        "Canh giữa theo chiều ngang ở lề trên của văn bản, cỡ chữ 13-14, chữ số Ả Rập, không hiển thị trang thứ nhất",
-        "Góc trên cùng bên phải của trang giấy",
-        "Góc dưới cùng ở giữa trang giấy"
-      ],
-      "correct": 1,
-      "explanation": "Số trang văn bản được đặt canh giữa theo chiều ngang ở phần lề trên của văn bản, phông chữ Times New Roman, chữ số Ả Rập, cỡ 13-14, không hiển thị số trang 1."
     }
   ],
   "to_trinh_thiet_bi": [
