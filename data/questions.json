@@ -589,18 +589,6 @@
   ],
   "to_trinh_thiet_bi": [
     {
-      "id": 1,
-      "question": "Trường hợp ký thay người đứng đầu đơn vị trong Tờ trình (Phó Giám đốc ký thay Giám đốc), thẩm quyền ký ghi là gì?",
-      "options": [
-        "KÝ THAY: GIÁM ĐỐC",
-        "KT. GIÁM ĐỐC (dòng trên) và PHÓ GIÁM ĐỐC (dòng dưới), in hoa, đậm",
-        "TL. GIÁM ĐỐC, chữ thường, nghiêng",
-        "PHÓ GIÁM ĐỐC KÝ THAY"
-      ],
-      "correct": 1,
-      "explanation": "Ký thay viết tắt là KT. (dành cho cấp phó ký thay cấp trưởng). Dòng 1: KT. GIÁM ĐỐC; Dòng 2: PHÓ GIÁM ĐỐC, in hoa, đậm, cỡ chữ 13-14."
-    },
-    {
       "id": 2,
       "question": "Quy cách trình bày đường kẻ dưới Trích yếu của Tờ trình xin máy móc thiết bị là gì?",
       "options": [
@@ -723,30 +711,6 @@
       "explanation": "Mục Kính gửi (Ô 9a) của Báo cáo được trình bày sau Trích yếu văn bản (Ô 5a) và trước khi bắt đầu nội dung báo cáo (Ô 6)."
     },
     {
-      "id": 4,
-      "question": "Tại góc ký tên (Ô 7a, Ô 8, Ô 7b) của Báo cáo, trường hợp cấp phó ký thay người đứng đầu thì thể thức đề ký nào là ĐÚNG?",
-      "options": [
-        "Dòng 1: 'KT. GIÁM ĐỐC' (hoặc KT. HIỆU TRƯỞNG), Dòng 2: 'PHÓ GIÁM ĐỐC' (hoặc PHÓ HIỆU TRƯỞNG), in hoa, đậm, giữa",
-        "Chỉ ghi một dòng duy nhất: 'PHÓ GIÁM ĐỐC'",
-        "Ghi 'TL. GIÁM ĐỐC / PHÓ GIÁM ĐỐC'",
-        "Ghi 'TM. BAN GIÁM ĐỐC / PHÓ GIÁM ĐỐC'"
-      ],
-      "correct": 0,
-      "explanation": "Theo Nghị định 30/2020/NĐ-CP, cấp phó ký thay người đứng đầu sử dụng thể thức 'KT.' gồm 2 dòng: Dòng 1 ghi 'KT. <CHỨC VỤ NGƯỜI ĐỨNG ĐẦU>', Dòng 2 ghi chức vụ cấp phó trực tiếp ký (đều in hoa, in đậm, căn giữa)."
-    },
-    {
-      "id": 5,
-      "question": "Tại Ô 9b (Nơi nhận ở chân trang) của Báo cáo gửi cấp trên, dòng đầu tiên trong danh sách nơi nhận thường là gì?",
-      "options": [
-        "- Như kính gửi;",
-        "- Kính gửi cơ quan cấp trên;",
-        "- Ban Giám đốc;",
-        "- Lưu: VT."
-      ],
-      "correct": 0,
-      "explanation": "Khi văn bản có mục 'Kính gửi:' ở Ô 9a, tại phần nơi nhận Ô 9b dòng đầu tiên của danh sách nơi nhận sẽ ghi '- Như kính gửi;'."
-    },
-    {
       "id": 6,
       "question": "Một văn bản Báo cáo hành chính thông thường gồm có kết cấu 3 phần chính nào?",
       "options": [
@@ -769,18 +733,6 @@
       ],
       "correct": 1,
       "explanation": "Họ và tên người ký (Ô 7b) trình bày bằng chữ in thường, kiểu chữ đứng, đậm, cỡ chữ từ 13 đến 14, canh giữa so với chức vụ người ký."
-    },
-    {
-      "id": 8,
-      "question": "Thứ tự viện dẫn một văn bản quy phạm pháp luật trong phần Căn cứ của Báo cáo như thế nào là CHUẨN xác?",
-      "options": [
-        "Trích yếu nội dung trước, rồi đến tên cơ quan ban hành",
-        "Tên loại văn bản, số, ký hiệu của văn bản, ngày tháng năm ban hành, tên cơ quan ban hành và trích yếu nội dung văn bản",
-        "Chỉ cần ghi số văn bản và năm ban hành",
-        "Tên cơ quan ban hành, năm ban hành và tên người ký"
-      ],
-      "correct": 1,
-      "explanation": "Viện dẫn chuẩn: Tên loại VB, số/ký hiệu, ngày tháng năm ban hành, cơ quan ban hành, trích yếu. Ví dụ: 'Căn cứ Nghị định số 30/2020/NĐ-CP ngày 05/3/2020 của Chính phủ về công tác văn thư;'."
     }
   ]
 }
