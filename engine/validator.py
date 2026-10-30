@@ -1003,6 +1003,7 @@ class Decree30Validator:
 
         not_justified_count = 0
         no_indent_count = 0
+        no_list_indent_count = 0
         wrong_font_count = 0
         wrong_size_count = 0
         wrong_spacing_count = 0
@@ -1011,46 +1012,91 @@ class Decree30Validator:
         expected_body_size = self.get_expected_size("noi_dung")
 
         for p in body_paragraphs:
+            raw_text = p.text
             text = self._clean_text(p)
-            if len(text) < 40 or "[Nội dung văn bản:" in text:
+            if not text or "[Nội dung văn bản:" in text or "tự nhập theo nội dung" in text:
                 continue
 
-            # Nhận diện nếu là dòng danh sách liệt kê (Bullet / Numbered List / Gạch đầu dòng)
+            # Nhận diện nếu là dòng danh sách liệt kê (Bullet / Numbered List / Gạch đầu dòng / Dấu cộng)
             is_list_item = (
                 bool(p._p.xpath("./w:pPr/w:numPr")) or 
-                bool(p.style and ("List" in p.style.name or "Bullet" in p.style.name)) or
-                bool(re.match(r"^\s*([0-9]+[\.\)]|[a-zA-Z][\.\)]|[-•+*])\s+", text))
+                bool(p.style and ("List" in p.style.name or "Bullet" in p.style.name or "Number" in p.style.name)) or
+                bool(re.match(r"^\s*([0-9]+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\)|[ivxIVX]+[\.\)]|[-+*•⁃‣○●■□▪▫–—])\s*", text))
             )
 
-            # 1. Dàn đều cả hai lề (Justify: Ctrl + J)
-            if p.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
-                not_justified_count += 1
+            if is_list_item:
+                # KIỂM TRA QUY TẮC: Các dòng gạch đầu dòng / bullet / danh sách liệt kê phải lùi vào so với ý chính
+                is_indented = False
+                # 1. Định dạng Bullets / Numbering của Word (w:numPr tự động có lề thụt danh sách)
+                if bool(p._p.xpath("./w:pPr/w:numPr")):
+                    is_indented = True
 
-            # 2. Thụt đầu dòng 1 - 1.27 cm (First line indent) - chỉ áp dụng cho đoạn văn chính, không áp dụng cho danh sách liệt kê/bullet
-            if not is_list_item:
-                indent = p.paragraph_format.first_line_indent
-                if indent is None or indent.inches < 0.35:
-                    if not (text.startswith("    ") or text.startswith("\t")):
-                        no_indent_count += 1
+                # 2. Thuộc tính thụt lề: left_indent hoặc first_line_indent >= 0.2 inch (~0.5 cm)
+                pf = p.paragraph_format
+                if not is_indented:
+                    if pf.left_indent is not None and pf.left_indent.inches >= 0.2:
+                        is_indented = True
+                    elif pf.first_line_indent is not None and pf.first_line_indent.inches >= 0.2:
+                        is_indented = True
+
+                # 3. Thẻ OpenXML w:ind (w:left hoặc w:firstLine >= 280 dxa ~ 0.2 inch)
+                if not is_indented:
+                    ind_elems = p._p.xpath("./w:pPr/w:ind")
+                    if ind_elems:
+                        ind = ind_elems[0]
+                        w_left = ind.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}left")
+                        w_first = ind.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}firstLine")
+                        if w_left and int(w_left) >= 280:
+                            is_indented = True
+                        elif w_first and int(w_first) >= 280:
+                            is_indented = True
+
+                # 4. Thụt dòng thủ công bằng phím Tab (\t) hoặc từ 2 khoảng trắng trở lên
+                if not is_indented:
+                    if raw_text.startswith("\t") or re.match(r"^[ ]{2,}", raw_text):
+                        is_indented = True
+                    elif p.runs and (p.runs[0].text.startswith("\t") or re.match(r"^[ ]{2,}", p.runs[0].text)):
+                        is_indented = True
+
+                if not is_indented:
+                    no_list_indent_count += 1
+
+                # Nếu là dòng danh sách dài (>= 40 ký tự), kiểm tra thêm căn đều hai lề (Justify)
+                if len(text) >= 40 and p.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
+                    not_justified_count += 1
+
+            else:
+                # Đoạn văn xuôi thông thường (chỉ kiểm tra nếu độ dài >= 40 để tránh các dòng chào/kết ngắn)
+                if len(text) >= 40:
+                    # 1. Dàn đều cả hai lề (Justify: Ctrl + J)
+                    if p.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
+                        not_justified_count += 1
+
+                    # 2. Thụt đầu dòng 1 - 1.27 cm (First line indent)
+                    indent = p.paragraph_format.first_line_indent
+                    if indent is None or indent.inches < 0.35:
+                        if not (raw_text.startswith("    ") or raw_text.startswith("\t")):
+                            no_indent_count += 1
 
             # 3. Font Times New Roman & Cỡ chữ thống nhất
-            font, size, bold, italic = self._get_dominant_font_and_size(p)
-            if font and "Times New Roman" not in font and "times new roman" not in font.lower():
-                wrong_font_count += 1
-            if size != expected_body_size:
-                wrong_size_count += 1
+            if len(text) >= 40:
+                font, size, bold, italic = self._get_dominant_font_and_size(p)
+                if font and "Times New Roman" not in font and "times new roman" not in font.lower():
+                    wrong_font_count += 1
+                if size != expected_body_size:
+                    wrong_size_count += 1
 
-            # 4. Khoảng cách giữa các đoạn văn (tối thiểu 6pt)
-            sp_after = getattr(p.paragraph_format.space_after, "pt", 0) or 0
-            sp_before = getattr(p.paragraph_format.space_before, "pt", 0) or 0
-            if sp_after < 5 and sp_before < 5:
-                wrong_spacing_count += 1
+                # 4. Khoảng cách giữa các đoạn văn (tối thiểu 6pt)
+                sp_after = getattr(p.paragraph_format.space_after, "pt", 0) or 0
+                sp_before = getattr(p.paragraph_format.space_before, "pt", 0) or 0
+                if sp_after < 5 and sp_before < 5:
+                    wrong_spacing_count += 1
 
-            # 5. Khoảng cách giữa các dòng chữ (tối thiểu đơn, tối đa 1.5 dòng)
-            line_sp = p.paragraph_format.line_spacing
-            if line_sp is not None and isinstance(line_sp, float):
-                if line_sp < 0.95 or line_sp > 1.55:
-                    wrong_line_spacing_count += 1
+                # 5. Khoảng cách giữa các dòng chữ (tối thiểu đơn, tối đa 1.5 dòng)
+                line_sp = p.paragraph_format.line_spacing
+                if line_sp is not None and isinstance(line_sp, float):
+                    if line_sp < 0.95 or line_sp > 1.55:
+                        wrong_line_spacing_count += 1
 
         if not_justified_count > 0:
             errors.append({
@@ -1061,6 +1107,11 @@ class Decree30Validator:
             errors.append({
                 "issue": f"Có {no_indent_count} đoạn văn dòng đầu tiên chưa thụt vào 1 - 1.27 cm (First line indent).",
                 "fix": "Vào hộp thoại Paragraph ➔ mục Indentation ➔ Special chọn First line: 1.27 cm (hoặc dùng 1 phím Tab)."
+            })
+        if no_list_indent_count > 0:
+            errors.append({
+                "issue": f"Có {no_list_indent_count} dòng gạch đầu dòng / bullet / danh sách liệt kê chưa lùi vào so với ý chính.",
+                "fix": "Các dòng danh sách liệt kê, gạch đầu dòng phải lùi vào trong so với ý chính (ví dụ dùng phím Tab, nút 'Increase Indent' / Tăng thụt lề trên thanh công cụ Word, hoặc dùng tính năng Bullets / Numbering)."
             })
         if wrong_font_count > 0:
             errors.append({
@@ -1643,7 +1694,7 @@ class Decree30Validator:
                 # Nếu chỉ có từ "Kính gửi:" trên 1 dòng riêng thì mới tiếp tục thu thập các cơ quan bên dưới
                 # Nếu đã có tên cơ quan ngay sau dấu hai chấm (ví dụ: "Kính gửi: Bộ Khoa học và Công nghệ.") thì là trường hợp 1 cơ quan
                 after_kg = re.sub(r"^Kính\s+gửi\s*:\s*", "", t, flags=re.IGNORECASE).strip()
-                if not after_kg:
+                if not after_kg or t.endswith(";"):
                     collecting_kinh_gui = True
                 else:
                     collecting_kinh_gui = False
@@ -1689,14 +1740,19 @@ class Decree30Validator:
                 outside_header_paras.append(p)
             elif not p_noi_nhan_title and "Nơi nhận" in t:
                 p_noi_nhan_title = p
-            elif p_noi_nhan_title and (t.startswith("-") or "Lưu:" in t):
+            elif not footer_table and p_noi_nhan_title and (t.startswith("-") or "Lưu:" in t):
                 noi_nhan_items.append(p)
             elif not p_chuc_vu and any(kw in t.upper() for kw in ["HIỆU TRƯỞNG", "GIÁM ĐỐC", "TRƯỞNG PHÒNG", "TRƯỞNG KHOA", "BÍ THƯ", "NGƯỜI THU HOẠCH", "NGƯỜI LÀM BÀI", "HỌC VIÊN", "SINH VIÊN", "NGƯỜI THỰC HIỆN"]):
                 p_chuc_vu = p
             elif p_chuc_vu and not p_ho_ten and len(t.split()) in [2, 3, 4] and not t.startswith("Căn cứ"):
                 p_ho_ten = p
             else:
-                if len(t) > 20 and not t.lower().startswith("cơ quan ban hành") and not t.lower().startswith("cơ quan chủ quản"):
+                is_list_line = (
+                    bool(p._p.xpath("./w:pPr/w:numPr")) or 
+                    bool(p.style and ("List" in p.style.name or "Bullet" in p.style.name or "Number" in p.style.name)) or
+                    bool(re.match(r"^\s*([0-9]+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\)|[ivxIVX]+[\.\)]|[-+*•⁃‣○●■□▪▫–—])\s*", t))
+                )
+                if (len(t) > 20 or (is_list_line and len(t) >= 3)) and not t.lower().startswith("cơ quan ban hành") and not t.lower().startswith("cơ quan chủ quản"):
                     body_paragraphs.append(p)
                 elif not p_kinh_gui and len(body_paragraphs) == 0 and len(t) > 2:
                     outside_header_paras.append(p)

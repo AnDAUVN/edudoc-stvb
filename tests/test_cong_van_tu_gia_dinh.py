@@ -309,8 +309,24 @@ class TestCongVanTuGiaDinh(unittest.TestCase):
         box6 = next((b for b in report.get("checklist", []) if str(b.get("box_id")) == "6"), None)
         self.assertIsNotNone(box6, "Phải tìm thấy kết quả kiểm tra Ô 6")
         
-        indent_errors = [e for e in box6.get("errors", []) if "thụt vào 1 - 1.27 cm" in e.get("issue", "")]
-        self.assertEqual(len(indent_errors), 0, f"Các dòng bullet/liệt kê không được tính là lỗi thụt lề Ô 6! Lỗi: {indent_errors}")
+        # 1. Các dòng bullet chưa lùi vào phải bị báo lỗi
+        has_list_indent_err = any("chưa lùi vào so với ý chính" in e.get("issue", "") for e in box6.get("errors", []))
+        self.assertTrue(has_list_indent_err, "Phải bắt lỗi nếu dòng bullet/danh sách liệt kê chưa lùi vào so với ý chính!")
+
+        # 2. Khi lùi vào (bằng Tab hoặc left_indent hoặc Word bullets), không còn bị báo lỗi
+        p_bullet1.paragraph_format.left_indent = Inches(0.5)
+        p_bullet2.text = "\t" + p_bullet2.text
+        p_bullet3.paragraph_format.first_line_indent = Inches(0.5)
+        doc_indented_path = os.path.join(self.temp_dir, "test_cv_bullets_indented_ok.docx")
+        doc.save(doc_indented_path)
+
+        v_ok = Decree30Validator(doc_indented_path, "cong_van_de_nghi", mssv="2100001234")
+        report_ok = v_ok.validate_document()
+        box6_ok = next((b for b in report_ok.get("checklist", []) if str(b.get("box_id")) == "6"), None)
+        list_errors_ok = [e for e in box6_ok.get("errors", []) if "chưa lùi vào so với ý chính" in e.get("issue", "")]
+        self.assertEqual(len(list_errors_ok), 0, f"Dòng danh sách đã lùi vào không được báo lỗi! Lỗi: {list_errors_ok}")
+        indent_errors_ok = [e for e in box6_ok.get("errors", []) if "thụt vào 1 - 1.27 cm" in e.get("issue", "")]
+        self.assertEqual(len(indent_errors_ok), 0, f"Đoạn văn chính chuẩn và bullet đã lùi vào không được báo lỗi thụt dòng!")
 
 if __name__ == "__main__":
     unittest.main()
