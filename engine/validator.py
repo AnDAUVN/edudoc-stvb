@@ -534,39 +534,22 @@ class Decree30Validator:
                         "fix": "Thêm tiền tố 'BC-' sau dấu gạch chéo (Ví dụ: 'Số: 18/BC-CNTT')."
                     })
 
-            # 3. KIỂM TRA CÁ NHÂN HÓA THEO MÃ SINH VIÊN (CHỐNG CHÉP BÀI NỘP HỘ)
-            if self.mssv and len(self.mssv) >= 3:
-                expected_num = self.mssv[-3:]
-                num_match = re.search(r"^Số\s*:\s*([0-9A-Za-z]+)/", t, re.IGNORECASE)
-                if num_match:
-                    found_num = num_match.group(1).strip()
-                    default_num = None
-                    if self.template_info and "header_part" in self.template_info:
-                        def_m = re.search(r"Số\s*:\s*([0-9A-Za-z]+)/", self.template_info["header_part"], re.IGNORECASE)
-                        if def_m:
-                            default_num = def_m.group(1).strip()
-
-                    is_match = False
-                    if self.doc_type_id in ["cong_van_de_nghi", "bai_thu_hoach"]:
-                        # Đối với bài tập Công văn đề nghị: Tất cả các mục là tự giả định (không tuân thủ đề),
-                        # cho phép sinh viên tự giả định bất kỳ số ban hành nào hoặc dùng 3 số cuối MSSV / số mặc định.
-                        is_match = True
-                    else:
-                        try:
-                            if (found_num == expected_num) or (int(found_num) == int(expected_num)):
-                                is_match = True
-                        except ValueError:
-                            if found_num == expected_num:
-                                is_match = True
-
-                        if default_num and (found_num == default_num):
-                            is_match = True
-
-                    if not is_match:
-                        errors.append({
-                            "issue": f"Yêu cầu cá nhân hóa: Số văn bản ({found_num}) không hợp lệ: Không khớp với 3 số cuối MSSV của bạn ('{expected_num}') hoặc số mặc định của đề bài ('{default_num}').",
-                            "fix": f"Sửa lại số văn bản thành: 'Số: {expected_num}/{after_slash}' theo đúng 3 số cuối Mã sinh viên của bạn."
-                        })
+            # 3. KIỂM TRA TÍNH HỢP THỨC CỦA SỐ THỨ TỰ VĂN BẢN (ĐIỀU 8 NGHỊ ĐỊNH 30)
+            # Theo Nghị định 30: Số của văn bản là chữ số Ả Rập bắt đầu từ 01, không được là 0 hoặc 000.
+            # Toàn bộ việc chống gian lận & truy nguyên bài nộp được đảm nhiệm độc lập bởi Thủy ấn số vô hình.
+            num_match = re.search(r"^Số\s*:\s*([0-9A-Za-z]+)/", t, re.IGNORECASE)
+            if num_match:
+                found_num = num_match.group(1).strip()
+                if not found_num.isdigit():
+                    errors.append({
+                        "issue": f"Số thứ tự của văn bản ({found_num}) phải được ghi bằng chữ số Ả-rập theo Điều 8 Nghị định 30.",
+                        "fix": "Sửa phần số trước dấu gạch chéo thành chữ số (Ví dụ: 'Số: 01/...', 'Số: 12/...')."
+                    })
+                elif int(found_num) == 0:
+                    errors.append({
+                        "issue": f"Số thứ tự của văn bản ({found_num}) không hợp lệ: Theo Điều 8 Nghị định 30, số của văn bản bắt đầu từ số 01 vào ngày đầu năm, không thể là số 0 hoặc 000.",
+                        "fix": "Sửa lại số ban hành hợp lệ bắt đầu từ 01 (Ví dụ: 'Số: 01/...', 'Số: 12/...')."
+                    })
 
         font, size, bold, italic = self._get_dominant_font_and_size(p_so)
         if bold:

@@ -119,8 +119,8 @@ class TestAntiCheatStages(unittest.TestCase):
         self.assertTrue(sub_data["passed"])
         print("✔ [GĐ 2] Chấm trắc nghiệm đạt 5/5 chính xác theo ID gốc!")
 
-    def test_06_personalized_mssv_matching(self):
-        """[GĐ 2] Cá nhân hóa đề bài: Kiểm tra 3 số cuối MSSV trong Số văn bản"""
+    def test_06_decree30_box3_valid_number_and_formula(self):
+        """[GĐ 2 - Phương án 3] Kiểm tra Ô 3: Số thứ tự hợp chuẩn NĐ 30 (Chữ số Ả-rập >= 01, không được 000/0) và ký hiệu"""
         doc = Document()
         # Tạo Header table 2x2
         t = doc.add_table(rows=2, cols=2)
@@ -129,31 +129,34 @@ class TestAntiCheatStages(unittest.TestCase):
         t.cell(0, 1).paragraphs[0].add_run("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM")
         p_tn = t.cell(0, 1).add_paragraph()
         p_tn.add_run("Độc lập - Tự do - Hạnh phúc")
-        # Ô 3: Sinh viên A có MSSV 2100001234 -> 3 số cuối là 234
+        # Ô 3: Số: 45/TB-ĐT
         p_so = t.cell(1, 0).paragraphs[0]
         p_so.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = p_so.add_run("Số: 234/TB-ĐT")
+        r = p_so.add_run("Số: 45/TB-ĐT")
         r.font.name = "Times New Roman"
         r.font.size = Pt(13)
         # Ô 4
         t.cell(1, 1).paragraphs[0].add_run("TP. Hồ Chí Minh, ngày 02 tháng 02 năm 2026")
 
-        doc_path = os.path.join(self.test_dir, "test_personalized_doc.docx")
+        doc_path = os.path.join(self.test_dir, "test_box3_doc.docx")
         doc.save(doc_path)
 
-        # 1. Trường hợp chính chủ (MSSV đuôi 234): Phải khớp
-        val_correct = Decree30Validator(doc_path, "thong_bao_nhiem_vu", mssv="2100001234")
+        # 1. Trường hợp số chuẩn mực (Số: 45/TB-ĐT): Phải đạt
+        val = Decree30Validator(doc_path, "thong_bao_nhiem_vu")
         p_so_p = t.cell(1, 0).paragraphs[0]
-        res_correct = val_correct.check_box_3_so_ky_hieu(p_so_p)
-        has_mismatch = any("Yêu cầu cá nhân hóa" in e.get("issue", "") for e in res_correct.get("errors", []))
-        self.assertFalse(has_mismatch, "Chính chủ phải không bị báo lỗi cá nhân hóa!")
+        res_correct = val.check_box_3_so_ky_hieu(p_so_p)
+        self.assertTrue(res_correct["passed"], "Số văn bản hợp lệ 45/TB-ĐT phải Đạt Ô 3!")
 
-        # 2. Trường hợp nộp bài chép (Sinh viên khác MSSV đuôi 999 nhưng nộp file có số 234)
-        val_stolen = Decree30Validator(doc_path, "thong_bao_nhiem_vu", mssv="2100009999")
-        res_stolen = val_stolen.check_box_3_so_ky_hieu(p_so_p)
-        has_stolen_err = any("Yêu cầu cá nhân hóa" in e.get("issue", "") for e in res_stolen.get("errors", []))
-        self.assertTrue(has_stolen_err, "Phải phát hiện số văn bản không khớp với MSSV của người nộp!")
-        print("✔ [GĐ 2] Hệ thống đã phát hiện thành công sai lệch số văn bản cá nhân hóa!")
+        # 2. Trường hợp số 000 (không phù hợp với văn bản NĐ 30): Phải bắt lỗi
+        p_so.text = ""
+        r2 = p_so.add_run("Số: 000/TB-ĐT")
+        r2.font.name = "Times New Roman"
+        r2.font.size = Pt(13)
+        res_zero = val.check_box_3_so_ky_hieu(p_so)
+        self.assertFalse(res_zero["passed"], "Số văn bản 000 phải bị từ chối!")
+        has_zero_err = any("không thể là số 0 hoặc 000" in e.get("issue", "") for e in res_zero.get("errors", []))
+        self.assertTrue(has_zero_err, "Phải bắt lỗi số 000 không phù hợp với văn bản NĐ 30!")
+        print("✔ [GĐ 2 - Phương án 3] Hệ thống đã bắt chính xác lỗi số 000 không hợp lệ theo NĐ 30!")
 
     def test_07_detect_copy_paste_from_outside_into_template(self):
         """[GĐ 2] Bắt gian lận: SV copy toàn bộ nội dung tài liệu bên ngoài dán vào file mẫu"""

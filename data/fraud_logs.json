@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "53690d0b",
+    "class_code": "KN01",
+    "timestamp": "2026-10-30 22:23:30",
+    "doc_type": "cong_van_de_nghi",
+    "fraud_data": {
+      "is_fraud": true,
+      "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
+      "reason": "Sao chép toàn bộ văn bản bên ngoài",
+      "student_a": {
+        "sbd": "01",
+        "mssv": "2100001122",
+        "name": "Cao Thành Trung",
+        "class_code": "KN01"
+      },
+      "evidence": "Sinh viên Cao Thành Trung (MSSV: 2100001122) đã copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu! Bài làm không còn chứa mã thủy ấn số bảo mật của phôi đề thi được hệ thống cấp phát."
+    }
+  }
+]

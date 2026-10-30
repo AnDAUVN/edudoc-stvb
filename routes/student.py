@@ -240,11 +240,8 @@ def generate_template():
     footer = tmpl.get("footer_part", "")
     full_text = f"{header}\n\n{body_content}\n\n{footer}" if (header or footer) else tmpl.get("raw_text", "")
 
-    # Cá nhân hóa Số ký hiệu văn bản gắn với 3 số cuối MSSV
-    if len(mssv) >= 3:
-        last3 = mssv[-3:]
-        full_text = re.sub(r'(Số\s*:\s*)\d+(/)', rf'\g<1>{last3}\2', full_text, flags=re.IGNORECASE)
-    
+    # Phương án 3: Giữ nguyên số văn bản chuẩn mực thực tế của đề bài
+    # Toàn bộ cơ chế chống gian lận & bảo mật được đảm nhiệm bởi hệ thống Thủy ấn số vô hình đa tầng
     create_student_raw_template(
         sbd=sbd,
         mssv=mssv,

@@ -628,16 +628,13 @@
           <span class="step-badge">3</span> Nhận File mẫu bài tập thô (Tự động đổi tên & Nhúng mã bảo mật)
         </h5>
 
-        <!-- HỘP YÊU CẦU CÁ NHÂN HÓA SỐ VĂN BẢN (CHỐNG CHÉP BÀI) -->
-        <div class="alert alert-warning border-0 d-flex gap-3 align-items-center mb-3 shadow-sm" id="alert-personalized-req">
-          <i class="fa-solid fa-bullseye fa-2x text-warning"></i>
+        <!-- HỘP THÔNG TIN BẢO MẬT & ĐỀ THI (PHƯƠNG ÁN 3) -->
+        <div class="alert alert-primary border-0 d-flex gap-3 align-items-center mb-3 shadow-sm" id="alert-personalized-req">
+          <i class="fa-solid fa-shield-halved fa-2x text-primary"></i>
           <div>
-            <strong class="text-dark"><i class="fa-solid fa-shield-halved text-danger me-1"></i> Yêu cầu cá nhân hóa bài tập (Chống sao chép bài nộp hộ):</strong>
+            <strong class="text-dark"><i class="fa-solid fa-file-signature text-primary me-1"></i> Số và ký hiệu văn bản (Ô 3):</strong>
             <p class="mb-0 small text-dark mt-1">
-              Số ban hành tại <strong>Ô 3</strong> bắt buộc phải sử dụng <strong>3 số cuối Mã sinh viên</strong> của bạn: 
-              <span class="badge bg-danger fs-6 font-monospace" id="lbl-personalized-mssv">...</span> 
-              (Ví dụ: <code class="text-dark fw-bold" id="lbl-personalized-example">Số: .../TB-...</code>). 
-              Hệ thống sẽ đối chiếu tự động khi bạn nộp bài để xác thực quyền tác giả chính chủ!
+              Văn bản sử dụng số ban hành thực tế chuẩn theo Nghị định 30 (bắt đầu từ 01, không sử dụng số 000). Toàn bộ bài làm được bảo vệ bằng chữ ký số và thủy ấn số vô hình đa tầng để xác thực quyền tác giả chính chủ.
             </p>
           </div>
         </div>
@@ -1459,12 +1456,11 @@
       document.getElementById('lbl-generated-filename').innerText = data.filename;
       document.getElementById('lnk-download-template').href = data.download_url;
 
-      // Cập nhật yêu cầu cá nhân hóa MSSV
-      const last3 = (mssv.length >= 3) ? mssv.slice(-3) : mssv;
+      // Phương án 3: Số văn bản chuẩn thực tế NĐ 30, bảo vệ toàn diện bằng Thủy ấn số vô hình
       const elMssv = document.getElementById('lbl-personalized-mssv');
-      if (elMssv) elMssv.innerText = last3;
+      if (elMssv) elMssv.innerText = 'NĐ 30';
       const elEx = document.getElementById('lbl-personalized-example');
-      if (elEx) elEx.innerText = `Số: ${last3}/...`;
+      if (elEx) elEx.innerText = `Số: .../...`;
 
       document.getElementById('section-template').classList.remove('d-none');
       document.getElementById('section-validate').classList.remove('d-none');
