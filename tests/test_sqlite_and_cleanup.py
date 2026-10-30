@@ -28,7 +28,7 @@ from engine.db import (
     get_student_session, save_student_session,
     get_session_state_db, save_session_state_db
 )
-from engine.security import generate_anti_cheat_token
+from engine.security import generate_anti_cheat_token, plant_watermark_in_line
 from engine.common import (
     STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
     STUDENTS_ROSTER_FILE, SESSION_STATE_FILE, load_json_file, save_json_file
@@ -145,7 +145,7 @@ class TestSqliteAndCleanup(unittest.TestCase):
         """Kiểm tra chống lặp tên tệp dạng temp_2100001234_temp_2100001234_..."""
         # Tạo một tài liệu docx hợp lệ có metadata bảo mật hệ thống
         doc = docx.Document()
-        doc.add_paragraph("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM")
+        doc.add_paragraph(plant_watermark_in_line("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", self.test_mssv))
         now_str = "20261028100000"
         token = generate_anti_cheat_token("99", self.test_mssv, self.test_doc, now_str)
         doc.core_properties.identifier = f"STVB_SIGNATURE:{token}"

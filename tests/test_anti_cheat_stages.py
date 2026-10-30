@@ -18,6 +18,7 @@ sys.path.insert(0, BASE_DIR)
 
 from app import app, load_json_file, save_json_file, STUDENT_SESSIONS_FILE
 from engine.validator import Decree30Validator
+from engine.security import check_anti_cheat
 
 class TestAntiCheatStages(unittest.TestCase):
     def setUp(self):
@@ -153,6 +154,75 @@ class TestAntiCheatStages(unittest.TestCase):
         has_stolen_err = any("Yêu cầu cá nhân hóa" in e.get("issue", "") for e in res_stolen.get("errors", []))
         self.assertTrue(has_stolen_err, "Phải phát hiện số văn bản không khớp với MSSV của người nộp!")
         print("✔ [GĐ 2] Hệ thống đã phát hiện thành công sai lệch số văn bản cá nhân hóa!")
+
+    def test_07_detect_copy_paste_from_outside_into_template(self):
+        """[GĐ 2] Bắt gian lận: SV copy toàn bộ nội dung tài liệu bên ngoài dán vào file mẫu"""
+        # 1. Đăng ký SV vào danh sách lớp
+        self.client.post("/api/teacher/students/add", json={
+            "class_code": "KN01",
+            "sbd": "01",
+            "mssv": "2100001122",
+            "name": "Cao Thành Trung"
+        })
+
+        # 2. Sinh viên tải file mẫu
+        res_gen = self.client.post("/api/template/generate", json={
+            "class_code": "KN01",
+            "sbd": "01",
+            "mssv": "2100001122",
+            "name": "Cao Thành Trung",
+            "doc_type": "cong_van_de_nghi"
+        })
+        self.assertEqual(res_gen.status_code, 200)
+        filename = res_gen.get_json()["filename"]
+        template_file_path = os.path.join(self.test_dir, filename)
+
+        # File phôi đề gốc phải hợp lệ không bị báo gian lận
+        res_clean = check_anti_cheat(template_file_path, "01", "2100001122", "Cao Thành Trung")
+        self.assertFalse(res_clean["is_fraud"], "Phôi mẫu cấp phát ban đầu phải hợp lệ!")
+
+        # 3. Giả lập hành vi gian lận: Mở file mẫu nhưng xóa hết nội dung và dán văn bản bên ngoài vào
+        doc = Document(template_file_path)
+        for p in list(doc.paragraphs):
+            p._element.getparent().remove(p._element)
+        for t in list(doc.tables):
+            t._element.getparent().remove(t._element)
+
+        # Dán văn bản tùy tiện từ bên ngoài vào (không có thủy ấn số của hệ thống)
+        doc.add_paragraph("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM")
+        doc.add_paragraph("Độc lập - Tự do - Hạnh phúc")
+        doc.add_paragraph("Kính gửi: Sở Công Thương quận Gò Vấp")
+        doc.add_paragraph("Hiện nay Công ty Ánh Dương đang vào giai đoạn cao điểm...")
+        
+        tampered_path = os.path.join(self.test_dir, f"tampered_{filename}")
+        doc.save(tampered_path)
+
+        # 4. Kiểm tra qua engine: Phải phát hiện COPY_NOI_DUNG_BEN_NGOAI
+        fraud_check = check_anti_cheat(tampered_path, "01", "2100001122", "Cao Thành Trung")
+        self.assertTrue(fraud_check["is_fraud"], "Hệ thống phải phát hiện hành vi dán đè văn bản bên ngoài!")
+        self.assertEqual(fraud_check["fraud_type"], "COPY_NOI_DUNG_BEN_NGOAI")
+        print("✔ [GĐ 2] Đã phát hiện chính xác lỗi COPY_NOI_DUNG_BEN_NGOAI qua check_anti_cheat!")
+
+        # 5. Kiểm tra qua endpoint /api/validate: Phải trả về status FRAUD_DETECTED
+        with open(tampered_path, "rb") as f:
+            res_val = self.client.post("/api/validate", data={
+                "file": (f, filename),
+                "class_code": "KN01",
+                "sbd": "01",
+                "mssv": "2100001122",
+                "name": "Cao Thành Trung",
+                "doc_type": "cong_van_de_nghi"
+            }, content_type="multipart/form-data")
+
+        self.assertEqual(res_val.status_code, 200)
+        val_data = res_val.get_json()
+        self.assertEqual(val_data.get("status"), "FRAUD_DETECTED")
+        self.assertEqual(val_data["fraud_info"]["fraud_type"], "COPY_NOI_DUNG_BEN_NGOAI")
+        print("✔ [GĐ 2] Endpoint /api/validate đã chặn nộp bài và cảnh báo gian lận thành công!")
+
+        # Dọn dẹp file tạm
+        if os.path.exists(tampered_path):
+            os.remove(tampered_path)
 
 if __name__ == "__main__":
     unittest.main()

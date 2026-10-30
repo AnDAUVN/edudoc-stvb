@@ -246,6 +246,12 @@
       "mssv": "2280609999",
       "name": "Nguyễn Kiểm Tra",
       "student_class": ""
+    },
+    {
+      "sbd": "01",
+      "mssv": "2100001122",
+      "name": "Cao Thành Trung",
+      "student_class": ""
     }
   ],
   "KN02": [
@@ -253,6 +259,14 @@
       "sbd": "02",
       "mssv": "2280600222",
       "name": "Trần Thị B",
+      "student_class": ""
+    }
+  ],
+  "22DTH01": [
+    {
+      "sbd": "01",
+      "mssv": "2100001122",
+      "name": "Cao Thành Trung",
       "student_class": ""
     }
   ]

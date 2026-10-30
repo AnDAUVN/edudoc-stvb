@@ -29,6 +29,37 @@ def encode_hidden_mssv_to_text(text, mssv):
         return words[0] + zero_width_str + ' ' + words[1]
     return text + zero_width_str
 
+def plant_watermark_in_line(line, mssv):
+    """
+    Cấy thủy ấn số MSSV vào dòng văn bản ở các vị trí chiến lược
+    đảm bảo người dùng định dạng / cắt dán / xóa nhãn vẫn giữ nguyên thủy ấn.
+    """
+    binary = ''.join(format(ord(c), '08b') for c in str(mssv))
+    zero_width_str = binary.replace('0', ZERO_BIN_0).replace('1', ZERO_BIN_1)
+    
+    res = line
+    # Nếu là dòng hướng dẫn trong ngoặc vuông, cấy vào cuối dòng để không làm vỡ cụm từ kiểm thử
+    if res.strip().startswith('['):
+        return res + zero_width_str
+
+    # 1. Cấy trực tiếp vào các từ khóa bất biến trong thể thức Nghị định 30
+    anchors = [
+        "CỘNG", "Độc", "Nơi", "Kính", "TRƯỜNG", "PHÒNG", 
+        "ĐOÀN", "THÔNG", "TỜ", "ỦY BAN", "SỞ", "CÔNG TY"
+    ]
+    for anchor in anchors:
+        if anchor in res and zero_width_str not in res:
+            res = res.replace(anchor, anchor + zero_width_str, 1)
+            
+    # 2. Cấy thêm vào sau từ đầu tiên của dòng
+    words = res.split(' ', 1)
+    if len(words) >= 2 and zero_width_str not in words[0]:
+        res = words[0] + zero_width_str + ' ' + words[1]
+    elif zero_width_str not in res:
+        res = res + zero_width_str
+        
+    return res
+
 def extract_all_hidden_mssvs(text):
     """
     Trích xuất và giải mã toàn bộ các thủy ấn số vô hình có trong văn bản
@@ -89,14 +120,7 @@ def create_student_raw_template(sbd, mssv, student_name, doc_type_id, raw_text, 
     # 3. Ghi nội dung thô kèm thủy ấn vô hình
     lines = raw_text.strip().split("\n")
     for idx, line in enumerate(lines):
-        line_to_write = line
-        # Cấy thủy ấn vô hình vào dòng tiêu ngữ / cơ quan ban hành / nơi nhận và thân bài
-        # Đảm bảo dù phần thân bài để trống hay tự gõ, mã định danh chống gian lận vẫn hiện diện 100%
-        line_lower = line.lower()
-        if (idx in [1, 3] or "tiêu ngữ" in line_lower or "quốc hiệu" in line_lower 
-            or "cơ quan ban hành" in line_lower or "nơi nhận" in line_lower
-            or "căn cứ" in line_lower or "thực hiện" in line_lower or "nhằm" in line_lower):
-            line_to_write = encode_hidden_mssv_to_text(line, mssv)
+        line_to_write = plant_watermark_in_line(line, mssv)
             
         p = doc.add_paragraph()
         run = p.add_run(line_to_write)
@@ -119,6 +143,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
     Kiểm tra gian lận:
     - Chiêu 1: SV A nộp nguyên file của SV B (Đổi tên file)
     - Chiêu 2: SV A mở file mình nhưng Copy-Paste nội dung từ file của SV B
+    - Chiêu 3: SV copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu
     """
     try:
         doc = Document(docx_path)
@@ -132,6 +157,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             return {
                 "is_fraud": True,
                 "fraud_type": "FILE_KHONG_HOP_LE",
+                "reason": "File không có chữ ký số STVB",
                 "message": "File bài làm không chứa mã bảo mật hợp lệ của hệ thống! Sinh viên phải sử dụng đúng file mẫu tải về từ phần mềm."
             }
             
@@ -144,6 +170,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
                 return {
                     "is_fraud": True,
                     "fraud_type": "NOP_NGUYEN_FILE_BAN",
+                    "reason": "Nộp nguyên file của bạn học",
                     "student_a": {
                         "sbd": current_sbd,
                         "mssv": current_mssv,
@@ -166,7 +193,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
                     
         all_found_mssvs = extract_all_hidden_mssvs(full_text)
         
-        # Tìm xem có MSSV nào khác MSSV của sinh viên hiện tại hay không
+        # 2a. Phát hiện mã thủy ấn của sinh viên khác -> Chép bài từ bạn học
         stolen_mssvs = [m for m in all_found_mssvs if str(m).strip() != str(current_mssv).strip()]
         
         if stolen_mssvs:
@@ -179,6 +206,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             return {
                 "is_fraud": True,
                 "fraud_type": "COPY_PASTE_NOI_DUNG",
+                "reason": "Sao chép bài bạn học",
                 "student_a": {
                     "sbd": current_sbd,
                     "mssv": current_mssv,
@@ -188,7 +216,22 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
                     "mssv": target_b_mssv,
                     "name": student_b_name
                 },
-                "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã copy-paste nội dung bài làm từ file của Sinh viên B (MSSV: {target_b_mssv}). Thủy ấn số bí mật của Sinh viên B đã bị phát hiện trong nội dung văn bản."
+                "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã copy-paste nội dung bài làm từ file của Sinh viên B ({student_b_name} - MSSV: {target_b_mssv}). Thủy ấn số bí mật của Sinh viên B đã bị phát hiện trong nội dung văn bản."
+            }
+
+        # 2b. Phát hiện copy nội dung bên ngoài dán đè vào file mẫu:
+        # File có mã bảo mật phôi STVB nhưng toàn bộ thủy ấn MSSV của chính sinh viên đã bị xóa sạch!
+        if str(current_mssv).strip() not in all_found_mssvs:
+            return {
+                "is_fraud": True,
+                "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
+                "reason": "Sao chép toàn bộ văn bản bên ngoài",
+                "student_a": {
+                    "sbd": current_sbd,
+                    "mssv": current_mssv,
+                    "name": current_name
+                },
+                "evidence": f"Sinh viên {current_name} (MSSV: {current_mssv}) đã copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu! Bài làm không còn chứa mã thủy ấn số bảo mật của phôi đề thi được hệ thống cấp phát."
             }
 
         return {"is_fraud": False, "message": "File chính chủ và bảo mật hợp lệ."}

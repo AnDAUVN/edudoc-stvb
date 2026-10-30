@@ -708,11 +708,11 @@
             <div class="card bg-white p-3 border-danger">
               <div class="row">
                 <div class="col-md-6 border-end">
-                  <h6 class="text-danger fw-bold"><i class="fa-solid fa-user-xmark me-1"></i> Sinh viên sao chép (Người nộp):</h6>
+                  <h6 class="text-danger fw-bold"><i class="fa-solid fa-user-xmark me-1"></i> Sinh viên nộp bài:</h6>
                   <p class="mb-0" id="cheat-sv-a"></p>
                 </div>
-                <div class="col-md-6">
-                  <h6 class="text-danger fw-bold"><i class="fa-solid fa-user-slash me-1"></i> Sinh viên cho chép (Nguồn bài làm):</h6>
+                <div class="col-md-6" id="cheat-sv-b-container">
+                  <h6 class="text-danger fw-bold" id="cheat-sv-b-title"><i class="fa-solid fa-user-slash me-1"></i> Sinh viên cho chép (Nguồn bài làm):</h6>
                   <p class="mb-0" id="cheat-sv-b"></p>
                 </div>
               </div>
@@ -1558,7 +1558,7 @@
           document.getElementById('normal-validation-box').classList.add('d-none');
 
           document.getElementById('cheat-summary-text').innerHTML = `
-            <strong>Loại vi phạm:</strong> <span class="badge bg-danger fs-6">${fraud.fraud_type}</span><br>
+            <strong>Loại vi phạm:</strong> <span class="badge bg-danger fs-6">${fraud.reason || fraud.fraud_type}</span><br>
             <strong>Chứng cứ:</strong> ${fraud.evidence || fraud.message}
           `;
 
@@ -1573,12 +1573,33 @@
               <strong>Họ tên:</strong> ${fraud.student_b.name}<br>
               <strong>MSSV:</strong> ${fraud.student_b.mssv} ${fraud.student_b.sbd ? '| SBD: ' + fraud.student_b.sbd : ''}
             `;
+            const titleElem = document.getElementById('cheat-sv-b-title');
+            if (titleElem) titleElem.innerHTML = '<i class="fa-solid fa-user-slash me-1"></i> Sinh viên cho chép (Nguồn bài làm):';
+          } else {
+            document.getElementById('cheat-sv-b').innerHTML = `
+              <span class="text-danger fw-bold">${fraud.evidence || fraud.message || 'Tài liệu bên ngoài hệ thống'}</span>
+            `;
+            const titleElem = document.getElementById('cheat-sv-b-title');
+            if (titleElem) titleElem.innerHTML = '<i class="fa-solid fa-file-circle-xmark me-1"></i> Nguồn tài liệu bên ngoài / Bằng chứng:';
+          }
+
+          let swalTitle = '🚨 PHÁT HIỆN VI PHẠM THI CỬ!';
+          let swalMsg = fraud.evidence || fraud.message;
+          if (fraud.fraud_type === 'COPY_PASTE_NOI_DUNG' || fraud.fraud_type === 'NOP_NGUYEN_FILE_BAN') {
+            swalTitle = '🚨 PHÁT HIỆN SAO CHÉP BÀI!';
+            swalMsg = `Hệ thống ghi nhận bạn đã sao chép bài của sinh viên <strong>${fraud.student_b ? fraud.student_b.name : 'khác'}</strong>!<br>Biên bản vi phạm đã được lập và gửi đến Giảng viên.`;
+          } else if (fraud.fraud_type === 'COPY_NOI_DUNG_BEN_NGOAI') {
+            swalTitle = '🚨 PHÁT HIỆN DÁN NỘI DUNG TỪ BÊN NGOÀI!';
+            swalMsg = `Hệ thống ghi nhận bạn đã copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu!<br>Mã thủy ấn số bảo mật của phôi đề thi đã bị xóa sạch.<br><strong>Biên bản vi phạm đã được lập và gửi đến Giảng viên.</strong>`;
+          } else {
+            swalTitle = '🚨 FILE BÀI LÀM KHÔNG HỢP LỆ!';
+            swalMsg = fraud.message || 'File bài làm vi phạm quy chế thi và không hợp lệ!';
           }
 
           Swal.fire({
             icon: 'error',
-            title: '🚨 PHÁT HIỆN SAO CHÉP BÀI!',
-            html: `Hệ thống ghi nhận bạn đã sao chép bài của sinh viên <strong>${fraud.student_b ? fraud.student_b.name : 'khác'}</strong>!<br>Biên bản vi phạm đã được lập và gửi đến Giảng viên.`
+            title: swalTitle,
+            html: swalMsg
           });
           return;
         }

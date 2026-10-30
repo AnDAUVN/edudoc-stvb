@@ -1505,7 +1505,7 @@
         return `
           <div class="card p-3 border-danger shadow-xs">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="badge bg-danger fs-6"><i class="fa-solid fa-shield-virus me-1"></i> ${f.reason || 'Phát hiện mã ẩn sao chép'}</span>
+              <span class="badge bg-danger fs-6"><i class="fa-solid fa-shield-virus me-1"></i> ${f.reason || f.fraud_type || 'Phát hiện vi phạm gian lận'}</span>
               <div class="d-flex align-items-center gap-2">
                 <small class="text-muted">${l.timestamp || ''}</small>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteFraudLog('${l.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -1513,12 +1513,12 @@
             </div>
             <div class="row g-2 small">
               <div class="col-md-6 border-end">
-                <strong class="text-danger">Sinh viên nộp (Người chép):</strong><br>
+                <strong class="text-danger">Sinh viên nộp bài:</strong><br>
                 Họ tên: <b>${svA.name || 'N/A'}</b> - MSSV: <code>${svA.mssv || 'N/A'}</code> (Lớp: ${svA.class_code || l.class_code || 'Chung'})
               </div>
               <div class="col-md-6">
-                <strong class="text-primary">Nguồn gốc bài tập (Người cho chép):</strong><br>
-                Họ tên: <b>${svB.name || 'N/A'}</b> - MSSV: <code>${svB.mssv || 'N/A'}</code> (Lớp: ${svB.class_code || 'Chung'})
+                <strong class="text-primary">${svB.name ? 'Nguồn gốc bài tập (Người cho chép):' : 'Bằng chứng / Chi tiết vi phạm:'}</strong><br>
+                ${svB.name ? `Họ tên: <b>${svB.name}</b> - MSSV: <code>${svB.mssv || 'N/A'}</code> (Lớp: ${svB.class_code || 'Chung'})` : `<span class="text-danger fw-semibold">${f.evidence || f.message || 'Sao chép văn bản bên ngoài dán vào file mẫu'}</span>`}
               </div>
             </div>
           </div>
