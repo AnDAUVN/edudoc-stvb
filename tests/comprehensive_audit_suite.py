@@ -106,6 +106,12 @@ def run_comprehensive_audit():
     # TEST 4: SINH FILE MẪU & TẢI VỀ CHO TẤT CẢ 8 LOẠI VĂN BẢN
     # ---------------------------------------------------------
     print("\n--- [TEST 4] KIỂM TRA TỰ ĐỘNG SINH FILE MẪU CHO CẢ 8 LOẠI VĂN BẢN ---")
+    requests.post(f"{BASE_URL}/api/teacher/students/add", json={
+        "class_code": "KN01",
+        "sbd": "01",
+        "mssv": "2280609999",
+        "name": "Nguyễn Kiểm Tra"
+    })
     for d in docs:
         gen_res = requests.post(f"{BASE_URL}/api/template/generate", json={
             "class_code": "KN01",

@@ -23,6 +23,12 @@ def test_fraud_management():
     print(" [+] API /api/teacher/fraud/clear (ALL) hoạt động tốt, đã làm sạch nhật ký.")
 
     # 3. Giả lập một sinh viên nộp file không hợp lệ thuộc lớp KN01
+    requests.post(f"{BASE_URL}/api/teacher/students/add", json={
+        "class_code": "KN01",
+        "sbd": "01",
+        "mssv": "2280600111",
+        "name": "Nguyễn Văn Gian Lận"
+    })
     # Tạo một file docx rỗng bất kỳ
     from docx import Document
     test_docx = "temp_unauthorized.docx"
@@ -62,6 +68,12 @@ def test_fraud_management():
     print(f" [+] Hồ sơ vi phạm đã lưu đúng mã lớp 'KN01' và ID: '{log_id}'.")
 
     # 5. Giả lập một sinh viên khác vi phạm ở lớp KN02
+    requests.post(f"{BASE_URL}/api/teacher/students/add", json={
+        "class_code": "KN02",
+        "sbd": "02",
+        "mssv": "2280600222",
+        "name": "Trần Thị B"
+    })
     doc = Document()
     doc.add_paragraph("Nội dung bài làm sao chép lớp khác")
     doc.save(test_docx)
