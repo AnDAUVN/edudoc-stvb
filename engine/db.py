@@ -128,6 +128,22 @@ def init_db(db_path: Optional[str] = None) -> None:
             conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher_id TEXT DEFAULT 'GV01';")
         except Exception:
             pass
+
+        # 6. BẢNG NỘI DUNG THÂN BÀI Ô 6 (BOX 6 SUBMISSIONS - ĐỐI CHIẾU ĐẠO VĂN)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS box6_submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mssv TEXT NOT NULL,
+            name TEXT NOT NULL,
+            class_code TEXT,
+            doc_type TEXT NOT NULL,
+            box6_text TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(mssv, doc_type)
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_mssv ON box6_submissions(mssv);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_doc_type ON box6_submissions(doc_type);")
     conn.close()
 
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
@@ -637,3 +653,52 @@ def delete_teacher_db(teacher_id: str, db_path: Optional[str] = None) -> bool:
 
 # Khởi tạo database tự động khi import
 init_db()
+
+# =========================================================================
+# API BOX 6 SUBMISSIONS (ĐỐI CHIẾU ĐẠO VĂN NỘI DUNG THÂN BÀI)
+# =========================================================================
+def save_box6_submission(mssv: str, name: str, class_code: str, doc_type: str, box6_text: str, db_path: Optional[str] = None) -> None:
+    """Lưu trữ / Cập nhật nội dung Thân bài (Ô 6) của sinh viên để đối chiếu đạo văn"""
+    if not mssv or not box6_text or len(box6_text.strip()) < 25:
+        return
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO box6_submissions (mssv, name, class_code, doc_type, box6_text, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (str(mssv).strip(), name or "", class_code or "Chung", doc_type or "", box6_text.strip()))
+    finally:
+        conn.close()
+
+def get_all_box6_submissions(doc_type: Optional[str] = None, exclude_mssv: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Lấy danh sách nội dung Ô 6 của các sinh viên khác để so khớp đạo văn"""
+    conn = get_db_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        query = "SELECT mssv, name, class_code, doc_type, box6_text, updated_at FROM box6_submissions WHERE 1=1"
+        params = []
+        if doc_type:
+            query += " AND doc_type = ?"
+            params.append(doc_type)
+        if exclude_mssv:
+            query += " AND mssv != ?"
+            params.append(str(exclude_mssv).strip())
+        cursor.execute(query, tuple(params))
+        rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+def delete_box6_submission_by_mssv(mssv: str, doc_type: Optional[str] = None, db_path: Optional[str] = None) -> bool:
+    """Xóa bản ghi Ô 6 của sinh viên"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            if doc_type:
+                res = conn.execute("DELETE FROM box6_submissions WHERE mssv = ? AND doc_type = ?;", (str(mssv).strip(), doc_type))
+            else:
+                res = conn.execute("DELETE FROM box6_submissions WHERE mssv = ?;", (str(mssv).strip(),))
+            return res.rowcount > 0
+    finally:
+        conn.close()

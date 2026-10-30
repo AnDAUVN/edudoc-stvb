@@ -1102,6 +1102,17 @@ class Decree30Validator:
     # =========================================================================
     # Ô 6: NỘI DUNG VĂN BẢN
     # =========================================================================
+    def get_box6_text(self) -> str:
+        """Lấy toàn bộ nội dung văn bản Ô 6 đã được làm sạch ký tự vô hình"""
+        if not hasattr(self, "body_paragraphs") or not self.body_paragraphs:
+            return ""
+        lines = []
+        for p in self.body_paragraphs:
+            t = self._clean_text(p)
+            if t and "[Nội dung văn bản:" not in t and "tự nhập theo nội dung" not in t:
+                lines.append(t)
+        return "\n".join(lines)
+
     def check_box_6_noi_dung(self, body_paragraphs):
         errors = []
         if not body_paragraphs:
@@ -1933,6 +1944,7 @@ class Decree30Validator:
             p_trich_yeu_outside=(p_trich_yeu if not is_5b_in_table else p_trich_yeu_outside_extra),
             outside_header_paras=outside_header_paras
         ))
+        self.body_paragraphs = body_paragraphs
         checklist.append(self.check_box_6_noi_dung(body_paragraphs))
         checklist.append(self.check_box_7_8_chuc_vu_nguoi_ky(p_chuc_vu, p_ho_ten, empty_lines_sign, p_cq_ban_hanh=p_cq_ban_hanh))
 
