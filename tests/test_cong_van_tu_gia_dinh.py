@@ -221,5 +221,39 @@ class TestCongVanTuGiaDinh(unittest.TestCase):
         )
         self.assertTrue(has_5a_err, "Phải bắt lỗi sai sơ đồ bố trí: Công văn không có Ô 5a!")
 
+    def test_04_cong_van_co_tu_thong_bao_trong_noi_dung_khong_bi_nham_la_5a(self):
+        """Công văn có các từ ngữ 'thông báo', 'báo cáo' trong phần nội dung thân bài (Ô 6) không được nhận nhầm là Ô 5a"""
+        doc_path = os.path.join(self.temp_dir, "test_cv_body_with_kw.docx")
+        doc = Document()
+        ht = doc.add_table(rows=2, cols=2)
+        # Bảng đầu trang đúng chuẩn
+        ht.cell(0, 0).paragraphs[0].text = "CÔNG TY ÁNH DƯƠNG"
+        ht.cell(0, 1).paragraphs[0].text = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"
+        ht.cell(1, 0).paragraphs[0].text = "Số: 122/AD-HC"
+        p_vv = ht.cell(1, 0).add_paragraph("V/v khắc phục sự cố")
+        ht.cell(1, 1).paragraphs[0].text = "Hà Nội, ngày 06 tháng 08 năm 2026"
+
+        # Kính gửi Ô 9a
+        doc.add_paragraph("Kính gửi: Sở Công Thương quận Gò Vấp;")
+        doc.add_paragraph("Công ty Điện Lực Gò Vấp.")
+
+        # Thân bài Ô 6 chứa các từ thông báo, báo cáo
+        doc.add_paragraph("Hiện nay Công ty Ánh Dương đang vào giai đoạn cao điểm.")
+        doc.add_paragraph("Chấm dứt ngay tình trạng cắt điện đột ngột không thông báo trước.")
+        doc.add_paragraph("Thực hiện nghiêm túc quy trình thông báo ngừng, giảm cung cấp điện.")
+        
+        ft = doc.add_table(rows=1, cols=2)
+        ft.cell(0, 0).paragraphs[0].text = "Nơi nhận:\n- Như trên;\n- Lưu: VT."
+        ft.cell(0, 1).paragraphs[0].text = "GIÁM ĐỐC\n\n\nTrần Thị Hiền"
+        doc.save(doc_path)
+
+        validator = Decree30Validator(doc_path, "cong_van_de_nghi", mssv="2100001234")
+        report = validator.validate_document()
+        has_false_5a_err = any(
+            any("KHÔNG CÓ TÊN LOẠI (Ô 5a)" in e.get("issue", "") for e in box.get("errors", []))
+            for box in report.get("checklist", [])
+        )
+        self.assertFalse(has_false_5a_err, "Công văn có từ 'thông báo' trong câu thân bài KHÔNG ĐƯỢC báo lỗi Ô 5a!")
+
 if __name__ == "__main__":
     unittest.main()

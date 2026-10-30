@@ -1679,18 +1679,23 @@ class Decree30Validator:
                 p_so = p
             elif not p_dia_danh and ("ngày" in t.lower() and "tháng" in t.lower() and "năm" in t.lower()):
                 p_dia_danh = p
-            elif not p_type and (t in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"] or any(kw in t.upper() for kw in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH"])):
+            # Ô 5a: TÊN LOẠI VĂN BẢN (CHỈ XUẤT HIỆN Ở ĐẦU TRANG, TRƯỚC KÍNH GỬI VÀ TRƯỚC NỘI DUNG THÂN BÀI)
+            elif (not p_type and not p_kinh_gui and len(body_paragraphs) == 0 and 
+                  len(t) <= 45 and not t.endswith(".") and
+                  (t.upper().strip() in ["CÔNG VĂN", "THÔNG BÁO", "TỜ TRÌNH", "BÁO CÁO", "BÀI THU HOẠCH", "QUYẾT ĐỊNH"] or 
+                   re.match(r"^(CÔNG VĂN|THÔNG BÁO|TỜ TRÌNH|BÁO CÁO|BÀI THU HOẠCH|QUYẾT ĐỊNH)\b", t.upper().strip()))):
                 p_type = p
-                if not p_kinh_gui and len(body_paragraphs) == 0:
-                    outside_header_paras.append(p)
-            elif (t.startswith("Về việc") or t.startswith("về việc") or t.startswith("V/v") or (p_type is not None and not p_kinh_gui and (t.startswith("Về ") or t.startswith("về ") or t.startswith("Khóa ") or t.startswith("Chuyên đề ") or t.startswith("Học phần ")))):
+                outside_header_paras.append(p)
+            # Ô 5b: TRÍCH YẾU NGOÀI BẢNG (CHỈ XUẤT HIỆN Ở ĐẦU TRANG, TRƯỚC KÍNH GỬI VÀ TRƯỚC NỘI DUNG THÂN BÀI)
+            elif (not p_kinh_gui and len(body_paragraphs) == 0 and
+                  (t.startswith("Về việc") or t.startswith("về việc") or t.startswith("V/v") or 
+                   (p_type is not None and (t.startswith("Về ") or t.startswith("về ") or t.startswith("Khóa ") or t.startswith("Chuyên đề ") or t.startswith("Học phần "))))):
                 if not p_trich_yeu:
                     p_trich_yeu = p
                     is_5b_in_table = False
                 else:
                     p_trich_yeu_outside_extra = p
-                if not p_kinh_gui and len(body_paragraphs) == 0:
-                    outside_header_paras.append(p)
+                outside_header_paras.append(p)
             elif not p_noi_nhan_title and "Nơi nhận" in t:
                 p_noi_nhan_title = p
             elif p_noi_nhan_title and (t.startswith("-") or "Lưu:" in t):
