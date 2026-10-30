@@ -1581,9 +1581,10 @@
 
           let swalTitle = '🚨 PHÁT HIỆN VI PHẠM THI CỬ!';
           let swalMsg = fraud.evidence || fraud.message;
-          if (fraud.fraud_type === 'COPY_PASTE_NOI_DUNG' || fraud.fraud_type === 'NOP_NGUYEN_FILE_BAN') {
+          if (fraud.fraud_type === 'COPY_PASTE_NOI_DUNG' || fraud.fraud_type === 'COPY_PASTE_NOI_DUNG_O6' || fraud.fraud_type === 'NOP_NGUYEN_FILE_BAN') {
             swalTitle = '🚨 PHÁT HIỆN SAO CHÉP BÀI!';
-            swalMsg = `Hệ thống ghi nhận bạn đã sao chép bài của sinh viên <strong>${fraud.student_b ? fraud.student_b.name : 'khác'}</strong>!<br>Biên bản vi phạm đã được lập và gửi đến Giảng viên.`;
+            const simText = fraud.similarity ? ` (Độ trùng lặp Thân bài Ô 6: <strong>${fraud.similarity}%</strong>)` : '';
+            swalMsg = `Hệ thống ghi nhận bạn đã sao chép nội dung bài làm của sinh viên <strong>${fraud.student_b ? fraud.student_b.name : 'khác'}</strong>${simText}!<br>Biên bản vi phạm đã được lập và gửi đến Giảng viên.`;
           } else if (fraud.fraud_type === 'COPY_NOI_DUNG_BEN_NGOAI') {
             swalTitle = '🚨 PHÁT HIỆN DÁN NỘI DUNG TỪ BÊN NGOÀI!';
             swalMsg = `Hệ thống ghi nhận bạn đã copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu!<br>Mã thủy ấn số bảo mật của phôi đề thi đã bị xóa sạch.<br><strong>Biên bản vi phạm đã được lập và gửi đến Giảng viên.</strong>`;

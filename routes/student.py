@@ -21,7 +21,8 @@ from engine.common import (
 )
 from engine.db import (
     get_all_submissions, save_submission,
-    add_fraud_log, get_student_session, save_student_session
+    add_fraud_log, get_student_session, save_student_session,
+    save_box6_submission
 )
 from engine.security import create_student_raw_template, check_anti_cheat
 from engine.validator import Decree30Validator
@@ -326,7 +327,9 @@ def validate_student_work():
             current_sbd=sbd,
             current_mssv=mssv,
             current_name=name,
-            students_db=students_db
+            students_db=students_db,
+            doc_type=doc_type,
+            class_code=class_code
         )
         
         if fraud_check.get("is_fraud"):
@@ -377,6 +380,11 @@ def validate_student_work():
         validator = Decree30Validator(temp_save_path, doc_type, tmpl_info, mssv=mssv)
         result = validator.validate_document()
         
+        # Ghi nhận nội dung Ô 6 vào SQLite để phục vụ đối chiếu đạo văn các bài sau
+        box6_text = fraud_check.get("box6_text") or (validator.get_box6_text() if hasattr(validator, "get_box6_text") else "")
+        if box6_text:
+            save_box6_submission(mssv, name, class_code, doc_type, box6_text)
+
         result["status"] = "SUCCESS"
         result["temp_file"] = temp_filename
         result["preview_count"] = current_sess["preview_count"]
@@ -426,6 +434,42 @@ def submit_final():
     temp_path = os.path.join(STORAGE_UPLOADS, safe_temp_name)
     if not os.path.exists(temp_path):
         return jsonify({"error": "Không tìm thấy file bài làm tạm thời để nộp!"}), 404
+
+    # Kiểm tra gian lận lại một lần nữa trước khi ghi nhận bài nộp chính thức
+    all_subs = get_all_submissions()
+    students_db = {s["mssv"]: s for s in all_subs}
+    fraud_check = check_anti_cheat(
+        docx_path=temp_path,
+        current_sbd=sbd,
+        current_mssv=mssv,
+        current_name=name,
+        students_db=students_db,
+        doc_type=doc_type,
+        class_code=class_code
+    )
+    if fraud_check.get("is_fraud") and fraud_check.get("fraud_type") in ["COPY_PASTE_NOI_DUNG", "COPY_PASTE_NOI_DUNG_O6", "NOP_NGUYEN_FILE_BAN"]:
+        log_id = str(uuid.uuid4())[:8]
+        if "student_a" not in fraud_check:
+            fraud_check["student_a"] = {"sbd": sbd, "mssv": mssv, "name": name, "class_code": class_code}
+        else:
+            fraud_check["student_a"]["class_code"] = class_code
+        fraud_entry = {
+            "id": log_id,
+            "class_code": class_code or "Chung",
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "doc_type": doc_type,
+            "fraud_data": fraud_check
+        }
+        add_fraud_log(fraud_entry)
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+        return jsonify({
+            "status": "FRAUD_DETECTED",
+            "fraud_info": fraud_check
+        }), 400
         
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     tmpl = templates_data.get(doc_type, {})

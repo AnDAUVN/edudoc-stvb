@@ -252,6 +252,24 @@
       "mssv": "2100001122",
       "name": "Cao Thành Trung",
       "student_class": ""
+    },
+    {
+      "sbd": "02",
+      "mssv": "2100002222",
+      "name": "Nguyễn Văn Chép Bài",
+      "student_class": ""
+    },
+    {
+      "sbd": "01",
+      "mssv": "2100009991",
+      "name": "Trần Văn Gốc",
+      "student_class": ""
+    },
+    {
+      "sbd": "02",
+      "mssv": "2100009992",
+      "name": "Nguyễn Văn Chép Bài",
+      "student_class": ""
     }
   ],
   "KN02": [

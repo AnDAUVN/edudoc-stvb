@@ -27,6 +27,28 @@ class TestAntiCheatStages(unittest.TestCase):
         os.environ["EDUDOC_TESTING"] = "1"
         self.test_dir = os.path.join(BASE_DIR, "storage", "templates")
         os.makedirs(self.test_dir, exist_ok=True)
+        from engine.db import delete_box6_submission_by_mssv
+        for m in ["2100009991", "2100009992", "2100008888"]:
+            delete_box6_submission_by_mssv(m)
+        if os.path.exists(self.test_dir):
+            for f in os.listdir(self.test_dir):
+                if any(m in f for m in ["2100009991", "2100009992"]):
+                    try:
+                        os.remove(os.path.join(self.test_dir, f))
+                    except Exception:
+                        pass
+
+    def tearDown(self):
+        from engine.db import delete_box6_submission_by_mssv
+        for m in ["2100009991", "2100009992", "2100008888"]:
+            delete_box6_submission_by_mssv(m)
+        if os.path.exists(self.test_dir):
+            for f in os.listdir(self.test_dir):
+                if any(m in f for m in ["2100009991", "2100009992"]):
+                    try:
+                        os.remove(os.path.join(self.test_dir, f))
+                    except Exception:
+                        pass
 
     def test_01_space_abuse_detection(self):
         """[GĐ 1] Bắt lỗi sử dụng phím Space liên tiếp (>= 4 space) để căn chỉnh đối phó"""
@@ -164,7 +186,7 @@ class TestAntiCheatStages(unittest.TestCase):
         self.client.post("/api/teacher/students/add", json={
             "class_code": "KN01",
             "sbd": "01",
-            "mssv": "2100001122",
+            "mssv": "2100009991",
             "name": "Cao Thành Trung"
         })
 
@@ -172,7 +194,7 @@ class TestAntiCheatStages(unittest.TestCase):
         res_gen = self.client.post("/api/template/generate", json={
             "class_code": "KN01",
             "sbd": "01",
-            "mssv": "2100001122",
+            "mssv": "2100009991",
             "name": "Cao Thành Trung",
             "doc_type": "cong_van_de_nghi"
         })
@@ -181,7 +203,7 @@ class TestAntiCheatStages(unittest.TestCase):
         template_file_path = os.path.join(self.test_dir, filename)
 
         # File phôi đề gốc phải hợp lệ không bị báo gian lận
-        res_clean = check_anti_cheat(template_file_path, "01", "2100001122", "Cao Thành Trung")
+        res_clean = check_anti_cheat(template_file_path, "01", "2100009991", "Cao Thành Trung")
         self.assertFalse(res_clean["is_fraud"], "Phôi mẫu cấp phát ban đầu phải hợp lệ!")
 
         # 3. Giả lập hành vi gian lận: Mở file mẫu nhưng xóa hết nội dung và dán văn bản bên ngoài vào
@@ -201,7 +223,7 @@ class TestAntiCheatStages(unittest.TestCase):
         doc.save(tampered_path)
 
         # 4. Kiểm tra qua engine: Phải phát hiện COPY_NOI_DUNG_BEN_NGOAI
-        fraud_check = check_anti_cheat(tampered_path, "01", "2100001122", "Cao Thành Trung")
+        fraud_check = check_anti_cheat(tampered_path, "01", "2100009991", "Cao Thành Trung")
         self.assertTrue(fraud_check["is_fraud"], "Hệ thống phải phát hiện hành vi dán đè văn bản bên ngoài!")
         self.assertEqual(fraud_check["fraud_type"], "COPY_NOI_DUNG_BEN_NGOAI")
         print("✔ [GĐ 2] Đã phát hiện chính xác lỗi COPY_NOI_DUNG_BEN_NGOAI qua check_anti_cheat!")
@@ -212,7 +234,7 @@ class TestAntiCheatStages(unittest.TestCase):
                 "file": (f, filename),
                 "class_code": "KN01",
                 "sbd": "01",
-                "mssv": "2100001122",
+                "mssv": "2100009991",
                 "name": "Cao Thành Trung",
                 "doc_type": "cong_van_de_nghi"
             }, content_type="multipart/form-data")
@@ -226,6 +248,72 @@ class TestAntiCheatStages(unittest.TestCase):
         # Dọn dẹp file tạm
         if os.path.exists(tampered_path):
             os.remove(tampered_path)
+
+
+    def test_08_detect_box6_cross_student_plagiarism(self):
+        """[GĐ 2 - Chống sao chép Ô 6] Bắt gian lận: SV B copy nội dung Thân bài (Ô 6) từ file của SV A dán vào file của mình"""
+        # 1. Thêm 2 sinh viên vào danh sách lớp KN01
+        self.client.post("/api/teacher/students/add", json={
+            "class_code": "KN01", "sbd": "01", "mssv": "2100009991", "name": "Trần Văn Gốc"
+        })
+        self.client.post("/api/teacher/students/add", json={
+            "class_code": "KN01", "sbd": "02", "mssv": "2100009992", "name": "Nguyễn Văn Chép Bài"
+        })
+
+        # 2. Sinh viên A tải đề Bài thu hoạch và soạn thảo nội dung Ô 6
+        res_a = self.client.post("/api/template/generate", json={
+            "class_code": "KN01", "sbd": "01", "mssv": "2100009991", "name": "Trần Văn Gốc", "doc_type": "bai_thu_hoach"
+        })
+        self.assertEqual(res_a.status_code, 200)
+        fn_a = res_a.get_json()["filename"]
+        path_a = os.path.join(self.test_dir, fn_a)
+
+        doc_a = Document(path_a)
+        # SV A soạn thảo nội dung Ô 6
+        body_p1 = "Hiện nay Công ty Ánh Dương đang vào giai đoạn cao điểm sản xuất. Tuy nhiên trong thời gian qua tình trạng cúp điện đột ngột liên tục xảy ra gây ảnh hưởng nghiêm trọng đến tiến độ đơn hàng xuất khẩu."
+        body_p2 = "Phòng Hành chính kính đề nghị Sở Công Thương quận Gò Vấp và Công ty Điện Lực Gò Vấp nhanh chóng phối hợp làm rõ nguyên nhân và có biện pháp khắc phục triệt để sự cố trên."
+        doc_a.add_paragraph(body_p1)
+        doc_a.add_paragraph(body_p2)
+        doc_a.save(path_a)
+
+        # SV A tải lên kiểm tra thẩm định -> Lưu vết vào box6_submissions
+        with open(path_a, "rb") as f:
+            res_val_a = self.client.post("/api/validate", data={
+                "file": (f, fn_a),
+                "class_code": "KN01", "sbd": "01", "mssv": "2100009991", "name": "Trần Văn Gốc", "doc_type": "bai_thu_hoach"
+            }, content_type="multipart/form-data")
+        self.assertEqual(res_val_a.status_code, 200)
+        self.assertNotEqual(res_val_a.get_json().get("status"), "FRAUD_DETECTED")
+
+        # 3. Sinh viên B tải phôi bài chính chủ của mình (đầy đủ metadata & watermark của SV B)
+        res_b = self.client.post("/api/template/generate", json={
+            "class_code": "KN01", "sbd": "02", "mssv": "2100009992", "name": "Nguyễn Văn Chép Bài", "doc_type": "bai_thu_hoach"
+        })
+        self.assertEqual(res_b.status_code, 200)
+        fn_b = res_b.get_json()["filename"]
+        path_b = os.path.join(self.test_dir, fn_b)
+
+        # 4. Sinh viên B mở file của mình nhưng COPY NỘI DUNG Ô 6 TỪ BÀI CỦA SV A DÁN VÀO
+        doc_b = Document(path_b)
+        doc_b.add_paragraph(body_p1)
+        doc_b.add_paragraph(body_p2)
+        doc_b.save(path_b)
+
+        # 5. SV B tải lên thẩm định /api/validate: HỆ THỐNG PHẢI BẮT ĐƯỢC GIAN LẬN COPY Ô 6
+        with open(path_b, "rb") as f:
+            res_val_b = self.client.post("/api/validate", data={
+                "file": (f, fn_b),
+                "class_code": "KN01", "sbd": "02", "mssv": "2100009992", "name": "Nguyễn Văn Chép Bài", "doc_type": "bai_thu_hoach"
+            }, content_type="multipart/form-data")
+
+        self.assertEqual(res_val_b.status_code, 200)
+        data_b = res_val_b.get_json()
+        self.assertEqual(data_b.get("status"), "FRAUD_DETECTED", "Hệ thống bắt buộc phải phát hiện hành vi copy Ô 6 giữa 2 file!")
+        fraud_info = data_b["fraud_info"]
+        self.assertEqual(fraud_info["fraud_type"], "COPY_PASTE_NOI_DUNG_O6")
+        self.assertEqual(str(fraud_info["student_b"]["mssv"]), "2100009991", "Phải chỉ đúng đích danh SV A là người bị chép bài!")
+        self.assertGreaterEqual(fraud_info["similarity"], 80.0, "Độ tương đồng phải >= 80%!")
+        print(f"✔ [GĐ 2 - Chống sao chép Ô 6] Đã phát hiện sao chép Thân bài Ô 6 từ SV A với độ tương đồng {fraud_info['similarity']}%!")
 
 if __name__ == "__main__":
     unittest.main()
