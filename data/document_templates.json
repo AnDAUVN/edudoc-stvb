@@ -3,7 +3,7 @@
     "id": "bai_thu_hoach",
     "name": "1. Bài thu hoạch",
     "category": "Công văn hành chính",
-    "filename_suffix": "BaiThuHoach",
+    "filename_suffix": "Bài thu hoạch",
     "expected_data": {
       "has_type_name": false,
       "so_ky_hieu_pattern": "DNTT",
@@ -11,11 +11,11 @@
       "has_kinh_gui": true,
       "sign_type": "TRUC_TIEP"
     },
-    "is_body_blank": false,
-    "header_part": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 01/DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.",
+    "is_body_blank": true,
+    "header_part": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 12/CV-DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.",
     "body_part": "",
     "footer_part": "Nơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm",
-    "raw_text": "\n\n\n\n"
+    "raw_text": "cơ quan chủ quản: BỘ GIÁO DỤC VÀ ĐÀO TẠO\ncơ quan ban hành: TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH\nquốc hiệu: CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\ntiêu ngữ: Độc lập - Tự do - Hạnh phúc\nsố ký hiệu: Số: 12/CV-DNTT\nđịa danh ngày tháng: Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026\ntrích yếu công văn: V/v đề nghị hỗ trợ kinh phí\n\nKính gửi: Bộ Khoa học và Công nghệ.\n\n[Nội dung văn bản: Sinh viên tự giả định nội dung theo thực tế bài giảng, không tuân thủ đề cố định. Sơ đồ bố trí bắt buộc tuân thủ Sơ đồ Công văn (Hình 2 theo Nghị định 30)]\n\nNơi nhận:\n- Như kính gửi;\n- Lưu: VT.\n\nHIỆU TRƯỞNG\n\n\n\nTrần Ái Cầm"
   },
   "cong_van_de_nghi": {
     "id": "cong_van_de_nghi",

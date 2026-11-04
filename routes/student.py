@@ -227,8 +227,12 @@ def generate_template():
     if not tmpl:
         return jsonify({"error": "Không tìm thấy dữ liệu loại văn bản này!"}), 404
         
-    clean_name = "".join(c for c in name if c.isalnum()).upper()
+    clean_name = " ".join(re.sub(r'[\\/*?:"<>|]', '', name).strip().split())
+    if not clean_name:
+        clean_name = mssv
     file_suffix = tmpl.get("filename_suffix", doc_type)
+    if doc_type == "bai_thu_hoach":
+        file_suffix = "Bài thu hoạch"
     filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
     output_path = os.path.join(STORAGE_TEMPLATES, filename)
     
@@ -473,8 +477,12 @@ def submit_final():
         
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     tmpl = templates_data.get(doc_type, {})
-    clean_name = "".join(c for c in name if c.isalnum()).upper()
+    clean_name = " ".join(re.sub(r'[\\/*?:"<>|]', '', name).strip().split())
+    if not clean_name:
+        clean_name = mssv
     file_suffix = tmpl.get("filename_suffix", doc_type)
+    if doc_type == "bai_thu_hoach":
+        file_suffix = "Bài thu hoạch"
     final_filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
     final_path = os.path.join(STORAGE_SUBMITTED, final_filename)
     

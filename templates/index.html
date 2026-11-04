@@ -1454,7 +1454,9 @@
 
       currentGeneratedFile = data.filename;
       document.getElementById('lbl-generated-filename').innerText = data.filename;
-      document.getElementById('lnk-download-template').href = data.download_url;
+      const lnkDl = document.getElementById('lnk-download-template');
+      lnkDl.href = data.download_url;
+      lnkDl.setAttribute('download', data.filename);
 
       // Phương án 3: Số văn bản chuẩn thực tế NĐ 30, bảo vệ toàn diện bằng Thủy ấn số vô hình
       const elMssv = document.getElementById('lbl-personalized-mssv');

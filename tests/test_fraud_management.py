@@ -8,6 +8,7 @@ def test_fraud_management():
     print("=== KIỂM THỬ QUẢN LÝ NHẬT KÝ VI PHẠM & CÔ LẬP THEO MÃ LỚP ===")
     
     # 1. Kiểm tra API lấy dữ liệu giảng viên
+    requests.post(f"{BASE_URL}/api/teacher/session-state", json={"is_open": True})
     res = requests.get(f"{BASE_URL}/api/teacher/data")
     assert res.status_code == 200, f"Failed /api/teacher/data: {res.text}"
     data = res.json()
