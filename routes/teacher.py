@@ -25,6 +25,7 @@ from engine.db import (
 
 teacher_bp = Blueprint("teacher", __name__)
 
+@teacher_bp.route("/gv")
 @teacher_bp.route("/quan-tri")
 @teacher_bp.route("/teacher")
 @teacher_bp.route("/admin")

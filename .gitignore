@@ -46,3 +46,4 @@ Thumbs.db
 # Binaries & Tunnel info
 tools/cloudflared.exe
 data/tunnel_info.json
+data/cloudflared.log
