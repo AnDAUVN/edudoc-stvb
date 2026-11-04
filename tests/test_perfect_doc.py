@@ -12,8 +12,10 @@ from engine.validator import Decree30Validator
 def create_perfect_decree30_doc(output_path):
     doc = Document()
     
-    # 1. Page Margins chuẩn NĐ 30: Top 2cm, Bottom 2cm, Left 3cm, Right 1.5cm
+    # 1. Page Margins & Khổ giấy A4 chuẩn NĐ 30: Top 2cm, Bottom 2cm, Left 3cm, Right 1.5cm
     section = doc.sections[0]
+    section.page_width = Inches(21.0 / 2.54)
+    section.page_height = Inches(29.7 / 2.54)
     section.top_margin = Inches(2.0 / 2.54)
     section.bottom_margin = Inches(2.0 / 2.54)
     section.left_margin = Inches(3.0 / 2.54)

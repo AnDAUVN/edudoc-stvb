@@ -65,87 +65,147 @@ class Decree30Validator:
         c = self._clean_text(text).upper()
         return ("ĐỘC LẬP" in c and "HẠNH PHÚC" in c)
 
-    def _get_dominant_font_and_size(self, paragraph):
-        """Trích xuất chính xác Font, Size, Bold, Italic theo chuẩn phân tầng OpenXML: Run -> Paragraph pPr -> Style -> DocDefaults"""
+    def _inspect_paragraph_runs(self, paragraph):
+        """
+        Đánh giá chi tiết từng Run trong đoạn văn bản theo chuẩn OpenXML (D12):
+        - Bỏ qua các run rỗng hoặc chỉ có khoảng trắng
+        - Kế thừa đầy đủ định dạng: Run direct -> Paragraph pPr -> Style hierarchy -> docDefaults
+        - Trả về font, size theo trọng số ký tự thực tế
+        - Tính tỷ lệ in đậm, in nghiêng trên độ dài chuỗi ký tự
+        """
         if not paragraph:
-            return self.doc_default_font, self.doc_default_size, False, False
+            return self.doc_default_font, self.doc_default_size, False, False, []
 
-        fonts = []
-        sizes = []
-        bolds = []
-        italics = []
+        runs_with_text = [r for r in paragraph.runs if r.text and r.text.strip()]
+        if not runs_with_text:
+            return self._get_fallback_font_and_size(paragraph)
 
-        # Tầng 1: Quét từ các Runs (định dạng trực tiếp cho từng đoạn chữ)
-        for r in paragraph.runs:
-            if r.font.name:
-                fonts.append(r.font.name)
+        run_details = []
+        for r in runs_with_text:
+            t = r.text.strip()
+            # 1. Font
+            r_font = r.font.name
+            if not r_font:
+                rPr = getattr(r._element, "rPr", None)
+                if rPr is not None:
+                    rFonts = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts')
+                    if rFonts is not None:
+                        r_font = (rFonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii') or 
+                                  rFonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi'))
+            if not r_font and paragraph.style and paragraph.style.font:
+                r_font = paragraph.style.font.name
+            if not r_font:
+                r_font = self.doc_default_font
+
+            # 2. Size
+            r_size = None
             if r.font.size:
-                sizes.append(round(r.font.size.pt, 1))
-            if r.bold is not None:
-                bolds.append(bool(r.bold))
-            if r.italic is not None:
-                italics.append(bool(r.italic))
-
-            rPr = getattr(r._element, "rPr", None)
-            if rPr is not None:
-                b_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}b')
-                if b_elem is not None:
-                    val = b_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '1')
-                    if val not in ['0', 'false']:
-                        bolds.append(True)
-
-                i_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}i')
-                if i_elem is not None:
-                    val = i_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '1')
-                    if val not in ['0', 'false']:
-                        italics.append(True)
-
-                sz_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
-                if sz_elem is not None:
-                    val = sz_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
-                    if val and val.isdigit():
-                        sizes.append(float(val) / 2.0)
-
-                rFonts = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rFonts')
-                if rFonts is not None:
-                    f_name = (rFonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii') or 
-                              rFonts.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi'))
-                    if f_name:
-                        fonts.append(f_name)
-
-        # Tầng 2: Nếu chưa có từ Runs, kiểm tra Paragraph Style & Document Defaults
-        has_text_runs = any(r.text.strip() for r in paragraph.runs)
-        if not sizes and not has_text_runs:
-            # Chỉ dùng pPr/rPr/sz khi đoạn văn không có text run (đoạn trống ký tên)
-            pPr = getattr(paragraph._element, "pPr", None)
-            if pPr is not None:
-                rPr_p = pPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr')
-                if rPr_p is not None:
-                    sz_elem = rPr_p.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
+                r_size = round(r.font.size.pt, 1)
+            else:
+                rPr = getattr(r._element, "rPr", None)
+                if rPr is not None:
+                    sz_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
                     if sz_elem is not None:
                         val = sz_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                         if val and val.isdigit():
-                            sizes.append(float(val) / 2.0)
+                            r_size = float(val) / 2.0
+            if r_size is None and paragraph.style and paragraph.style.font and paragraph.style.font.size:
+                r_size = round(paragraph.style.font.size.pt, 1)
+            if r_size is None:
+                r_size = self.doc_default_size
 
-        # Tầng 3: Nếu chưa có, kế thừa từ Style của Paragraph (kể cả base styles)
-        st = getattr(paragraph, "style", None)
+            # 3. Bold
+            r_bold = r.bold
+            if r_bold is None:
+                rPr = getattr(r._element, "rPr", None)
+                if rPr is not None:
+                    b_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}b')
+                    if b_elem is not None:
+                        val = b_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '1')
+                        r_bold = (val not in ['0', 'false'])
+            if r_bold is None and paragraph.style and paragraph.style.font:
+                r_bold = paragraph.style.font.bold
+            r_bold = bool(r_bold)
+
+            # 4. Italic
+            r_italic = r.italic
+            if r_italic is None:
+                rPr = getattr(r._element, "rPr", None)
+                if rPr is not None:
+                    i_elem = rPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}i')
+                    if i_elem is not None:
+                        val = i_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val', '1')
+                        r_italic = (val not in ['0', 'false'])
+            if r_italic is None and paragraph.style and paragraph.style.font:
+                r_italic = paragraph.style.font.italic
+            r_italic = bool(r_italic)
+
+            run_details.append({
+                "text": t,
+                "length": len(t),
+                "font": r_font,
+                "size": r_size,
+                "bold": r_bold,
+                "italic": r_italic
+            })
+
+        total_len = sum(rd["length"] for rd in run_details)
+        font_weights = {}
+        size_weights = {}
+        bold_chars = 0
+        italic_chars = 0
+        for rd in run_details:
+            l = rd["length"]
+            font_weights[rd["font"]] = font_weights.get(rd["font"], 0) + l
+            size_weights[rd["size"]] = size_weights.get(rd["size"], 0) + l
+            if rd["bold"]:
+                bold_chars += l
+            if rd["italic"]:
+                italic_chars += l
+
+        dominant_font = max(font_weights.items(), key=lambda x: x[1])[0]
+        dominant_size = max(size_weights.items(), key=lambda x: x[1])[0]
+        is_bold = (bold_chars / total_len >= 0.7) if total_len > 0 else False
+        is_italic = (italic_chars / total_len >= 0.7) if total_len > 0 else False
+
+        return dominant_font, dominant_size, is_bold, is_italic, run_details
+
+    def _get_fallback_font_and_size(self, paragraph):
+        """Kế thừa định dạng cho đoạn văn không có text run (D12)"""
+        font = self.doc_default_font
+        size = self.doc_default_size
+        bold = False
+        italic = False
+
+        pPr = getattr(paragraph._element, "pPr", None) if paragraph else None
+        if pPr is not None:
+            rPr_p = pPr.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr')
+            if rPr_p is not None:
+                sz_elem = rPr_p.find('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
+                if sz_elem is not None:
+                    val = sz_elem.attrib.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
+                    if val and val.isdigit():
+                        size = float(val) / 2.0
+
+        st = getattr(paragraph, "style", None) if paragraph else None
         while st is not None:
-            if not sizes and st.font and st.font.size:
-                sizes.append(round(st.font.size.pt, 1))
-            if not fonts and st.font and st.font.name:
-                fonts.append(st.font.name)
-            if not bolds and st.font and st.font.bold is not None:
-                bolds.append(bool(st.font.bold))
-            if not italics and st.font and st.font.italic is not None:
-                italics.append(bool(st.font.italic))
+            if st.font:
+                if st.font.name and font == self.doc_default_font:
+                    font = st.font.name
+                if st.font.size and size == self.doc_default_size:
+                    size = round(st.font.size.pt, 1)
+                if st.font.bold is not None:
+                    bold = bool(st.font.bold)
+                if st.font.italic is not None:
+                    italic = bool(st.font.italic)
             st = getattr(st, "base_style", None)
 
-        # Tầng 4: Nếu vẫn chưa có, kế thừa từ Document Defaults (docDefaults của file Word)
-        main_font = fonts[0] if fonts else self.doc_default_font
-        main_size = sizes[0] if sizes else self.doc_default_size
-        is_bold = any(bolds)
-        is_italic = any(italics)
-        return main_font, main_size, is_bold, is_italic
+        return font, size, bold, italic, []
+
+    def _get_dominant_font_and_size(self, paragraph):
+        """Trích xuất chính xác Font, Size, Bold, Italic theo chuẩn phân tầng OpenXML (D12)"""
+        f, s, b, i, _ = self._inspect_paragraph_runs(paragraph)
+        return f, s, b, i
 
     def get_expected_size(self, box_key):
         """
@@ -173,49 +233,77 @@ class Decree30Validator:
         return pair[0] if self.font_profile == "SO_TRUOC" else pair[1]
 
     # =========================================================================
-    # CĂN LỀ TRANG GIẤY (PAGE MARGINS)
+    # CĂN LỀ TRANG GIẤY & KHỔ GIẤY A4 (PAGE MARGINS & A4 PAPER - D09, D10, D11, D26)
     # =========================================================================
     def check_page_margins(self):
         errors = []
-        for section in self.doc.sections:
-            top_cm = section.top_margin.inches * 2.54
-            bot_cm = section.bottom_margin.inches * 2.54
-            left_cm = section.left_margin.inches * 2.54
-            right_cm = section.right_margin.inches * 2.54
+        num_sections = len(self.doc.sections)
 
-            # Nếu vẫn là lề mặc định 2.54cm
+        for sec_idx, section in enumerate(self.doc.sections):
+            prefix = f"Section {sec_idx + 1}: " if num_sections > 1 else ""
+
+            # D11: Thẩm định khổ giấy chuẩn A4 (210 x 297 mm) theo Nghị định 30
+            try:
+                w_cm = round(section.page_width.inches * 2.54, 2) if section.page_width else 21.0
+                h_cm = round(section.page_height.inches * 2.54, 2) if section.page_height else 29.7
+            except Exception:
+                w_cm, h_cm = 21.0, 29.7
+
+            is_portrait_a4 = (20.5 <= w_cm <= 21.5 and 29.2 <= h_cm <= 30.2)
+            is_landscape_a4 = (29.2 <= w_cm <= 30.2 and 20.5 <= h_cm <= 21.5)
+            if not (is_portrait_a4 or is_landscape_a4):
+                errors.append({
+                    "issue": f"{prefix}Khổ giấy chưa đạt chuẩn A4 (210 x 297 mm) theo Nghị định 30 (Hiện tại: {w_cm:.1f} x {h_cm:.1f} cm).",
+                    "fix": "Vào thẻ Layout ➔ Size ➔ Chọn khổ giấy chuẩn A4 (210 x 297 mm)."
+                })
+
+            try:
+                top_cm = round(section.top_margin.inches * 2.54, 2) if section.top_margin else 2.54
+                bot_cm = round(section.bottom_margin.inches * 2.54, 2) if section.bottom_margin else 2.54
+                left_cm = round(section.left_margin.inches * 2.54, 2) if section.left_margin else 2.54
+                right_cm = round(section.right_margin.inches * 2.54, 2) if section.right_margin else 2.54
+            except Exception:
+                top_cm, bot_cm, left_cm, right_cm = 2.54, 2.54, 2.54, 2.54
+
+            # Nếu vẫn là lề mặc định 2.54cm (1 inch) của Word
             if abs(top_cm - 2.54) < 0.05 and abs(left_cm - 2.54) < 0.05 and abs(right_cm - 2.54) < 0.05:
                 errors.append({
-                    "issue": "Bạn chưa căn lề trang văn bản (đang để lề mặc định 2.54 cm).",
+                    "issue": f"{prefix}Bạn chưa căn lề trang văn bản (đang để lề mặc định 2.54 cm).",
                     "fix": "Vào thẻ Layout ➔ Margins ➔ Custom Margins: Trên: 2.0-2.5cm, Dưới: 2.0-2.5cm, Trái: 3.0-3.5cm, Phải: 1.5-2.0cm."
                 })
-                break
+                continue
 
-            if not (1.9 <= top_cm <= 2.6):
+            # D10: Chuẩn hóa khoảng lề chấp nhận theo đúng Nghị định 30 (dung sai OpenXML float +-0.05cm)
+            # Lề trên: 2.0 - 2.5 cm (dung sai: 1.95 - 2.55 cm)
+            if not (1.95 <= top_cm <= 2.55):
                 errors.append({
-                    "issue": f"Lề trên chưa đạt chuẩn NĐ 30 (Hiện tại: {top_cm:.2f} cm).",
+                    "issue": f"{prefix}Lề trên chưa đạt chuẩn NĐ 30 (Hiện tại: {top_cm:.2f} cm).",
                     "fix": "Đặt lại lề trên từ 2.0 cm đến 2.5 cm (Số trước: 2.0cm, Số sau: 2.5cm)."
                 })
-            if not (1.9 <= bot_cm <= 2.6):
+            # Lề dưới: 2.0 - 2.5 cm (dung sai: 1.95 - 2.55 cm)
+            if not (1.95 <= bot_cm <= 2.55):
                 errors.append({
-                    "issue": f"Lề dưới chưa đạt chuẩn NĐ 30 (Hiện tại: {bot_cm:.2f} cm).",
+                    "issue": f"{prefix}Lề dưới chưa đạt chuẩn NĐ 30 (Hiện tại: {bot_cm:.2f} cm).",
                     "fix": "Đặt lại lề dưới từ 2.0 cm đến 2.5 cm (Số trước: 2.0cm, Số sau: 2.5cm)."
                 })
-            if not (2.9 <= left_cm <= 3.6):
+            # Lề trái: 3.0 - 3.5 cm (dung sai: 2.95 - 3.55 cm)
+            if not (2.95 <= left_cm <= 3.55):
                 errors.append({
-                    "issue": f"Lề trái chưa đạt chuẩn NĐ 30 (Hiện tại: {left_cm:.2f} cm).",
+                    "issue": f"{prefix}Lề trái chưa đạt chuẩn NĐ 30 (Hiện tại: {left_cm:.2f} cm).",
                     "fix": "Đặt lại lề trái từ 3.0 cm đến 3.5 cm (Số trước: 3.0cm, Số sau: 3.5cm)."
                 })
-            if not (1.4 <= right_cm <= 2.1):
+            # Lề phải: 1.5 - 2.0 cm (dung sai: 1.45 - 2.05 cm)
+            if not (1.45 <= right_cm <= 2.05):
                 errors.append({
-                    "issue": f"Lề phải chưa đạt chuẩn NĐ 30 (Hiện tại: {right_cm:.2f} cm).",
+                    "issue": f"{prefix}Lề phải chưa đạt chuẩn NĐ 30 (Hiện tại: {right_cm:.2f} cm).",
                     "fix": "Đặt lại lề phải từ 1.5 cm đến 2.0 cm (Số trước: 1.5cm, Số sau: 2.0cm)."
                 })
-            break
 
         return {
             "box_id": "margins",
-            "name": "Căn lề trang giấy (Page Margins)",
+            "rule_id": "ND30_PL1_CAN_LE_KHO_GIAY",
+            "legal_ref": "Mục I.1 & Mục II.1 Phụ lục I Nghị định 30/2020/NĐ-CP",
+            "name": "Căn lề trang giấy & Khổ giấy A4",
             "passed": len(errors) == 0,
             "errors": errors
         }
@@ -1286,8 +1374,20 @@ class Decree30Validator:
             punc_errs = self.check_decree30_punctuation_spacing(text_p, "Ô 6: Nội dung văn bản")
             errors.extend(punc_errs)
 
+        # 6.4. D17: Thẩm định mức độ đầy đủ của nội dung văn bản (Content sufficiency)
+        valid_paras = [p for p in body_paragraphs if "[Nội dung văn bản:" not in self._clean_text(p) and "tự nhập theo nội dung" not in self._clean_text(p)]
+        all_body_text = " ".join(self._clean_text(p) for p in valid_paras)
+        body_words = [w for w in all_body_text.split() if w]
+        if len(body_words) < 15:
+            errors.append({
+                "issue": f"Nội dung văn bản quá ngắn hoặc chưa hoàn chỉnh (Hiện tại: {len(body_words)} từ, tối thiểu 15 từ).",
+                "fix": "Soạn thảo đầy đủ phần nội dung bài tập theo đúng nội dung yêu cầu của văn bản."
+            })
+
         return {
             "box_id": 6,
+            "rule_id": "ND30_O6_NOI_DUNG",
+            "legal_ref": "Mục II.7 Phụ lục I Nghị định 30/2020/NĐ-CP",
             "name": "Ô 6: Nội dung văn bản",
             "passed": len(errors) == 0,
             "errors": errors
@@ -1957,11 +2057,23 @@ class Decree30Validator:
         passed_count = sum(1 for item in checklist if item["passed"])
         total_count = len(checklist)
 
+        # D17: Tách bạch điểm thể thức Nghị định 30 và mức độ đạt nội dung Ô 6
+        format_items = [it for it in checklist if it.get("box_id") != 6]
+        content_items = [it for it in checklist if it.get("box_id") == 6]
+        format_passed = sum(1 for it in format_items if it["passed"])
+        format_total = len(format_items)
+        format_pct = round((format_passed / format_total) * 100, 1) if format_total > 0 else 100.0
+        content_passed = bool(content_items and content_items[0]["passed"])
+
         return {
             "checklist": checklist,
             "passed_count": passed_count,
             "total_count": total_count,
             "percentage": round((passed_count / total_count) * 100, 1),
+            "format_percentage": format_pct,
+            "format_passed_count": format_passed,
+            "format_total_count": format_total,
+            "content_passed": content_passed,
             "font_profile": self.font_profile,
             "can_submit": (passed_count == total_count)
         }

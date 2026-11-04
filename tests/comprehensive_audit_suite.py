@@ -15,12 +15,17 @@ def run_comprehensive_audit():
     print("=" * 70)
     print("     BẮT ĐẦU KIỂM TRA TOÀN DIỆN PHẦN MỀM EDUDOC - NGHỊ ĐỊNH 30")
     print("=" * 70)
+    
+    session = requests.Session()
+    session.headers.update({"X-Teacher-PIN": "gv2026"})
+    # Đảm bảo phòng thi mở và có thể truy xuất câu hỏi
+    session.post(f"{BASE_URL}/api/teacher/session-state", json={"is_open": True, "enforce_roster": False, "enforce_quiz": False, "enable_anti_cheat": True})
 
     # ---------------------------------------------------------
     # TEST 1: KIỂM TRA DANH SÁCH 8 LOẠI VĂN BẢN VÀ NGÂN HÀNG CÂU HỎI
     # ---------------------------------------------------------
     print("\n--- [TEST 1] RÀ SOÁT DỮ LIỆU ĐỀ BÀI & CÂU HỎI TRẮC NGHIỆM ---")
-    res_docs = requests.get(f"{BASE_URL}/api/documents")
+    res_docs = session.get(f"{BASE_URL}/api/documents")
     assert res_docs.status_code == 200, "Lỗi lấy danh sách văn bản"
     docs = res_docs.json()
     assert len(docs) == 8, f"Mong muốn có 8 loại văn bản, có: {len(docs)}"
@@ -30,7 +35,7 @@ def run_comprehensive_audit():
 
     # Kiểm tra mỗi loại văn bản đều có câu hỏi trắc nghiệm
     for d in docs:
-        q_res = requests.post(f"{BASE_URL}/api/quiz/get", json={"doc_type": d["id"]})
+        q_res = session.post(f"{BASE_URL}/api/quiz/get", json={"doc_type": d["id"]})
         assert q_res.status_code == 200
         q_data = q_res.json()
         assert q_data["total"] >= 5, f"Loại {d['id']} có ít hơn 5 câu hỏi: {q_data['total']}"
@@ -43,18 +48,18 @@ def run_comprehensive_audit():
     print("\n--- [TEST 2] KIỂM TRA CHỨC NĂNG QUẢN LÝ MÃ LỚP KN ---")
     test_class = "TEST_KN99"
     # Thêm lớp mới
-    add_c = requests.post(f"{BASE_URL}/api/classes/add", json={"class_code": test_class})
+    add_c = session.post(f"{BASE_URL}/api/classes/add", json={"class_code": test_class})
     assert add_c.status_code == 200
     assert test_class in add_c.json()["classes"]
     print(f" [+] Thêm thành công mã lớp mới: '{test_class}'")
 
     # Lấy danh sách lớp
-    get_c = requests.get(f"{BASE_URL}/api/classes")
+    get_c = session.get(f"{BASE_URL}/api/classes")
     assert test_class in get_c.json()["classes"]
     print(f" [+] Danh sách lớp hiện tại có: {get_c.json()['classes']}")
 
     # Xóa lớp vừa thêm
-    del_c = requests.post(f"{BASE_URL}/api/classes/delete", json={"class_code": test_class})
+    del_c = session.post(f"{BASE_URL}/api/classes/delete", json={"class_code": test_class})
     assert del_c.status_code == 200
     assert test_class not in del_c.json()["classes"]
     print(f" [+] Xóa thành công mã lớp test: '{test_class}'")
@@ -66,37 +71,42 @@ def run_comprehensive_audit():
     doc_type_test = "cong_van_de_nghi"
     new_q_payload = {
         "doc_type": doc_type_test,
-        "question": "Câu hỏi kiểm tra tự động do hệ thống tạo",
-        "options": ["Phương án A", "Phương án B", "Phương án C", "Phương án D"],
-        "correct": 1,
-        "explanation": "Phương án B là đáp án chính xác theo Nghị định 30."
+        "question": "Câu hỏi kiểm thử tự động hệ thống?",
+        "options": [
+            "Phương án đúng chuẩn Nghị định 30",
+            "Phương án sai 1",
+            "Phương án sai 2",
+            "Phương án sai 3"
+        ],
+        "correct": 0,
+        "explain": "Giải thích chi tiết chuẩn NĐ 30"
     }
-    save_q_res = requests.post(f"{BASE_URL}/api/teacher/quiz/save", json=new_q_payload)
+    # Thêm câu hỏi
+    save_q_res = session.post(f"{BASE_URL}/api/teacher/quiz/save", json=new_q_payload)
     assert save_q_res.status_code == 200
-    q_list = save_q_res.json()["questions"]
-    created_q = next((q for q in q_list if q["question"] == new_q_payload["question"]), None)
+    all_q_after_add = save_q_res.json()["questions"]
+    created_q = next((q for q in all_q_after_add if q["question"] == new_q_payload["question"]), None)
     assert created_q is not None, "Không tìm thấy câu hỏi vừa tạo"
     created_q_id = created_q["id"]
-    print(f" [+] Đã thêm mới thành công câu hỏi (ID: {created_q_id})")
+    print(f" [+] Thêm mới câu hỏi thành công (ID: {created_q_id})")
 
     # Sửa câu hỏi
     edit_payload = {
         "doc_type": doc_type_test,
         "id": created_q_id,
-        "question": "Câu hỏi kiểm tra tự động ĐÃ ĐƯỢC CHỈNH SỬA",
-        "options": ["Phương án A mới", "Phương án B mới", "Phương án C mới", "Phương án D mới"],
-        "correct": 2,
-        "explanation": "Giải thích đã được cập nhật."
+        "question": "Câu hỏi kiểm thử tự động hệ thống (ĐÃ SỬA)?",
+        "options": ["Đúng sửa", "Sai A", "Sai B", "Sai C"],
+        "correct": 0,
+        "explain": "Đã sửa thành công"
     }
-    edit_res = requests.post(f"{BASE_URL}/api/teacher/quiz/save", json=edit_payload)
+    edit_res = session.post(f"{BASE_URL}/api/teacher/quiz/save", json=edit_payload)
     assert edit_res.status_code == 200
-    q_list_edited = edit_res.json()["questions"]
-    edited_q = next((q for q in q_list_edited if q["id"] == created_q_id), None)
-    assert edited_q["question"] == edit_payload["question"]
-    print(f" [+] Đã chỉnh sửa thành công câu hỏi (ID: {created_q_id})")
+    q_edited = next(q for q in edit_res.json()["questions"] if q["id"] == created_q_id)
+    assert q_edited["question"] == edit_payload["question"]
+    print(f" [+] Cập nhật câu hỏi thành công (ID: {created_q_id})")
 
     # Xóa câu hỏi
-    del_q_res = requests.post(f"{BASE_URL}/api/teacher/quiz/delete", json={"doc_type": doc_type_test, "id": created_q_id})
+    del_q_res = session.post(f"{BASE_URL}/api/teacher/quiz/delete", json={"doc_type": doc_type_test, "id": created_q_id})
     assert del_q_res.status_code == 200
     rem_list = del_q_res.json()["questions"]
     assert not any(q["id"] == created_q_id for q in rem_list)
@@ -106,14 +116,14 @@ def run_comprehensive_audit():
     # TEST 4: SINH FILE MẪU & TẢI VỀ CHO TẤT CẢ 8 LOẠI VĂN BẢN
     # ---------------------------------------------------------
     print("\n--- [TEST 4] KIỂM TRA TỰ ĐỘNG SINH FILE MẪU CHO CẢ 8 LOẠI VĂN BẢN ---")
-    requests.post(f"{BASE_URL}/api/teacher/students/add", json={
+    session.post(f"{BASE_URL}/api/teacher/students/add", json={
         "class_code": "KN01",
         "sbd": "01",
         "mssv": "2280609999",
         "name": "Nguyễn Kiểm Tra"
     })
     for d in docs:
-        gen_res = requests.post(f"{BASE_URL}/api/template/generate", json={
+        gen_res = session.post(f"{BASE_URL}/api/template/generate", json={
             "class_code": "KN01",
             "sbd": "01",
             "mssv": "2280609999",
@@ -126,7 +136,7 @@ def run_comprehensive_audit():
         assert "download_url" in gen_data
         
         # Test download endpoint
-        dl_res = requests.get(f"{BASE_URL}{gen_data['download_url']}")
+        dl_res = session.get(f"{BASE_URL}{gen_data['download_url']}")
         assert dl_res.status_code == 200, f"Download failed for {gen_data['filename']}"
         assert len(dl_res.content) > 1000, "File rỗng hoặc quá nhỏ"
         print(f"     ✔ {d['id']}: Sinh file '{gen_data['filename']}' ({len(dl_res.content)} bytes) - OK")
@@ -150,7 +160,7 @@ def run_comprehensive_audit():
             "name": "Nguyễn Kiểm Tra",
             "doc_type": "cong_van_de_nghi"
         }
-        res_chk = requests.post(f"{BASE_URL}/api/validate", files=files, data=data)
+        res_chk = session.post(f"{BASE_URL}/api/validate", files=files, data=data)
 
     if os.path.exists(ext_path):
         os.remove(ext_path)
@@ -165,7 +175,7 @@ def run_comprehensive_audit():
     # TEST 6: XUẤT BẢNG ĐIỂM CSV & BỘ LỌC
     # ---------------------------------------------------------
     print("\n--- [TEST 6] KIỂM TRA XUẤT CSV & ĐẢM BẢO UTF-8 BOM CHO EXCEL ---")
-    csv_res = requests.get(f"{BASE_URL}/api/teacher/export-csv?class_code=ALL")
+    csv_res = session.get(f"{BASE_URL}/api/teacher/export-csv?class_code=ALL")
     assert csv_res.status_code == 200
     csv_bytes = csv_res.content
     assert csv_bytes.startswith(b'\xef\xbb\xbf'), "CSV thiếu UTF-8 BOM để Excel hiển thị đúng tiếng Việt"
@@ -178,21 +188,21 @@ def run_comprehensive_audit():
     # TEST 7: QUẢN LÝ NHẬT KÝ GIAN LẬN & LỌC THEO MÃ LỚP
     # ---------------------------------------------------------
     print("\n--- [TEST 7] KIỂM TRA NHẬT KÝ THANH TRA VI PHẠM & CÔ LẬP LỚP ---")
-    t_data_res = requests.get(f"{BASE_URL}/api/teacher/data")
+    t_data_res = session.get(f"{BASE_URL}/api/teacher/data")
     assert t_data_res.status_code == 200
     f_logs = t_data_res.json()["fraud_logs"]
     print(f" [+] Hiện có {len(f_logs)} biên bản vi phạm trong hệ thống.")
     if f_logs:
         sample_log_id = f_logs[0]["id"]
         # Xóa 1 log
-        del_f_res = requests.post(f"{BASE_URL}/api/teacher/fraud/delete", json={"id": sample_log_id})
+        del_f_res = session.post(f"{BASE_URL}/api/teacher/fraud/delete", json={"id": sample_log_id})
         assert del_f_res.status_code == 200
         print(f" [+] Xóa đơn lẻ thành công biên bản ID '{sample_log_id}'")
 
     # Xóa sạch nhật ký
-    clr_res = requests.post(f"{BASE_URL}/api/teacher/fraud/clear", json={"class_code": "ALL"})
+    clr_res = session.post(f"{BASE_URL}/api/teacher/fraud/clear", json={"class_code": "ALL"})
     assert clr_res.status_code == 200
-    t_data_after = requests.get(f"{BASE_URL}/api/teacher/data").json()
+    t_data_after = session.get(f"{BASE_URL}/api/teacher/data").json()
     assert len(t_data_after["fraud_logs"]) == 0
     print(" [+] Xóa sạch toàn bộ nhật ký vi phạm thành công!")
 

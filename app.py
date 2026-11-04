@@ -11,7 +11,7 @@ Kiến trúc Hệ thống:
 """
 import os
 import sys
-from flask import Flask
+from flask import Flask, jsonify
 
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
@@ -30,6 +30,17 @@ def create_app():
     application = Flask(__name__, template_folder="templates", static_folder="static")
     application.secret_key = os.environ.get("SECRET_KEY", "edudoc_secret_key_2026_nttu_secure_wal")
     
+    # D28: Giới hạn kích thước tệp tải lên tối đa 16MB (chống tràn bộ nhớ & từ chối dịch vụ)
+    application.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    
+    @application.errorhandler(413)
+    def request_entity_too_large(error):
+        return jsonify({
+            "error": "Dung lượng tệp tải lên vượt quá giới hạn cho phép (Tối đa 16MB)! Vui lòng kiểm tra lại hình ảnh hoặc nội dung đính kèm.",
+            "file_too_large": True,
+            "status": "ERROR"
+        }), 413
+
     # Khởi tạo cơ sở dữ liệu SQLite WAL
     init_db()
     

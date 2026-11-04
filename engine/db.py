@@ -863,8 +863,8 @@ def save_box6_submission(mssv: str, name: str, class_code: str, doc_type: str, b
     finally:
         conn.close()
 
-def get_all_box6_submissions(doc_type: Optional[str] = None, exclude_mssv: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Lấy danh sách nội dung Ô 6 của các sinh viên khác để so khớp đạo văn"""
+def get_all_box6_submissions(doc_type: Optional[str] = None, exclude_mssv: Optional[str] = None, class_code: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Lấy danh sách nội dung Ô 6 của các sinh viên khác để so khớp đạo văn (D08, D23)"""
     conn = get_db_connection(db_path)
     try:
         cursor = conn.cursor()
@@ -876,6 +876,9 @@ def get_all_box6_submissions(doc_type: Optional[str] = None, exclude_mssv: Optio
         if exclude_mssv:
             query += " AND mssv != ?"
             params.append(str(exclude_mssv).strip())
+        if class_code and class_code.upper() != "ALL":
+            query += " AND class_code = ?"
+            params.append(class_code.upper())
         cursor.execute(query, tuple(params))
         rows = cursor.fetchall()
         return [dict(r) for r in rows]

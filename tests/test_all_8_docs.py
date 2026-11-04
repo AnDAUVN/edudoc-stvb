@@ -15,6 +15,8 @@ from engine.validator import Decree30Validator
 
 def set_page_margins(doc):
     for sec in doc.sections:
+        sec.page_width = Inches(21.0 / 2.54)
+        sec.page_height = Inches(29.7 / 2.54)
         sec.top_margin = Inches(0.79)     # 2.0 cm
         sec.bottom_margin = Inches(0.79)  # 2.0 cm
         sec.left_margin = Inches(1.18)    # 3.0 cm

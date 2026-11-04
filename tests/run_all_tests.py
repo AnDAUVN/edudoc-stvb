@@ -29,6 +29,8 @@ TEST_SUITES = [
     "test_teacher_selector_and_quiz_edit.py",
     "test_audit_phase1.py",
     "test_audit_phase2.py",
+    "test_audit_phase3.py",
+    "test_audit_phase4.py",
     "comprehensive_audit_suite.py"
 ]
 

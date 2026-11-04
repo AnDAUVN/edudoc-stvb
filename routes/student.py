@@ -26,7 +26,7 @@ from engine.db import (
     add_fraud_log, get_student_session, save_student_session,
     save_box6_submission, save_validation_log
 )
-from engine.security import create_student_raw_template, check_anti_cheat
+from engine.security import create_student_raw_template, check_anti_cheat, validate_docx_resource_limits
 from engine.validator import Decree30Validator
 
 student_bp = Blueprint("student", __name__)
@@ -398,14 +398,20 @@ def validate_student_work():
     # Lưu tệp tạm
     file.save(temp_save_path)
 
-    # D01: Kiểm tra tệp Word docx chuẩn
-    if not is_valid_docx(temp_save_path):
+    # D01 & D28: Kiểm tra tệp Word docx chuẩn & giới hạn tài nguyên an toàn (chống Zip Bomb)
+    is_valid, err_msg, is_too_large = validate_docx_resource_limits(temp_save_path)
+    if not is_valid:
         if os.path.exists(temp_save_path):
             try:
                 os.remove(temp_save_path)
             except Exception:
                 pass
-        return jsonify({"error": "Tệp tải lên không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!"}), 400
+        status_code = 413 if is_too_large else 400
+        return jsonify({
+            "error": err_msg or "Tệp tải lên không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!",
+            "file_too_large": is_too_large,
+            "status": "ERROR"
+        }), status_code
     
     try:
         # 1. BƯỚC 1: KIỂM TRA GIAN LẬN (CHỐNG CHÉP BÀI QUA WATERMARK)
@@ -585,9 +591,15 @@ def submit_final():
             "error": "Tệp bài làm tạm không thuộc về sinh viên này (Phát hiện nộp chéo tệp tạm)!"
         }), 403
 
-    # D01: Kiểm tra tệp Word docx chuẩn
-    if not is_valid_docx(temp_path):
-        return jsonify({"error": "Tệp bài làm không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!"}), 400
+    # D01 & D28: Kiểm tra tệp Word docx chuẩn & an toàn tài nguyên
+    is_valid, err_msg, is_too_large = validate_docx_resource_limits(temp_path)
+    if not is_valid:
+        status_code = 413 if is_too_large else 400
+        return jsonify({
+            "error": err_msg or "Tệp bài làm không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!",
+            "file_too_large": is_too_large,
+            "status": "ERROR"
+        }), status_code
 
     # Kiểm tra gian lận lại một lần nữa trước khi ghi nhận bài nộp chính thức (nếu bật chế độ chống copy)
     fraud_check = {"is_fraud": False}

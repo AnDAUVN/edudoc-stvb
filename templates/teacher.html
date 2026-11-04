@@ -1686,13 +1686,17 @@
       const docType = document.getElementById('teacher-doc-select').value;
       try {
         const res = await fetch('/api/teacher/templates');
+        if (!res.ok) throw new Error("Không thể tải cấu hình mẫu văn bản");
         const data = await res.json();
         const tmpl = data[docType] || {};
         document.getElementById('txt-teacher-header').value = tmpl.header_part || '';
         document.getElementById('txt-teacher-body').value = tmpl.body_part || '';
         document.getElementById('txt-teacher-footer').value = tmpl.footer_part || '';
-        document.getElementById('chk-teacher-blank-body').checked = bool(tmpl.is_body_blank);
-      } catch (e) {}
+        document.getElementById('chk-teacher-blank-body').checked = Boolean(tmpl.is_body_blank);
+        onTeacherBlankToggle();
+      } catch (e) {
+        console.error("Lỗi khi tải mẫu văn bản:", e);
+      }
     }
 
     function onTeacherBlankToggle() {
@@ -2131,7 +2135,7 @@
       }
     }
 
-    function renderClassAnalytics(allSubs, fraudLogs) {
+    async function renderClassAnalytics(allSubs, fraudLogs) {
       let subs = allSubs || [];
       if (currentAnalyticsClass && currentAnalyticsClass !== 'ALL') {
         subs = subs.filter(s => String(s.class_code || '').toUpperCase() === currentAnalyticsClass.toUpperCase());
@@ -2190,25 +2194,34 @@
       const scEl = document.getElementById('an-avg-score');
       if (scEl) scEl.innerText = avgScore;
 
-      let spaceAbuseCount = 0;
-      subs.forEach(s => {
-        if (Array.isArray(s.flags)) {
-          s.flags.forEach(f => {
-            if (f.includes('khoảng trắng') || f.includes('Space')) spaceAbuseCount++;
-          });
+      // D19: Gọi API thống kê thực tế từ DB
+      let realAnalytics = null;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (teacherPin) headers['X-Teacher-PIN'] = teacherPin;
+        const aRes = await fetch(`/api/teacher/analytics?class_code=${encodeURIComponent(currentAnalyticsClass)}`, { headers });
+        if (aRes.ok) {
+          realAnalytics = await aRes.json();
         }
-      });
+      } catch (err) {
+        console.warn("Không thể tải analytics thực tế, dùng fallback:", err);
+      }
 
-      const groupStats = [
-        { id: 1, passRate: 98, name: "Khổ giấy & Căn lề" },
-        { id: 2, passRate: 96, name: "Quốc hiệu, Tên CQ & Số/KH" },
-        { id: 3, passRate: 92, name: "Nội dung & Bảng biểu" },
-        { id: 4, passRate: 95, name: "Chữ ký & Nơi nhận" }
-      ];
+      let groupStats = [];
+      if (realAnalytics && realAnalytics.has_data && realAnalytics.group_stats && realAnalytics.group_stats.length > 0) {
+        groupStats = realAnalytics.group_stats;
+      } else {
+        groupStats = [
+          { id: 1, passRate: perfectRate, name: "Khổ giấy & Căn lề", passed: perfectCount, failed: total - perfectCount },
+          { id: 2, passRate: perfectRate, name: "Quốc hiệu, Tên CQ & Số/KH", passed: perfectCount, failed: total - perfectCount },
+          { id: 3, passRate: perfectRate, name: "Nội dung & Bảng biểu", passed: perfectCount, failed: total - perfectCount },
+          { id: 4, passRate: perfectRate, name: "Chữ ký & Nơi nhận", passed: perfectCount, failed: total - perfectCount }
+        ];
+      }
 
       groupStats.forEach((grp) => {
-        const passed = Math.round(total * (grp.passRate / 100));
-        const failed = Math.max(0, total - passed);
+        const passed = typeof grp.passed === 'number' ? grp.passed : Math.round(total * (grp.passRate / 100));
+        const failed = typeof grp.failed === 'number' ? grp.failed : Math.max(0, total - passed);
         const badge = document.getElementById(`an-grp${grp.id}-badge`);
         const bar = document.getElementById(`an-grp${grp.id}-bar`);
 
@@ -2232,64 +2245,36 @@
         if (fEl) fEl.innerText = `${failed} bài cần chỉnh`;
       });
 
-      const topErrors = [
-        {
-          rank: 1,
-          target: "Lạm dụng Spacebar thay vì Tab/Align",
-          count: Math.max(spaceAbuseCount, Math.round(total * 0.35)),
-          rate: "35%",
-          solution: "Nhấn tổ hợp Ctrl + H, tìm 2 dấu cách liên tiếp ('  ') và thay thế bằng Tab ('^t') hoặc dùng công cụ Canh lề (Ctrl + E / Ctrl + J)."
-        },
-        {
-          rank: 2,
-          target: "Lề trái chưa đủ 30 - 35 mm",
-          count: Math.round(total * 0.22),
-          rate: "22%",
-          solution: "Vào thẻ Layout ➔ Margins ➔ Custom Margins ➔ Đặt Left = 3.0 cm (hoặc 30 mm)."
-        },
-        {
-          rank: 3,
-          target: "Chưa ẩn đường viền Bảng (Borders)",
-          count: Math.round(total * 0.18),
-          rate: "18%",
-          solution: "Chọn bảng Ô 1-2 hoặc Ô 7-9b ➔ Thẻ Table Design ➔ Borders ➔ Chọn 'No Border'."
-        },
-        {
-          rank: 4,
-          target: "Tiêu ngữ chưa đúng font đứng 13-14pt",
-          count: Math.round(total * 0.12),
-          rate: "12%",
-          solution: "Bôi đen 'Độc lập - Tự do - Hạnh phúc' ➔ Chọn Times New Roman, cỡ 13pt hoặc 14pt, chữ đứng, in hoa chữ cái đầu các từ."
-        },
-        {
-          rank: 5,
-          target: "Nơi nhận (Ô 9b) thiếu 'Lưu: VT'",
-          count: Math.round(total * 0.08),
-          rate: "8%",
-          solution: "Mục Nơi nhận phải có dòng cuối cùng: '- Lưu: VT.' (hoặc kèm tên đơn vị soạn thảo), chữ nghiêng, cỡ 11pt."
-        }
-      ];
+      let topErrors = [];
+      if (realAnalytics && realAnalytics.has_data && Array.isArray(realAnalytics.top_errors) && realAnalytics.top_errors.length > 0) {
+        topErrors = realAnalytics.top_errors;
+      }
 
       const tbody = document.getElementById('tbl-top-errors-body');
       if (tbody) {
-        tbody.innerHTML = topErrors.map(err => `
-          <tr>
-            <td class="text-center fw-bold text-secondary">${err.rank}</td>
-            <td>
-              <span class="fw-bold text-dark">${err.target}</span>
-            </td>
-            <td class="text-center">
-              <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
-            </td>
-            <td class="text-center">
-              <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
-            </td>
-            <td class="small text-muted">
-              <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
-            </td>
-          </tr>
-        `).join('');
+        if (topErrors.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="text-center text-success py-4"><i class="fa-solid fa-circle-check fa-2x mb-2 d-block"></i>Tuyệt vời! Tất cả các bài nộp của lớp đều tuân thủ thể thức hoặc chưa phát hiện lỗi phổ biến nào.</td></tr>`;
+        } else {
+          tbody.innerHTML = topErrors.map(err => `
+            <tr>
+              <td class="text-center fw-bold text-secondary">${err.rank}</td>
+              <td>
+                <span class="fw-bold text-dark">${err.target}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
+              </td>
+              <td class="small text-muted">
+                <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
+              </td>
+            </tr>
+          `).join('');
+        }
       }
+    }
     }
 
   </script>

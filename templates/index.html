@@ -1397,37 +1397,66 @@
 
       const mssv = document.getElementById('inp-mssv') ? document.getElementById('inp-mssv').value.trim() : '';
       const classCode = document.getElementById('sel-class') ? document.getElementById('sel-class').value.trim() : '';
+      const btnQuiz = document.getElementById('btn-submit-quiz');
+      if (btnQuiz) btnQuiz.disabled = true;
 
-      const res = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ doc_type: docType, answers: answers, mssv: mssv, class_code: classCode })
-      });
-      const data = await res.json();
+      try {
+        const res = await fetch('/api/quiz/submit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ doc_type: docType, answers: answers, mssv: mssv, class_code: classCode })
+        });
+        const data = await res.json();
 
-      // Hiển thị giải thích
-      data.feedback.forEach(f => {
-        const expEl = document.getElementById(`explain_q_${f.id}`);
-        const cardEl = document.getElementById(`card_q_${f.id}`);
-        if (!expEl || !cardEl) return;
-        expEl.classList.remove('d-none');
-        if (f.is_correct) {
-          cardEl.className = 'quiz-card border-success bg-white shadow-sm';
-          expEl.className = 'mt-3 p-2 rounded bg-success bg-opacity-10 text-success small fw-semibold border border-success border-opacity-25';
-          expEl.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> <strong>Chính xác!</strong> ${escapeHtml(f.explanation)}`;
-        } else {
-          cardEl.className = 'quiz-card border-danger bg-white shadow-sm';
-          expEl.className = 'mt-3 p-2 rounded bg-danger bg-opacity-10 text-danger small fw-semibold border border-danger border-opacity-25';
-          expEl.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> <strong>Chưa chính xác:</strong> ${escapeHtml(f.explanation)}`;
+        if (!res.ok) {
+          if (res.status === 403) {
+            Swal.fire({
+              icon: data.not_in_roster ? 'error' : 'warning',
+              title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
+              text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'LỖI BÀI TRẮC NGHIỆM',
+              text: data.error || 'Có lỗi xảy ra khi chấm bài trắc nghiệm. Vui lòng thử lại!',
+              confirmButtonText: 'Đóng'
+            });
+          }
+          return;
         }
-      });
 
-      if (data.passed) {
-        if (window.quizTimerInterval) clearInterval(window.quizTimerInterval);
-        Swal.fire('Chúc mừng!', `Bạn đạt ${data.score}/${data.total} câu trắc nghiệm! Đủ điều kiện nhận File mẫu thực hành.`, 'success');
-        triggerTemplateGeneration();
-      } else {
-        Swal.fire('Chưa đạt yêu cầu', `Bạn đạt ${data.score}/${data.total} câu. Vui lòng xem lại giải thích và làm lại để đạt tối thiểu ${data.pass_score}/${data.total} câu.`, 'warning');
+        // Hiển thị giải thích
+        if (Array.isArray(data.feedback)) {
+          data.feedback.forEach(f => {
+            const expEl = document.getElementById(`explain_q_${f.id}`);
+            const cardEl = document.getElementById(`card_q_${f.id}`);
+            if (!expEl || !cardEl) return;
+            expEl.classList.remove('d-none');
+            if (f.is_correct) {
+              cardEl.className = 'quiz-card border-success bg-white shadow-sm';
+              expEl.className = 'mt-3 p-2 rounded bg-success bg-opacity-10 text-success small fw-semibold border border-success border-opacity-25';
+              expEl.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> <strong>Chính xác!</strong> ${escapeHtml(f.explanation)}`;
+            } else {
+              cardEl.className = 'quiz-card border-danger bg-white shadow-sm';
+              expEl.className = 'mt-3 p-2 rounded bg-danger bg-opacity-10 text-danger small fw-semibold border border-danger border-opacity-25';
+              expEl.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> <strong>Chưa chính xác:</strong> ${escapeHtml(f.explanation)}`;
+            }
+          });
+        }
+
+        if (data.passed) {
+          if (window.quizTimerInterval) clearInterval(window.quizTimerInterval);
+          Swal.fire('Chúc mừng!', `Bạn đạt ${data.score}/${data.total} câu trắc nghiệm! Đủ điều kiện nhận File mẫu thực hành.`, 'success');
+          triggerTemplateGeneration();
+        } else {
+          Swal.fire('Chưa đạt yêu cầu', `Bạn đạt ${data.score}/${data.total} câu. Vui lòng xem lại giải thích và làm lại để đạt tối thiểu ${data.pass_score}/${data.total} câu.`, 'warning');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi kết nối', 'Không thể kết nối máy chủ: ' + err, 'error');
+      } finally {
+        if (btnQuiz) btnQuiz.disabled = false;
       }
     }
 
@@ -1438,26 +1467,44 @@
       const name = document.getElementById('inp-name').value.trim();
       const docType = document.getElementById('sel-doc-type').value;
 
-      const res = await fetch('/api/template/generate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ class_code: classCode, sbd, mssv, name, doc_type: docType })
-      });
-      const data = await res.json();
-
-      if (res.status === 403) {
-        Swal.fire({
-          icon: data.not_in_roster ? 'error' : 'warning',
-          title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
-          text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
-          confirmButtonText: 'Đã hiểu'
+      try {
+        const res = await fetch('/api/template/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ class_code: classCode, sbd, mssv, name, doc_type: docType })
         });
-        return;
-      }
+        const data = await res.json();
 
-      currentGeneratedFile = data.filename;
-      document.getElementById('lbl-generated-filename').innerText = data.filename;
-      const lnkDl = document.getElementById('lnk-download-template');
+        if (!res.ok) {
+          if (res.status === 403) {
+            Swal.fire({
+              icon: data.not_in_roster ? 'error' : 'warning',
+              title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
+              text: data.error || 'Phòng làm bài hiện đang tạm khóa hoặc bạn chưa hoàn thành bài trắc nghiệm.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'LỖI TẢI FILE MẪU',
+              text: data.error || 'Không thể tạo file mẫu bài tập. Vui lòng liên hệ Giảng viên!',
+              confirmButtonText: 'Đóng'
+            });
+          }
+          return;
+        }
+
+        currentGeneratedFile = data.filename;
+        document.getElementById('lbl-generated-filename').innerText = data.filename;
+        const lnkDl = document.getElementById('lnk-download-template');
+        if (lnkDl) {
+          lnkDl.href = data.download_url;
+          lnkDl.setAttribute('download', data.filename);
+        }
+      } catch (err) {
+        Swal.fire('Lỗi kết nối', 'Không thể kết nối máy chủ để tải file mẫu: ' + err, 'error');
+      }
+    }
       lnkDl.href = data.download_url;
       lnkDl.setAttribute('download', data.filename);
 
@@ -1527,6 +1574,9 @@
       formData.append('name', name);
       formData.append('doc_type', docType);
 
+      const btnValidate = document.getElementById('btn-run-validation');
+      if (btnValidate) btnValidate.disabled = true;
+
       Swal.fire({
         title: 'Đang thẩm định thể thức...',
         text: 'Hệ thống đang quét chữ ký số và phân tích các Ô 1 - 9 theo Nghị định 30',
@@ -1539,13 +1589,43 @@
         const data = await res.json();
         Swal.close();
 
-        if (res.status === 403) {
-          Swal.fire({
-            icon: data.not_in_roster ? 'error' : 'warning',
-            title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
-            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
-            confirmButtonText: 'Đã hiểu'
-          });
+        if (!res.ok) {
+          if (res.status === 403) {
+            Swal.fire({
+              icon: data.not_in_roster ? 'error' : 'warning',
+              title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
+              text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else if (res.status === 413 || data.file_too_large) {
+            Swal.fire({
+              icon: 'error',
+              title: 'TỆP QUÁ DUNG LƯỢNG',
+              text: data.error || 'Dung lượng tệp tải lên vượt quá giới hạn tối đa 16MB hoặc chứa quá nhiều thành phần!',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else if (res.status === 429 || data.preview_limit_exceeded) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'HẾT LƯỢT KIỂM TRA THỬ',
+              html: `Bạn đã sử dụng hết số lần kiểm tra thử (<strong>${data.preview_count || 3}/${data.max_previews || 3} lần</strong>).<br>Vui lòng rà soát lại kỹ bài làm và bấm <strong>Nộp bài chính thức</strong>!`,
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else if (res.status === 400) {
+            Swal.fire({
+              icon: 'error',
+              title: 'LỖI ĐỊNH DẠNG TỆP',
+              text: data.error || 'Tệp tải lên không hợp lệ hoặc không đúng định dạng Word (.docx).',
+              confirmButtonText: 'Đóng'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'LỖI MÁY CHỦ',
+              text: data.error || 'Máy chủ gặp sự cố trong quá trình xử lý. Vui lòng liên hệ Giảng viên!',
+              confirmButtonText: 'Đóng'
+            });
+          }
           return;
         }
 
@@ -1615,6 +1695,8 @@
 
       } catch (e) {
         Swal.fire('Lỗi', 'Không thể kết nối máy chủ kiểm tra: ' + e, 'error');
+      } finally {
+        if (btnValidate) btnValidate.disabled = false;
       }
     }
 
@@ -1928,6 +2010,9 @@
       const name = document.getElementById('inp-name').value.trim();
       const docType = document.getElementById('sel-doc-type').value;
 
+      const btnSubmit = document.getElementById('btn-final-submit');
+      if (btnSubmit) btnSubmit.disabled = true;
+
       try {
         const res = await fetch('/api/submit', {
           method: 'POST',
@@ -1938,15 +2023,33 @@
         });
         const data = await res.json();
 
-        if (res.status === 403) {
-          Swal.fire({
-            icon: data.not_in_roster ? 'error' : 'warning',
-            title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
-            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
-            confirmButtonText: 'Đã hiểu'
-          });
+        if (!res.ok) {
+          if (res.status === 403) {
+            Swal.fire({
+              icon: data.not_in_roster ? 'error' : 'warning',
+              title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
+              text: data.error || 'Phòng làm bài hiện đang tạm khóa hoặc tệp không thuộc phiên làm bài của bạn.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else if (res.status === 413 || data.file_too_large) {
+            Swal.fire({
+              icon: 'error',
+              title: 'TỆP QUÁ DUNG LƯỢNG',
+              text: data.error || 'Dung lượng tệp bài nộp vượt quá 16MB!',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'LỖI NỘP BÀI',
+              text: data.error || 'Không thể ghi nhận bài nộp. Vui lòng liên hệ Giảng viên!',
+              confirmButtonText: 'Đóng'
+            });
+          }
+          if (btnSubmit) btnSubmit.disabled = false;
           return;
         }
+
         if (data.success) {
           const subScore = (data.submission && data.submission.score !== undefined) ? data.submission.score : '10.0';
           Swal.fire({
@@ -1969,6 +2072,7 @@
         }
       } catch (e) {
         Swal.fire('Lỗi', 'Không thể nộp bài: ' + e, 'error');
+        if (btnSubmit) btnSubmit.disabled = false;
       }
     }
 

@@ -8,16 +8,22 @@ import zipfile
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 
-SECRET_KEY = "STVB_NTTU_EDUCATIONAL_SECRET_2026"
+SECRET_KEY = os.environ.get("EDUDOC_SECRET_KEY", "STVB_NTTU_EDUCATIONAL_SECRET_2026")
 
 ZERO_BIN_0 = '\u200b'  # Zero-width space -> bit 0
 ZERO_BIN_1 = '\u200c'  # Zero-width non-joiner -> bit 1
 
 def generate_anti_cheat_token(sbd, mssv, doc_type, timestamp):
-    """Tạo chữ ký số bảo mật cho sinh viên"""
-    message = f"{sbd}_{mssv}_{doc_type}_{timestamp}"
-    token = hmac.new(SECRET_KEY.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).hexdigest()
-    return token
+    """Tạo mã xác thực HMAC cho phôi bài tập sinh viên (D14)"""
+    message = f"{str(sbd).strip()}_{str(mssv).strip()}_{str(doc_type).strip()}_{str(timestamp).strip()}"
+    return hmac.new(SECRET_KEY.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).hexdigest()
+
+def verify_anti_cheat_token(token, sbd, mssv, doc_type, timestamp):
+    """Xác minh mã HMAC bảo mật phôi bài bằng compare_digest (D14)"""
+    if not token:
+        return False
+    expected = generate_anti_cheat_token(sbd, mssv, doc_type, timestamp)
+    return hmac.compare_digest(str(token).strip(), expected)
 
 def encode_hidden_mssv_to_text(text, mssv):
     """
@@ -103,8 +109,10 @@ def create_student_raw_template(sbd, mssv, student_name, doc_type_id, raw_text, 
     """
     doc = Document()
     
-    # 1. Để lề mặc định 1 inch (2.54 cm) - Sinh viên bắt buộc phải tự chỉnh sang NĐ 30
+    # 1. Khổ giấy A4 chuẩn NĐ 30, để lề mặc định 1 inch (2.54 cm) - Sinh viên bắt buộc phải tự chỉnh lề sang NĐ 30
     for section in doc.sections:
+        section.page_width = Inches(21.0 / 2.54)
+        section.page_height = Inches(29.7 / 2.54)
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
@@ -241,54 +249,63 @@ def extract_box6_from_docx(doc_or_path) -> str:
 def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, doc_type=None, class_code=None, students_db=None):
     """
     Kiểm tra đạo văn Thân bài (Ô 6):
-    - Đối chiếu với các bài đã lưu trong SQLite box6_submissions
-    - Đối chiếu với tất cả file bài làm trong storage/uploads/ và storage/submitted/
-    - Đối chiếu với các mẫu văn bản khác trong document_templates.json
+    - D23: Loại trừ boilerplate đề bài trước khi so khớp
+    - D23: Chỉ áp dụng khi đề bài yêu cầu tự soạn thảo (is_body_blank hoặc bai_thu_hoach)
+    - Đối chiếu trong cùng mã lớp học
     """
     try:
         curr_box6 = extract_box6_from_docx(docx_path)
-        words = [w for w in curr_box6.split() if w]
+        # D23: Loại bỏ các đoạn boilerplate hướng dẫn trước khi kiểm tra
+        clean_curr_box6 = re.sub(r'\[Nội dung văn bản:[^\]]*\]', '', curr_box6).strip()
+        words = [w for w in clean_curr_box6.split() if w]
         if len(words) < 15:
-            return {"is_fraud": False, "box6_text": curr_box6}
+            return {"is_fraud": False, "box6_text": clean_curr_box6}
 
         from engine.common import DATA_DIR, load_json_file, STORAGE_UPLOADS, STORAGE_SUBMITTED
         from engine.db import get_all_box6_submissions, save_box6_submission
 
-        # 1. Kiểm tra đối chiếu với các mẫu văn bản khác trong hệ thống
         templates_path = os.path.join(DATA_DIR, "document_templates.json")
         all_tmpls = load_json_file(templates_path, {})
         curr_tmpl = all_tmpls.get(doc_type, {})
-        is_curr_blank = curr_tmpl.get("is_body_blank", True)
+        is_curr_blank = bool(curr_tmpl.get("is_body_blank", False)) or (doc_type == "bai_thu_hoach")
 
-        if is_curr_blank:
-            for other_id, other_tmpl in all_tmpls.items():
-                if other_id == doc_type:
-                    continue
-                other_body = other_tmpl.get("body_part", "")
-                if other_body and len(other_body.split()) >= 15:
-                    sim = compute_box6_similarity(curr_box6, other_body)
-                    if sim >= 70.0:
-                        return {
-                            "is_fraud": True,
-                            "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
-                            "reason": "Sao chép nội dung từ mẫu văn bản khác",
-                            "student_a": {
-                                "sbd": current_sbd,
-                                "mssv": current_mssv,
-                                "name": current_name,
-                                "class_code": class_code or "Chung"
-                            },
-                            "similarity": sim,
-                            "evidence": f"Sinh viên {current_name} (MSSV: {current_mssv}) đã copy nội dung Thân bài từ mẫu '{other_tmpl.get('name', other_id)}' dán vào bài làm! (Độ trùng lặp: {sim}%)"
-                        }
+        # D23: Nếu đề bài có phần thân bài cố định do giảng viên giao,
+        # sinh viên làm theo đề bài sẽ có nội dung giống nhau -> không tính là đạo văn
+        if not is_curr_blank:
+            return {"is_fraud": False, "box6_text": clean_curr_box6}
+
+        # 1. Kiểm tra đối chiếu với các mẫu văn bản khác trong hệ thống
+        for other_id, other_tmpl in all_tmpls.items():
+            if other_id == doc_type:
+                continue
+            other_body = other_tmpl.get("body_part", "")
+            if other_body and len(other_body.split()) >= 15:
+                sim = compute_box6_similarity(clean_curr_box6, other_body)
+                if sim >= 70.0:
+                    return {
+                        "is_fraud": True,
+                        "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
+                        "reason": "Sao chép nội dung từ mẫu văn bản khác",
+                        "student_a": {
+                            "sbd": current_sbd,
+                            "mssv": current_mssv,
+                            "name": current_name,
+                            "class_code": class_code or "Chung"
+                        },
+                        "similarity": sim,
+                        "evidence": f"Sinh viên {current_name} (MSSV: {current_mssv}) đã copy nội dung Thân bài từ mẫu '{other_tmpl.get('name', other_id)}' dán vào bài làm! (Độ trùng lặp: {sim}%)"
+                    }
 
         # 2. Kiểm tra đối chiếu với các bài làm của sinh viên khác trong SQLite box6_submissions
-        other_submissions = get_all_box6_submissions(doc_type=doc_type, exclude_mssv=current_mssv)
+        other_submissions = get_all_box6_submissions(doc_type=doc_type, exclude_mssv=current_mssv, class_code=class_code)
         for other in other_submissions:
             other_text = other.get("box6_text", "")
             if not other_text:
                 continue
-            sim = compute_box6_similarity(curr_box6, other_text)
+            clean_other = re.sub(r'\[Nội dung văn bản:[^\]]*\]', '', other_text).strip()
+            if len(clean_other.split()) < 15:
+                continue
+            sim = compute_box6_similarity(clean_curr_box6, clean_other)
             if sim >= 75.0:
                 target_name = other.get("name") or f"Sinh viên (MSSV: {other['mssv']})"
                 if students_db and str(other['mssv']) in students_db:
@@ -312,7 +329,7 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                     "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã sao chép {sim}% nội dung Thân bài (Ô 6) từ bài làm của Sinh viên B ({target_name} - MSSV: {other['mssv']})."
                 }
 
-        # 3. Quét kiểm tra trực tiếp các file docx khác trong storage/uploads/ và storage/submitted/
+        # 3. Quét kiểm tra các file docx khác trong storage/uploads/ và storage/submitted/ (nếu cùng lớp)
         scan_dirs = [STORAGE_UPLOADS, STORAGE_SUBMITTED]
         for sdir in scan_dirs:
             if not os.path.exists(sdir):
@@ -329,7 +346,10 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                     props = other_doc.core_properties
                     kw = getattr(props, "keywords", "") or ""
                     kw_parts = kw.split("|")
-                    if len(kw_parts) >= 3:
+                    if len(kw_parts) >= 4:
+                        # Chỉ so sánh nếu cùng doc_type
+                        if doc_type and kw_parts[3].strip() != str(doc_type).strip():
+                            continue
                         other_mssv = kw_parts[1]
                         other_name = kw_parts[2]
                     else:
@@ -341,11 +361,11 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                         continue
 
                     other_text = extract_box6_from_docx(other_doc)
-                    if other_text and len(other_text.split()) >= 15:
-                        sim = compute_box6_similarity(curr_box6, other_text)
+                    clean_other_disk = re.sub(r'\[Nội dung văn bản:[^\]]*\]', '', other_text).strip()
+                    if clean_other_disk and len(clean_other_disk.split()) >= 15:
+                        sim = compute_box6_similarity(clean_curr_box6, clean_other_disk)
                         if sim >= 75.0:
-                            # Lưu vào db để các truy vấn sau nhanh hơn
-                            save_box6_submission(other_mssv, other_name, class_code or "Chung", doc_type or "", other_text)
+                            save_box6_submission(other_mssv, other_name, class_code or "Chung", doc_type or "", clean_other_disk)
                             return {
                                 "is_fraud": True,
                                 "fraud_type": "COPY_PASTE_NOI_DUNG_O6",
@@ -367,7 +387,9 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                 except Exception:
                     continue
 
-        return {"is_fraud": False, "box6_text": curr_box6}
+        return {"is_fraud": False, "box6_text": clean_curr_box6}
+    except Exception as e:
+        return {"is_fraud": False, "box6_text": ""}
     except Exception as e:
         return {"is_fraud": False, "box6_text": ""}
 
@@ -397,7 +419,17 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
         parts = keywords.split("|")
         if len(parts) >= 5:
             orig_sbd, orig_mssv, orig_name, orig_doc_type, timestamp = parts[0], parts[1], parts[2], parts[3], parts[4]
-            
+
+            # D14: Xác minh mã bảo mật HMAC phôi bài bằng hmac.compare_digest
+            token_val = token_header[len("STVB_SIGNATURE:"):].strip()
+            if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp):
+                return {
+                    "is_fraud": True,
+                    "fraud_type": "FILE_KHONG_HOP_LE",
+                    "reason": "Mã xác thực phôi đề (HMAC) không khớp hoặc đã bị chỉnh sửa giả mạo",
+                    "message": "Phát hiện mã xác thực phôi đề thi bị sửa đổi! Bạn phải làm bài trên đúng phôi chính thức được cấp phát."
+                }
+
             # Nếu MSSV trong file không khớp với MSSV người đang đăng nhập nộp bài
             if str(orig_mssv).strip() != str(current_mssv).strip():
                 return {
@@ -544,20 +576,61 @@ def safe_storage_path(base_dir: str, filename: str) -> str:
         raise ValueError(f"Phát hiện hành vi Path Traversal không hợp lệ: {filename}")
     return full_path
 
-def is_valid_docx(file_path: str) -> bool:
+MAX_DOCX_FILE_COUNT = 500
+MAX_DOCX_UNCOMPRESSED_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_COMPRESSION_RATIO = 100.0
+
+def validate_docx_resource_limits(file_path: str):
     """
-    Kiểm tra xem tệp có phải là định dạng Word .docx chuẩn và không bị hỏng (D01).
-    Xác minh chữ ký ZIP hợp lệ và cấu trúc tệp OpenXML chuẩn.
+    D28: Kiểm tra giới hạn tài nguyên và chống Zip Bomb:
+    - Số lượng tệp nén bên trong <= 500
+    - Tổng kích thước giải nén <= 50MB
+    - Tỷ lệ nén giải nén <= 100 lần (nếu kích thước tệp con > 1MB)
+    - Trả về (is_valid: bool, error_message: str, is_too_large: bool)
     """
     if not file_path or not os.path.exists(file_path):
-        return False
+        return False, "Tệp không tồn tại hoặc đường dẫn rỗng.", False
+    
+    file_size = os.path.getsize(file_path)
+    if file_size == 0:
+        return False, "Tệp rỗng (0 bytes).", False
+    
+    if file_size > 16 * 1024 * 1024:
+        return False, f"Dung lượng tệp ({file_size / (1024*1024):.1f}MB) vượt quá giới hạn tối đa 16MB!", True
+
+    if not zipfile.is_zipfile(file_path):
+        return False, "Tệp tải lên không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!", False
+
     try:
-        if os.path.getsize(file_path) == 0:
-            return False
-        if not zipfile.is_zipfile(file_path):
-            return False
         with zipfile.ZipFile(file_path, "r") as z:
-            names = z.namelist()
-            return "[Content_Types].xml" in names or "word/document.xml" in names
-    except Exception:
-        return False
+            infolist = z.infolist()
+            if len(infolist) > MAX_DOCX_FILE_COUNT:
+                return False, f"Tệp chứa quá nhiều thành phần bên trong ({len(infolist)} > {MAX_DOCX_FILE_COUNT}). Phát hiện nguy cơ Zip Bomb!", True
+            
+            total_uncompressed = 0
+            for info in infolist:
+                total_uncompressed += info.file_size
+                if total_uncompressed > MAX_DOCX_UNCOMPRESSED_SIZE:
+                    return False, f"Tổng kích thước sau giải nén ({total_uncompressed / (1024*1024):.1f}MB) vượt quá giới hạn an toàn 50MB!", True
+                
+                # Kiểm tra tỷ lệ nén bất thường (Decompression bomb)
+                if info.file_size > 1024 * 1024 and info.compress_size > 0:
+                    ratio = info.file_size / info.compress_size
+                    if ratio > MAX_COMPRESSION_RATIO:
+                        return False, f"Tỷ lệ nén bất thường ({ratio:.1f}x). Phát hiện nguy cơ Decompression Bomb!", True
+
+            names = [info.filename for info in infolist]
+            if "[Content_Types].xml" not in names and "word/document.xml" not in names:
+                return False, "Tệp không có cấu trúc tài liệu Word (.docx) chuẩn (thiếu Content_Types hoặc document.xml).", False
+
+            return True, "Hợp lệ", False
+    except Exception as e:
+        return False, f"Không thể đọc cấu trúc tệp .docx: {str(e)}", False
+
+def is_valid_docx(file_path: str) -> bool:
+    """
+    Kiểm tra xem tệp có phải là định dạng Word .docx chuẩn và không bị hỏng (D01, D28).
+    Bao gồm kiểm tra chữ ký số ZIP, cấu trúc OpenXML và giới hạn tài nguyên an toàn.
+    """
+    valid, _, _ = validate_docx_resource_limits(file_path)
+    return valid

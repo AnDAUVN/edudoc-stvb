@@ -9,8 +9,10 @@ from engine.validator import Decree30Validator
 def create_cong_van_cong_ty(docx_path, kt_text="KT.GIÁM ĐỐC"):
     doc = Document()
     
-    # 1. Page Margins
+    # 1. Page Margins & Khổ giấy A4
     for section in doc.sections:
+        section.page_width = Inches(21.0 / 2.54)
+        section.page_height = Inches(29.7 / 2.54)
         section.top_margin = Inches(0.79)     # 2.0 cm
         section.bottom_margin = Inches(0.79)  # 2.0 cm
         section.left_margin = Inches(1.18)    # 3.0 cm

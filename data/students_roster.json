@@ -480,5 +480,21 @@
       "name": "Trần Thị B",
       "student_class": ""
     }
+  ],
+  "TEST_PHASE2_A": [
+    {
+      "sbd": "88",
+      "mssv": "2200008888",
+      "name": "Trần Thị Kiểm Thử Đợt 2",
+      "student_class": ""
+    }
+  ],
+  "TEST_PHASE2_B": [
+    {
+      "sbd": "88",
+      "mssv": "2200008888",
+      "name": "Trần Thị Kiểm Thử Đợt 2",
+      "student_class": ""
+    }
   ]
 }

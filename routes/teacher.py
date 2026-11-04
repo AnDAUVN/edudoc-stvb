@@ -598,13 +598,24 @@ def save_teacher_quiz():
     correct = data.get("correct")
     explanation = str(data.get("explanation", "")).strip()
 
-    if not doc_type or not question_text or len(options) < 2 or correct is None:
-        return jsonify({"error": "Vui lòng nhập đầy đủ câu hỏi, tối thiểu 2 phương án và chọn đáp án đúng!"}), 400
+    if not doc_type or not question_text or correct is None:
+        return jsonify({"error": "Vui lòng nhập đầy đủ loại đề thi, nội dung câu hỏi và chọn đáp án đúng!"}), 400
+
+    # D13: Ràng buộc tính hợp lệ của câu hỏi và đáp án
+    if not isinstance(options, list) or len(options) < 2:
+        return jsonify({"error": "Danh sách phương án phải có tối thiểu 2 phương án!"}), 400
+
+    clean_options = [str(opt).strip() for opt in options]
+    if any(not opt for opt in clean_options):
+        return jsonify({"error": "Nội dung các phương án trả lời không được để trống!"}), 400
 
     try:
         correct = int(correct)
     except Exception:
-        return jsonify({"error": "Đáp án đúng không hợp lệ!"}), 400
+        return jsonify({"error": "Chỉ số đáp án đúng phải là số nguyên!"}), 400
+
+    if correct < 0 or correct >= len(clean_options):
+        return jsonify({"error": f"Chỉ số đáp án đúng ({correct}) vượt quá phạm vi số lượng phương án (0 đến {len(clean_options) - 1})!"}), 400
 
     all_questions = load_json_file(QUESTIONS_FILE, {})
     if doc_type not in all_questions:
@@ -913,4 +924,160 @@ def api_get_validation_logs():
         "success": True,
         "total": len(logs),
         "logs": logs
+    })
+
+# =========================================================================
+# THỐNG KÊ LỖI THỰC TẾ TỪ CƠ SỞ DỮ LIỆU BÀI NỘP - REAL ANALYTICS (D19)
+# =========================================================================
+_ANALYTICS_CACHE = {}
+
+@teacher_bp.route("/api/teacher/analytics", methods=["GET"])
+@require_teacher_auth
+def api_get_analytics():
+    """
+    D19: Thống kê lỗi thực tế từ cơ sở dữ liệu bài nộp sinh viên:
+    - Tính toán tỷ lệ đạt theo từng nhóm thể thức thực tế
+    - Thống kê top các lỗi vi phạm phổ biến nhất từ bài nộp
+    - Hỗ trợ lọc theo mã lớp (class_code)
+    - Trả về has_data=False nếu chưa đủ dữ liệu
+    """
+    from engine.validator import Decree30Validator
+    
+    class_code = sanitize_identifier(request.args.get("class_code", ""), "").upper()
+    all_subs = get_all_submissions()
+    
+    if class_code and class_code != "ALL":
+        subs = [s for s in all_subs if s.get("class_code") == class_code]
+    else:
+        subs = all_subs
+
+    total = len(subs)
+    if total == 0:
+        return jsonify({
+            "success": True,
+            "has_data": False,
+            "message": "Chưa có đủ dữ liệu thống kê từ bài nộp sinh viên cho bộ lọc này.",
+            "total_submissions": 0,
+            "avg_score": 0.0,
+            "group_stats": [],
+            "top_errors": []
+        })
+
+    # Tính điểm trung bình thực tế
+    total_score = sum(float(s.get("score") or 0.0) for s in subs)
+    avg_score = round(total_score / total, 1) if total > 0 else 0.0
+
+    group_counts = {
+        1: {"name": "Khổ giấy & Căn lề", "passed": 0, "total": 0},
+        2: {"name": "Quốc hiệu, Tên CQ & Số/KH", "passed": 0, "total": 0},
+        3: {"name": "Nội dung & Bảng biểu", "passed": 0, "total": 0},
+        4: {"name": "Chữ ký & Nơi nhận", "passed": 0, "total": 0}
+    }
+    
+    error_freq = {}
+    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
+
+    for s in subs:
+        fn = s.get("filename", "")
+        doc_type = s.get("doc_type", "bai_thu_hoach")
+        fp = os.path.join(STORAGE_SUBMITTED, fn)
+        
+        checklist = None
+        if os.path.exists(fp):
+            mtime = os.path.getmtime(fp)
+            cache_key = f"{fn}_{mtime}"
+            if cache_key in _ANALYTICS_CACHE:
+                checklist = _ANALYTICS_CACHE[cache_key]
+            else:
+                try:
+                    tmpl = templates_data.get(doc_type, {})
+                    v = Decree30Validator(fp, doc_type, tmpl, mssv=s.get("mssv", ""))
+                    val_res = v.validate_document()
+                    checklist = val_res.get("checklist", [])
+                    _ANALYTICS_CACHE[cache_key] = checklist
+                except Exception:
+                    checklist = None
+
+        if checklist:
+            # Nhóm 1: Căn lề
+            g1_items = [it for it in checklist if it.get("box_id") == "margins"]
+            group_counts[1]["total"] += 1
+            if g1_items and all(it.get("passed", False) for it in g1_items):
+                group_counts[1]["passed"] += 1
+
+            # Nhóm 2: Quốc hiệu, CQ, Số, Địa danh
+            g2_items = [it for it in checklist if it.get("box_id") in [1, 2, 3, 4]]
+            group_counts[2]["total"] += 1
+            if g2_items and all(it.get("passed", False) for it in g2_items):
+                group_counts[2]["passed"] += 1
+
+            # Nhóm 3: Bảng biểu, Trích yếu, Nội dung
+            g3_items = [it for it in checklist if it.get("box_id") in ["tables", 5, "5a", "5b", 6]]
+            group_counts[3]["total"] += 1
+            if g3_items and all(it.get("passed", False) for it in g3_items):
+                group_counts[3]["passed"] += 1
+
+            # Nhóm 4: Chữ ký, Nơi nhận
+            g4_items = [it for it in checklist if it.get("box_id") in [7, "9a", "9b"]]
+            group_counts[4]["total"] += 1
+            if g4_items and all(it.get("passed", False) for it in g4_items):
+                group_counts[4]["passed"] += 1
+
+            # Ghi nhận từng lỗi chi tiết
+            for it in checklist:
+                if not it.get("passed", False):
+                    for err in it.get("errors", []):
+                        issue = err.get("issue", "").strip()
+                        fix = err.get("fix", "").strip()
+                        if issue:
+                            short_target = issue.split("(")[0].strip() if "(" in issue else issue
+                            short_target = short_target.replace("Section 1: ", "")
+                            if short_target not in error_freq:
+                                error_freq[short_target] = {
+                                    "target": short_target,
+                                    "solution": fix or "Xem lại quy định Nghị định 30/2020/NĐ-CP.",
+                                    "count": 0
+                                }
+                            error_freq[short_target]["count"] += 1
+        else:
+            is_100 = (s.get("score") == 10.0 or "100%" in str(s.get("status", "")))
+            for grp_id in [1, 2, 3, 4]:
+                group_counts[grp_id]["total"] += 1
+                if is_100:
+                    group_counts[grp_id]["passed"] += 1
+
+    group_stats = []
+    for grp_id in [1, 2, 3, 4]:
+        info = group_counts[grp_id]
+        grp_tot = max(1, info["total"])
+        grp_pass = info["passed"]
+        pass_rate = round((grp_pass / grp_tot) * 100)
+        group_stats.append({
+            "id": grp_id,
+            "name": info["name"],
+            "passed": grp_pass,
+            "failed": max(0, grp_tot - grp_pass),
+            "passRate": pass_rate
+        })
+
+    sorted_errors = sorted(error_freq.values(), key=lambda x: x["count"], reverse=True)
+    top_errors = []
+    for rank, err in enumerate(sorted_errors[:10], start=1):
+        cnt = err["count"]
+        pct = round((cnt / total) * 100)
+        top_errors.append({
+            "rank": rank,
+            "target": err["target"],
+            "count": cnt,
+            "rate": f"{pct}%",
+            "solution": err["solution"]
+        })
+
+    return jsonify({
+        "success": True,
+        "has_data": True,
+        "total_submissions": total,
+        "avg_score": avg_score,
+        "group_stats": group_stats,
+        "top_errors": top_errors
     })

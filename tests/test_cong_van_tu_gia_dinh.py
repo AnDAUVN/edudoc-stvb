@@ -48,8 +48,10 @@ class TestCongVanTuGiaDinh(unittest.TestCase):
         doc_path = os.path.join(self.temp_dir, "test_cv_tu_gia_dinh_perfect.docx")
         doc = Document()
 
-        # Căn lề chuẩn
+        # Căn lề chuẩn & Khổ giấy A4
         for section in doc.sections:
+            section.page_width = Inches(21.0 / 2.54)
+            section.page_height = Inches(29.7 / 2.54)
             section.top_margin = Inches(0.85)     # ~2.16cm
             section.bottom_margin = Inches(0.85)  # ~2.16cm
             section.left_margin = Inches(1.2)     # ~3.05cm
