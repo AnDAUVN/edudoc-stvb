@@ -1266,6 +1266,7 @@
           return;
         }
 
+        window.currentQuizAttemptId = data.attempt_id || '';
         currentQuizQuestions = data.questions;
         if (document.getElementById('lbl-quiz-total-q')) {
           document.getElementById('lbl-quiz-total-q').innerText = data.total;
@@ -1404,7 +1405,13 @@
         const res = await fetch('/api/quiz/submit', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ doc_type: docType, answers: answers, mssv: mssv, class_code: classCode })
+          body: JSON.stringify({
+            attempt_id: window.currentQuizAttemptId || '',
+            doc_type: docType,
+            answers: answers,
+            mssv: mssv,
+            class_code: classCode
+          })
         });
         const data = await res.json();
 

@@ -249,8 +249,8 @@ class Decree30Validator:
             except Exception:
                 w_cm, h_cm = 21.0, 29.7
 
-            is_portrait_a4 = (20.5 <= w_cm <= 21.5 and 29.2 <= h_cm <= 30.2)
-            is_landscape_a4 = (29.2 <= w_cm <= 30.2 and 20.5 <= h_cm <= 21.5)
+            is_portrait_a4 = (20.8 <= w_cm <= 21.2 and 29.5 <= h_cm <= 29.9)
+            is_landscape_a4 = (29.5 <= w_cm <= 29.9 and 20.8 <= h_cm <= 21.2)
             if not (is_portrait_a4 or is_landscape_a4):
                 errors.append({
                     "issue": f"{prefix}Khổ giấy chưa đạt chuẩn A4 (210 x 297 mm) theo Nghị định 30 (Hiện tại: {w_cm:.1f} x {h_cm:.1f} cm).",
@@ -273,27 +273,27 @@ class Decree30Validator:
                 })
                 continue
 
-            # D10: Chuẩn hóa khoảng lề chấp nhận theo đúng Nghị định 30 (dung sai OpenXML float +-0.05cm)
-            # Lề trên: 2.0 - 2.5 cm (dung sai: 1.95 - 2.55 cm)
-            if not (1.95 <= top_cm <= 2.55):
+            # D10: Chuẩn hóa khoảng lề chấp nhận theo đúng Nghị định 30 (dung sai chặt chẽ +-0.02cm)
+            # Lề trên: 2.0 - 2.5 cm (dung sai: 1.98 - 2.52 cm)
+            if not (1.98 <= top_cm <= 2.52):
                 errors.append({
                     "issue": f"{prefix}Lề trên chưa đạt chuẩn NĐ 30 (Hiện tại: {top_cm:.2f} cm).",
                     "fix": "Đặt lại lề trên từ 2.0 cm đến 2.5 cm (Số trước: 2.0cm, Số sau: 2.5cm)."
                 })
-            # Lề dưới: 2.0 - 2.5 cm (dung sai: 1.95 - 2.55 cm)
-            if not (1.95 <= bot_cm <= 2.55):
+            # Lề dưới: 2.0 - 2.5 cm (dung sai: 1.98 - 2.52 cm)
+            if not (1.98 <= bot_cm <= 2.52):
                 errors.append({
                     "issue": f"{prefix}Lề dưới chưa đạt chuẩn NĐ 30 (Hiện tại: {bot_cm:.2f} cm).",
                     "fix": "Đặt lại lề dưới từ 2.0 cm đến 2.5 cm (Số trước: 2.0cm, Số sau: 2.5cm)."
                 })
-            # Lề trái: 3.0 - 3.5 cm (dung sai: 2.95 - 3.55 cm)
-            if not (2.95 <= left_cm <= 3.55):
+            # Lề trái: 3.0 - 3.5 cm (dung sai: 2.98 - 3.52 cm)
+            if not (2.98 <= left_cm <= 3.52):
                 errors.append({
                     "issue": f"{prefix}Lề trái chưa đạt chuẩn NĐ 30 (Hiện tại: {left_cm:.2f} cm).",
                     "fix": "Đặt lại lề trái từ 3.0 cm đến 3.5 cm (Số trước: 3.0cm, Số sau: 3.5cm)."
                 })
-            # Lề phải: 1.5 - 2.0 cm (dung sai: 1.45 - 2.05 cm)
-            if not (1.45 <= right_cm <= 2.05):
+            # Lề phải: 1.5 - 2.0 cm (dung sai: 1.48 - 2.02 cm)
+            if not (1.48 <= right_cm <= 2.02):
                 errors.append({
                     "issue": f"{prefix}Lề phải chưa đạt chuẩn NĐ 30 (Hiện tại: {right_cm:.2f} cm).",
                     "fix": "Đặt lại lề phải từ 1.5 cm đến 2.0 cm (Số trước: 1.5cm, Số sau: 2.0cm)."

@@ -1,6 +1,8 @@
 {
   "classes": [
     "HC01K157",
-    "HC06K157"
+    "HC06K157",
+    "TEST_PHASE2_A",
+    "TEST_PHASE2_B"
   ]
 }

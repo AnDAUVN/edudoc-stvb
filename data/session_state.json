@@ -1,9 +1,14 @@
 {
+  "key": "current_session",
   "is_open": true,
-  "enforce_roster": true,
+  "enforce_roster": false,
+  "enforce_quiz": false,
+  "enable_anti_cheat": true,
+  "max_previews": 3,
+  "enforce_preview_limit": false,
   "active_doc_type": "cong_van_de_nghi",
   "message": "Kiểm tra phòng thi WAL mode",
   "active_teacher": "ThS. Cao Thành Trung",
   "active_teacher_id": "GV01",
-  "updated_at": "2026-11-05 01:38:00"
+  "updated_at": "2026-11-05 03:55:07"
 }

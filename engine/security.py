@@ -509,7 +509,8 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
         full_text_upper = full_text.upper()
         has_template_agency = any(kw in full_text_upper for kw in nttu_keywords)
 
-        if str(current_mssv).strip() not in all_found_mssvs and not has_template_agency:
+        is_blank = bool(curr_tmpl.get("is_body_blank", False)) or (effective_doc_type == "bai_thu_hoach")
+        if not is_blank and str(current_mssv).strip() not in all_found_mssvs and not has_template_agency:
             return {
                 "is_fraud": True,
                 "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
@@ -620,8 +621,16 @@ def validate_docx_resource_limits(file_path: str):
                         return False, f"Tỷ lệ nén bất thường ({ratio:.1f}x). Phát hiện nguy cơ Decompression Bomb!", True
 
             names = [info.filename for info in infolist]
-            if "[Content_Types].xml" not in names and "word/document.xml" not in names:
-                return False, "Tệp không có cấu trúc tài liệu Word (.docx) chuẩn (thiếu Content_Types hoặc document.xml).", False
+            # Priority 5: Bắt buộc cả [Content_Types].xml và word/document.xml phải tồn tại
+            if "[Content_Types].xml" not in names or "word/document.xml" not in names:
+                return False, "Tệp không có cấu trúc tài liệu Word (.docx) chuẩn (thiếu [Content_Types].xml hoặc word/document.xml).", False
+
+            try:
+                import xml.etree.ElementTree as ET
+                doc_xml_bytes = z.read("word/document.xml")
+                ET.fromstring(doc_xml_bytes)
+            except Exception:
+                return False, "Cấu trúc XML của tài liệu Word bị hỏng hoặc không đúng định dạng OpenXML!", False
 
             return True, "Hợp lệ", False
     except Exception as e:

@@ -496,5 +496,19 @@
       "name": "Trần Thị Kiểm Thử Đợt 2",
       "student_class": ""
     }
+  ],
+  "PRIO_CLA": [
+    {
+      "sbd": "99",
+      "mssv": "2280609999",
+      "name": "Nguyễn Văn Ưu Tiên"
+    }
+  ],
+  "PRIO_CLB": [
+    {
+      "sbd": "99",
+      "mssv": "2280609999",
+      "name": "Nguyễn Văn Ưu Tiên"
+    }
   ]
 }

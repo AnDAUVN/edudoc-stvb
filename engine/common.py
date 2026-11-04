@@ -87,27 +87,46 @@ def save_session_state(state: Dict[str, Any], class_code: str = "") -> None:
     except Exception:
         save_json_file(SESSION_STATE_FILE, state)
 
-def is_session_open(class_code: str = "", app_testing: bool = False) -> bool:
-    """Kiểm tra xem phòng thi/bài tập có đang mở cho sinh viên không (D30)"""
-    if app_testing or os.environ.get("EDUDOC_TESTING") == "1":
+def is_session_open(class_code: Any = "", app_testing: bool = False) -> bool:
+    """Kiểm tra xem phòng thi/bài tập có đang mở cho sinh viên không (D30, Priority 3, 4)"""
+    if isinstance(class_code, bool):
+        app_testing = class_code
+        class_code = ""
+
+    is_testing = bool(app_testing or os.environ.get("EDUDOC_TESTING") == "1")
+    if is_testing:
+        try:
+            from flask import request, has_request_context
+            if has_request_context():
+                if request.headers.get("X-Test-Force-Check-Open") == "0":
+                    return False
+                if request.headers.get("X-Test-Force-Check-Open") == "1":
+                    return True
+        except Exception:
+            pass
         return True
-    state = get_session_state(class_code)
+
+    c_code = str(class_code or "").strip().upper()
+    state = get_session_state(c_code)
     return bool(state.get("is_open", False))
 
 def is_anti_cheat_enabled(class_code: str = "", app_testing: bool = False) -> bool:
-    """Kiểm tra xem có bật chế độ kiểm tra lỗi copy / gian lận không (D07).
+    """Kiểm tra xem có bật chế độ kiểm tra lỗi copy / gian lận không (D07, Priority 3, 4).
     Giảng viên có thể bật/tắt chống gian lận cho từng lớp học hoặc toàn bộ hệ thống từ trang /gv.
     Tuyệt đối không hardcode theo tên mã lớp.
     """
-    try:
-        from flask import request, has_request_context
-        if has_request_context():
-            if request.headers.get("X-Test-Disable-Anti-Cheat") == "1":
-                return False
-            if request.headers.get("X-Test-Enable-Anti-Cheat") == "1":
-                return True
-    except Exception:
-        pass
+    is_testing = bool(app_testing or os.environ.get("EDUDOC_TESTING") == "1")
+    # Priority 4: X-Test-* headers chỉ xử lý khi ở môi trường testing
+    if is_testing:
+        try:
+            from flask import request, has_request_context
+            if has_request_context():
+                if request.headers.get("X-Test-Disable-Anti-Cheat") == "1":
+                    return False
+                if request.headers.get("X-Test-Enable-Anti-Cheat") == "1":
+                    return True
+        except Exception:
+            pass
 
     c_code = str(class_code or "").strip().upper()
     # 1. Nếu lớp có cấu hình riêng biệt trong DB (được lưu với key 'class_...')
@@ -124,17 +143,17 @@ def is_anti_cheat_enabled(class_code: str = "", app_testing: bool = False) -> bo
 
     # 2. Cấu hình toàn hệ thống
     global_state = get_session_state()
-    if global_state and global_state.get("enable_anti_cheat") is True:
-        return True
+    if global_state and global_state.get("enable_anti_cheat") is not None:
+        return bool(global_state.get("enable_anti_cheat"))
 
     # 3. Môi trường kiểm thử tự động (mặc định bật cho các bộ test chống gian lận cũ)
-    if app_testing or os.environ.get("EDUDOC_TESTING") == "1":
+    if is_testing:
         return True
 
-    return bool(global_state.get("enable_anti_cheat", False))
+    return False
 
 def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False, force_check: bool = False) -> bool:
-    """Kiểm tra sinh viên có trong danh sách chính thức của lớp không"""
+    """Kiểm tra sinh viên có trong danh sách chính thức của lớp không (D05, Priority 3, 4)"""
     c_code = str(class_code or "").strip().upper()
     m_clean = str(mssv or "").strip().lower()
     
@@ -142,7 +161,8 @@ def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False, 
     if not c_code or not m_clean:
         return False
 
-    if not force_check:
+    is_testing = bool(app_testing or os.environ.get("EDUDOC_TESTING") == "1")
+    if is_testing:
         try:
             from flask import request, has_request_context
             if has_request_context() and request.headers.get("X-Test-Enforce-Roster") == "1":
@@ -150,9 +170,11 @@ def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False, 
         except Exception:
             pass
 
-    if not force_check and (app_testing or os.environ.get("EDUDOC_TESTING") == "1"):
+    if not force_check and is_testing:
         return True
-    state = get_session_state()
+
+    # Kiểm tra cấu hình lớp cụ thể hoặc toàn cục
+    state = get_session_state(c_code)
     if not state.get("enforce_roster", True):
         return True
 

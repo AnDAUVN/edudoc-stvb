@@ -143,6 +143,9 @@
         <button class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm" onclick="triggerDbBackup()" title="Sao lưu nóng cơ sở dữ liệu">
           <i class="fa-solid fa-cloud-arrow-down me-1"></i> Sao lưu DB
         </button>
+        <a href="/api/teacher/database/download" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm" title="Tải xuống tệp cơ sở dữ liệu edudoc.db về máy tính">
+          <i class="fa-solid fa-download me-1"></i> Tải DB
+        </a>
         <button class="btn btn-info text-white rounded-pill px-3 fw-bold shadow-sm" onclick="openShareLinkModal()">
           <i class="fa-solid fa-share-nodes me-1"></i> Lấy Link Cho Sinh Viên
         </button>
@@ -955,6 +958,7 @@
           });
           const authData = await authRes.json();
           if (authRes.ok && authData.success) {
+            sessionStorage.setItem('edudoc_teacher_pin', pin);
             Swal.fire({
               icon: 'success',
               title: 'XÁC THỰC THÀNH CÔNG',
@@ -975,6 +979,13 @@
           Swal.fire('Lỗi', 'Không thể kết nối máy chủ xác thực: ' + err, 'error');
         }
       }
+    }
+
+    function getTeacherHeaders() {
+      const pin = sessionStorage.getItem('edudoc_teacher_pin') || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (pin) headers['X-Teacher-PIN'] = pin;
+      return headers;
     }
 
     async function triggerDbBackup() {
@@ -2194,28 +2205,28 @@
       const scEl = document.getElementById('an-avg-score');
       if (scEl) scEl.innerText = avgScore;
 
-      // D19: Gọi API thống kê thực tế từ DB
+      // D19 & Priority 6: Gọi API thống kê thực tế từ DB với token xác thực chuẩn
       let realAnalytics = null;
       try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (teacherPin) headers['X-Teacher-PIN'] = teacherPin;
+        const headers = getTeacherHeaders();
         const aRes = await fetch(`/api/teacher/analytics?class_code=${encodeURIComponent(currentAnalyticsClass)}`, { headers });
         if (aRes.ok) {
           realAnalytics = await aRes.json();
         }
       } catch (err) {
-        console.warn("Không thể tải analytics thực tế, dùng fallback:", err);
+        console.warn("Không thể tải analytics thực tế:", err);
       }
 
       let groupStats = [];
       if (realAnalytics && realAnalytics.has_data && realAnalytics.group_stats && realAnalytics.group_stats.length > 0) {
         groupStats = realAnalytics.group_stats;
       } else {
+        // Priority 6: Hiển thị trạng thái rỗng chân thực, không ngụy tạo số liệu giả định
         groupStats = [
-          { id: 1, passRate: perfectRate, name: "Khổ giấy & Căn lề", passed: perfectCount, failed: total - perfectCount },
-          { id: 2, passRate: perfectRate, name: "Quốc hiệu, Tên CQ & Số/KH", passed: perfectCount, failed: total - perfectCount },
-          { id: 3, passRate: perfectRate, name: "Nội dung & Bảng biểu", passed: perfectCount, failed: total - perfectCount },
-          { id: 4, passRate: perfectRate, name: "Chữ ký & Nơi nhận", passed: perfectCount, failed: total - perfectCount }
+          { id: 1, passRate: 0, name: "Khổ giấy & Căn lề", passed: 0, failed: 0 },
+          { id: 2, passRate: 0, name: "Quốc hiệu, Tên CQ & Số/KH", passed: 0, failed: 0 },
+          { id: 3, passRate: 0, name: "Nội dung & Bảng biểu", passed: 0, failed: 0 },
+          { id: 4, passRate: 0, name: "Chữ ký & Nơi nhận", passed: 0, failed: 0 }
         ];
       }
 

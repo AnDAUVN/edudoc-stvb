@@ -279,6 +279,35 @@ def init_db(db_path: Optional[str] = None) -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_mssv ON box6_submissions(mssv);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_doc_type ON box6_submissions(doc_type);")
         _migrate_box6_schema(conn)
+
+        # 7. BẢNG PHIÊN THI TRẮC NGHIỆM (QUIZ ATTEMPTS - PRIORITY 1)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS quiz_attempts (
+            attempt_id TEXT PRIMARY KEY,
+            class_code TEXT NOT NULL,
+            mssv TEXT NOT NULL,
+            doc_type TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            time_limit_seconds INTEGER DEFAULT 300,
+            question_ids TEXT NOT NULL,
+            questions_spec TEXT,
+            status TEXT DEFAULT 'IN_PROGRESS',
+            score INTEGER DEFAULT 0,
+            total INTEGER DEFAULT 5,
+            pass_score INTEGER DEFAULT 4,
+            passed INTEGER DEFAULT 0,
+            answers TEXT,
+            completed_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_quiz_attempts_student ON quiz_attempts(class_code, mssv, doc_type);")
+
+        # Đảm bảo cột checksum tồn tại trong submissions (PRIORITY 2)
+        try:
+            conn.execute("ALTER TABLE submissions ADD COLUMN checksum TEXT DEFAULT '';")
+        except Exception:
+            pass
     conn.close()
 
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
@@ -476,7 +505,8 @@ def get_all_submissions(class_code: Optional[str] = None, db_path: Optional[str]
                 "preview_count": r["preview_count"],
                 "flags": flags,
                 "status": r["status"],
-                "score": r["score"]
+                "score": r["score"],
+                "checksum": r["checksum"] if "checksum" in r.keys() else ""
             })
         return result
     finally:
@@ -487,11 +517,12 @@ def save_submission(sub: Dict[str, Any], db_path: Optional[str] = None) -> None:
     conn = get_db_connection(db_path)
     try:
         flags_str = json.dumps(sub.get("flags", []), ensure_ascii=False) if isinstance(sub.get("flags"), list) else "[]"
+        checksum_val = str(sub.get("checksum", "")).strip()
         with conn:
             conn.execute("""
                 INSERT OR REPLACE INTO submissions
-                (class_code, sbd, mssv, name, doc_type, doc_name, filename, submitted_at, elapsed_time, is_suspicious_speed, preview_count, flags, status, score)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (class_code, sbd, mssv, name, doc_type, doc_name, filename, submitted_at, elapsed_time, is_suspicious_speed, preview_count, flags, status, score, checksum)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 sub.get("class_code", "Chung"),
                 sub.get("sbd", ""),
@@ -506,7 +537,8 @@ def save_submission(sub: Dict[str, Any], db_path: Optional[str] = None) -> None:
                 sub.get("preview_count", 0),
                 flags_str,
                 sub.get("status", "Hoàn thành 100% Nghị định 30"),
-                float(sub.get("score", 10.0))
+                float(sub.get("score", 10.0)),
+                checksum_val
             ))
     finally:
         conn.close()
@@ -1015,3 +1047,105 @@ def list_backups(backup_dir: Optional[str] = None) -> List[Dict[str, Any]]:
             })
     files.sort(key=lambda x: x["created_at"], reverse=True)
     return files
+
+# =========================================================================
+# API QUIZ ATTEMPTS & PREVIEW QUOTA (PRIORITY 1 & ATOMIC PREVIEW)
+# =========================================================================
+def save_quiz_attempt(attempt_data: Dict[str, Any], db_path: Optional[str] = None) -> None:
+    """Lưu phiên làm bài trắc nghiệm mới vào SQLite (Priority 1)"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("""
+                INSERT OR REPLACE INTO quiz_attempts (
+                    attempt_id, class_code, mssv, doc_type, started_at,
+                    time_limit_seconds, question_ids, questions_spec, status,
+                    score, total, pass_score, passed, answers, completed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                attempt_data["attempt_id"],
+                attempt_data.get("class_code", "Chung"),
+                attempt_data.get("mssv", ""),
+                attempt_data.get("doc_type", ""),
+                attempt_data.get("started_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                attempt_data.get("time_limit_seconds", 300),
+                attempt_data.get("question_ids", "[]"),
+                attempt_data.get("questions_spec", "[]"),
+                attempt_data.get("status", "IN_PROGRESS"),
+                attempt_data.get("score", 0),
+                attempt_data.get("total", 5),
+                attempt_data.get("pass_score", 4),
+                1 if attempt_data.get("passed") else 0,
+                attempt_data.get("answers", "{}"),
+                attempt_data.get("completed_at", None)
+            ))
+    finally:
+        conn.close()
+
+def get_quiz_attempt(attempt_id: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Truy vấn thông tin phiên làm bài trắc nghiệm theo attempt_id (Priority 1)"""
+    if not attempt_id:
+        return None
+    conn = get_db_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM quiz_attempts WHERE attempt_id = ?;", (attempt_id,)).fetchone()
+        if not row:
+            return None
+        res = dict(row)
+        try:
+            res["question_ids"] = json.loads(res["question_ids"]) if res["question_ids"] else []
+        except Exception:
+            res["question_ids"] = []
+        try:
+            res["answers"] = json.loads(res["answers"]) if res["answers"] else {}
+        except Exception:
+            res["answers"] = {}
+        res["passed"] = bool(res["passed"])
+        return res
+    finally:
+        conn.close()
+
+def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Dict[str, Any], db_path: Optional[str] = None) -> None:
+    """Cập nhật kết quả chấm bài của phiên trắc nghiệm (Priority 1)"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("""
+                UPDATE quiz_attempts
+                SET status = 'COMPLETED',
+                    score = ?,
+                    passed = ?,
+                    answers = ?,
+                    completed_at = ?
+                WHERE attempt_id = ?;
+            """, (
+                min(int(score), 5),
+                1 if passed else 0,
+                json.dumps(answers, ensure_ascii=False) if isinstance(answers, dict) else "{}",
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                attempt_id
+            ))
+    finally:
+        conn.close()
+
+def get_atomic_preview_count(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> int:
+    """Đếm số lần sinh viên đã kiểm tra thử trực tiếp từ SQLite validation_logs (Atomic - D15)"""
+    conn = get_db_connection(db_path)
+    try:
+        c_code = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_type = str(doc_type or "").strip()
+        if c_code and c_code != "CHUNG":
+            row = conn.execute("""
+                SELECT COUNT(*) FROM validation_logs
+                WHERE LOWER(mssv) = ? AND doc_type = ? AND UPPER(class_code) = ?;
+            """, (m_clean, d_type, c_code)).fetchone()
+        else:
+            row = conn.execute("""
+                SELECT COUNT(*) FROM validation_logs
+                WHERE LOWER(mssv) = ? AND doc_type = ?;
+            """, (m_clean, d_type)).fetchone()
+        return row[0] if row else 0
+    finally:
+        conn.close()
+

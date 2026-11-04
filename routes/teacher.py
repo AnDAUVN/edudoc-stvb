@@ -871,6 +871,16 @@ def api_backup_database():
     except Exception as e:
         return jsonify({"error": f"Lỗi khi sao lưu cơ sở dữ liệu: {str(e)}"}), 500
 
+@teacher_bp.route("/api/teacher/database/download", methods=["GET"])
+@require_teacher_auth
+def api_download_database():
+    """Tải xuống tệp cơ sở dữ liệu SQLite edudoc.db để sao lưu ngoại vi an toàn (Priority 6)"""
+    db_file = os.path.join(DATA_DIR, "edudoc.db")
+    if not os.path.exists(db_file):
+        return jsonify({"error": "Không tìm thấy tệp cơ sở dữ liệu!"}), 404
+    from flask import send_file
+    return send_file(db_file, as_attachment=True, download_name="edudoc.db")
+
 @teacher_bp.route("/api/teacher/database/backups", methods=["GET"])
 @require_teacher_auth
 def api_list_backups():
