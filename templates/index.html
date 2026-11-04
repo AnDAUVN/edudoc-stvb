@@ -1651,12 +1651,18 @@
       }
 
       const btnSubmit = document.getElementById('btn-final-submit');
-      if (data.can_submit) {
+      if (btnSubmit) {
         btnSubmit.removeAttribute('disabled');
         btnSubmit.classList.add('animate__animated', 'animate__pulse');
-        Swal.fire('Tuyệt vời!', 'Bài làm của bạn đã đạt chuẩn 100% Nghị định 30! Bạn có thể bấm nút "XÁC NHẬN NỘP BÀI".', 'success');
-      } else {
-        btnSubmit.setAttribute('disabled', 'true');
+        const sc = (data.score !== undefined) ? Number(data.score).toFixed(1) : ((data.percentage / 10).toFixed(1));
+        if (data.can_submit) {
+          btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> XÁC NHẬN NỘP BÀI (ĐẠT 100%)';
+          btnSubmit.className = 'btn btn-success btn-lg px-4 fw-bold shadow-sm';
+          Swal.fire('Tuyệt vời!', 'Bài làm của bạn đã đạt chuẩn 100% Nghị định 30! Bạn có thể bấm nút "XÁC NHẬN NỘP BÀI" để nộp cho Giảng viên.', 'success');
+        } else {
+          btnSubmit.innerHTML = `<i class="fa-solid fa-paper-plane me-2"></i> XÁC NHẬN NỘP BÀI (${sc}đ)`;
+          btnSubmit.className = 'btn btn-primary btn-lg px-4 fw-bold shadow-sm';
+        }
       }
 
       // 1. THANH TIẾN TRÌNH & ĐIỂM SỐ NGHỊ ĐỊNH 30 (PROGRESS BAR)
@@ -1939,24 +1945,23 @@
           return;
         }
         if (data.success) {
+          const subScore = (data.submission && data.submission.score !== undefined) ? data.submission.score : '10.0';
           Swal.fire({
             icon: 'success',
             title: 'NỘP BÀI THÀNH CÔNG!',
             html: `
               <div class="text-start">
-                <p class="mb-2">Chúc mừng bạn! Bài làm đã được kiểm định <strong>chuẩn 100% Nghị định 30</strong> và nộp thành công vào hệ thống khảo thí.</p>
+                <p class="mb-2">Chúc mừng bạn! Bài làm đã được nộp thành công vào hệ thống với điểm số: <strong>${subScore} / 10 Điểm</strong>.</p>
                 <div class="p-3 bg-light rounded-3 border small font-monospace mb-3">
                   <div class="mb-1"><i class="fa-solid fa-file-word text-primary me-1"></i> <strong>File bài nộp:</strong> ${escapeHtml(data.submission.filename)}</div>
                   <div class="mb-1"><i class="fa-solid fa-clock text-secondary me-1"></i> <strong>Thời gian nộp:</strong> ${escapeHtml(data.submission.submitted_at || new Date().toLocaleString('vi-VN'))}</div>
-                  <div><i class="fa-solid fa-circle-check text-success me-1"></i> <strong>Trạng thái:</strong> Đạt 100% Thể thức & Chữ ký số hợp lệ</div>
+                  <div><i class="fa-solid fa-circle-check text-success me-1"></i> <strong>Trạng thái:</strong> ${escapeHtml(data.submission.status || 'Đã nộp bài')}</div>
                 </div>
-                <p class="text-muted small mb-0"><i class="fa-solid fa-circle-info text-primary me-1"></i> Giảng viên đã ghi nhận bài thi của bạn vào Bàn chấm bài.</p>
+                <p class="text-muted small mb-0"><i class="fa-solid fa-circle-info text-primary me-1"></i> Giảng viên đã nhận được bài làm của bạn trên Bàn làm việc Giảng viên.</p>
               </div>
             `,
-            confirmButtonText: 'Làm bài tập khác',
+            confirmButtonText: 'Hoàn thành',
             confirmButtonColor: '#10b981'
-          }).then(() => {
-            resetToStep1();
           });
         }
       } catch (e) {

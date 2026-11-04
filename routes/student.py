@@ -327,7 +327,7 @@ def validate_student_work():
         # Giảng viên yêu cầu bỏ hết lỗi copy để sinh viên nộp bài tập kiểm tra thể thức.
         # Chế độ kiểm tra copy chỉ kích hoạt khi test tự động hoặc khi Giảng viên chủ động bật lại.
         fraud_check = {"is_fraud": False, "box6_text": ""}
-        if is_anti_cheat_enabled(current_app.testing):
+        if is_anti_cheat_enabled(class_code, current_app.testing):
             all_subs = get_all_submissions()
             students_db = {s["mssv"]: s for s in all_subs}
             
@@ -394,6 +394,40 @@ def validate_student_work():
         if box6_text:
             save_box6_submission(mssv, name, class_code, doc_type, box6_text)
 
+        # Tự động đồng bộ bài nộp sang Bàn làm việc Giảng viên (/gv)
+        try:
+            clean_name = " ".join(re.sub(r'[\/*?:"<>|]', '', name).strip().split()) or mssv
+            file_suffix = tmpl_info.get("filename_suffix", doc_type)
+            if doc_type == "bai_thu_hoach":
+                file_suffix = "Bài thu hoạch"
+            final_filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
+            final_path = os.path.join(STORAGE_SUBMITTED, final_filename)
+            shutil.copy2(temp_save_path, final_path)
+
+            pct = result.get("percentage", 0.0)
+            calc_score = round(pct / 10.0, 1)
+            calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
+
+            sub_rec = {
+                "class_code": class_code or "Chung",
+                "sbd": sbd,
+                "mssv": mssv,
+                "name": name,
+                "doc_type": doc_type,
+                "doc_name": tmpl_info.get("name", doc_type),
+                "filename": final_filename,
+                "submitted_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "elapsed_time": "Vừa thẩm định",
+                "is_suspicious_speed": False,
+                "preview_count": current_sess["preview_count"],
+                "flags": [],
+                "status": calc_status,
+                "score": calc_score
+            }
+            save_submission(sub_rec)
+        except Exception as err_sync:
+            pass
+
         result["status"] = "SUCCESS"
         result["temp_file"] = temp_filename
         result["preview_count"] = current_sess["preview_count"]
@@ -446,7 +480,7 @@ def submit_final():
 
     # Kiểm tra gian lận lại một lần nữa trước khi ghi nhận bài nộp chính thức (nếu bật chế độ chống copy)
     fraud_check = {"is_fraud": False}
-    if is_anti_cheat_enabled(current_app.testing):
+    if is_anti_cheat_enabled(class_code, current_app.testing):
         all_subs = get_all_submissions()
         students_db = {s["mssv"]: s for s in all_subs}
         fraud_check = check_anti_cheat(
@@ -525,6 +559,16 @@ def submit_final():
             
     preview_count = sess.get("preview_count", 0)
 
+    try:
+        val_sub = Decree30Validator(final_path, doc_type, tmpl, mssv=mssv)
+        val_res = val_sub.validate_document()
+        pct = val_res.get("percentage", 100.0)
+        calc_score = round(pct / 10.0, 1)
+        calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
+    except Exception:
+        calc_score = 10.0
+        calc_status = "Hoàn thành 100% Nghị định 30"
+
     new_sub = {
         "class_code": class_code or "Chung",
         "sbd": sbd,
@@ -538,8 +582,8 @@ def submit_final():
         "is_suspicious_speed": is_suspicious_speed,
         "preview_count": preview_count,
         "flags": flags,
-        "status": "Hoàn thành 100% Nghị định 30",
-        "score": 10.0
+        "status": calc_status,
+        "score": calc_score
     }
     
     # Lưu vào cơ sở dữ liệu SQLite
