@@ -1,291 +1,462 @@
 {
   "HC01K157": [
     {
-      "sbd": "01",
-      "mssv": "2100001122",
-      "name": "Cao Thành Trung"
-    },
-    {
-      "sbd": "02",
+      "sbd": "1",
       "mssv": "2400003155",
       "name": "Lê Võ Hoài An",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "03",
+      "sbd": "2",
       "mssv": "2500016663",
       "name": "Lê Ngọc Minh Anh",
       "student_class": "25DTL1B"
     },
     {
-      "sbd": "04",
+      "sbd": "3",
       "mssv": "2311557766",
       "name": "Nguyễn Thị Phương Anh",
       "student_class": "23DKQT1A"
     },
     {
-      "sbd": "05",
+      "sbd": "4",
       "mssv": "2311558420",
       "name": "Trịnh Nguyễn Lan Anh",
       "student_class": "23DKS1B"
     },
     {
-      "sbd": "06",
+      "sbd": "5",
       "mssv": "2311558702",
       "name": "Trần Thị Quỳnh Anh",
       "student_class": "23DKQT1A"
     },
     {
-      "sbd": "07",
+      "sbd": "6",
       "mssv": "2100006468",
       "name": "Võ Đức Anh",
       "student_class": "21DQT1A"
     },
     {
-      "sbd": "08",
+      "sbd": "7",
       "mssv": "2311555605",
       "name": "Nguyễn Thị Lynh Đan",
       "student_class": "23DKQT1A"
     },
     {
-      "sbd": "09",
+      "sbd": "8",
       "mssv": "2311555687",
       "name": "Nguyễn Thị Tuyết Dung",
       "student_class": "23DKS1A"
     },
     {
-      "sbd": "10",
+      "sbd": "9",
       "mssv": "2500017448",
       "name": "Võ Hoàng Giang",
       "student_class": "25DTL1B"
     },
     {
-      "sbd": "11",
+      "sbd": "10",
       "mssv": "2400003161",
       "name": "Nguyễn Thị Lệ Hằng",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "12",
+      "sbd": "11",
       "mssv": "2400005478",
       "name": "Hồ Thị Ngọc Hiền",
       "student_class": "24DMK1D"
     },
     {
-      "sbd": "13",
+      "sbd": "12",
       "mssv": "2311554832",
       "name": "Nguyễn Tiến Hoàng",
       "student_class": "23DTL1A"
     },
     {
-      "sbd": "14",
+      "sbd": "13",
       "mssv": "2400001130",
       "name": "Nguyễn Lê Hoàng Khang",
       "student_class": "24DTH1A"
     },
     {
-      "sbd": "15",
+      "sbd": "14",
       "mssv": "2311559268",
       "name": "Lê Chí Khanh",
       "student_class": "23DKS1B"
     },
     {
-      "sbd": "16",
+      "sbd": "15",
       "mssv": "2400001058",
       "name": "Nguyễn Nam Khánh",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "17",
+      "sbd": "16",
       "mssv": "2400004371",
       "name": "Bùi Gia Khánh",
       "student_class": "24DKTPM1A"
     },
     {
-      "sbd": "18",
+      "sbd": "17",
       "mssv": "2200001480",
       "name": "Lê Đăng Khoa",
       "student_class": "22DMK1B"
     },
     {
-      "sbd": "19",
+      "sbd": "18",
       "mssv": "2400002028",
       "name": "Hà Thị Kim Loan",
       "student_class": "24DTD2D"
     },
     {
-      "sbd": "20",
+      "sbd": "19",
       "mssv": "2500015142",
       "name": "Lê Thị Cẩm Ly",
       "student_class": "25DTL1B"
     },
     {
-      "sbd": "21",
+      "sbd": "20",
       "mssv": "2400002828",
       "name": "Đinh Thị Kim Ngân",
       "student_class": "24DMK1B"
     },
     {
-      "sbd": "22",
+      "sbd": "21",
       "mssv": "2311558884",
       "name": "Nguyễn Như Ngọc",
       "student_class": "23DTT1C"
     },
     {
-      "sbd": "23",
+      "sbd": "22",
       "mssv": "2311558183",
       "name": "Phạm Thị Minh Nhàn",
       "student_class": "23DKQT1A"
     },
     {
-      "sbd": "24",
+      "sbd": "23",
       "mssv": "2400002269",
       "name": "Nguyễn Thị Ngọc Nhi",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "25",
+      "sbd": "24",
       "mssv": "2100002370",
       "name": "Nguyễn Xuân Phát",
       "student_class": "21DXD1A"
     },
     {
-      "sbd": "26",
+      "sbd": "25",
       "mssv": "2400000147",
       "name": "Đào Tấn Phát",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "27",
+      "sbd": "26",
       "mssv": "2200009376",
       "name": "Nguyễn Tấn Phú",
       "student_class": "22DKS1C"
     },
     {
-      "sbd": "28",
+      "sbd": "27",
       "mssv": "2100003281",
       "name": "Võ Đặng Hồng Quân",
       "student_class": "21DXD1A"
     },
     {
-      "sbd": "29",
+      "sbd": "28",
       "mssv": "2200010047",
       "name": "Trương Thanh Tân",
       "student_class": "22DKS1C"
     },
     {
-      "sbd": "30",
+      "sbd": "29",
       "mssv": "2400001787",
       "name": "Nguyễn Ngọc Thương",
       "student_class": "24DTMDT1A"
     },
     {
-      "sbd": "31",
+      "sbd": "30",
       "mssv": "2400002157",
       "name": "Hồ Ngọc Thủy Tiên",
       "student_class": "24DTD1A"
     },
     {
-      "sbd": "32",
+      "sbd": "31",
       "mssv": "2400002322",
       "name": "Đào Thị Bảo Trân",
       "student_class": "24DTD1A"
     },
     {
-      "sbd": "33",
+      "sbd": "32",
       "mssv": "2400003739",
       "name": "Vũ Nguyễn Bảo Trân",
       "student_class": "24DMK1B"
     },
     {
-      "sbd": "34",
+      "sbd": "33",
       "mssv": "2311557878",
       "name": "Giáp Thị Kiều Trang",
       "student_class": "23DKS1A"
     },
     {
-      "sbd": "35",
+      "sbd": "34",
       "mssv": "2400008954",
       "name": "Âu Thị Thu Trang",
       "student_class": "24DTL1C"
     },
     {
-      "sbd": "36",
+      "sbd": "35",
       "mssv": "2500020330",
       "name": "Đào Thanh Trúc",
       "student_class": "25DTD1C"
     },
     {
-      "sbd": "37",
+      "sbd": "36",
       "mssv": "2500016197",
       "name": "Phan Thị Thùy Trúc",
       "student_class": "25DTL1B"
     },
     {
-      "sbd": "38",
+      "sbd": "37",
       "mssv": "2311560233",
       "name": "Đặng Hồng Thúy Yên",
       "student_class": "23DTL1B"
     },
     {
-      "sbd": "39",
+      "sbd": "38",
       "mssv": "2400005235",
       "name": "Nguyễn Hoàng Yến",
       "student_class": "24DTT1C"
     }
   ],
-  "KN01": [
+  "HC06K157": [
     {
-      "sbd": "01",
-      "mssv": "2280600111",
-      "name": "Nguyễn Văn Gian Lận",
-      "student_class": ""
+      "sbd": "1",
+      "mssv": "2400008717",
+      "name": "Lê Hồng Anh",
+      "student_class": "24DTD2C"
     },
     {
-      "sbd": "01",
-      "mssv": "2280609999",
-      "name": "Nguyễn Kiểm Tra",
-      "student_class": ""
+      "sbd": "2",
+      "mssv": "2400000554",
+      "name": "Hồ Tấn Bửu",
+      "student_class": "24DTC1A"
     },
     {
-      "sbd": "01",
-      "mssv": "2100001122",
-      "name": "Cao Thành Trung",
-      "student_class": ""
+      "sbd": "3",
+      "mssv": "2400000571",
+      "name": "Phan Kim Dư",
+      "student_class": "24DTC1A"
     },
     {
-      "sbd": "02",
-      "mssv": "2100002222",
-      "name": "Nguyễn Văn Chép Bài",
-      "student_class": ""
+      "sbd": "4",
+      "mssv": "2400008862",
+      "name": "Phạm Chí Dũng",
+      "student_class": "24DQQT1A"
     },
     {
-      "sbd": "01",
-      "mssv": "2100009991",
-      "name": "Trần Văn Gốc",
-      "student_class": ""
+      "sbd": "5",
+      "mssv": "2400003119",
+      "name": "Nguyễn Thị Mỹ Duyên",
+      "student_class": "24DTD1C"
     },
     {
-      "sbd": "02",
-      "mssv": "2100009992",
-      "name": "Nguyễn Văn Chép Bài",
-      "student_class": ""
-    }
-  ],
-  "KN02": [
+      "sbd": "6",
+      "mssv": "2400008450",
+      "name": "Nguyễn Thị Mỹ Duyên",
+      "student_class": "24DQH1D"
+    },
     {
-      "sbd": "02",
-      "mssv": "2280600222",
-      "name": "Trần Thị B",
-      "student_class": ""
-    }
-  ],
-  "22DTH01": [
+      "sbd": "7",
+      "mssv": "2400004060",
+      "name": "Thóng Gia Hân",
+      "student_class": "24DQH1B"
+    },
     {
-      "sbd": "01",
-      "mssv": "2100001122",
-      "name": "Cao Thành Trung",
-      "student_class": ""
+      "sbd": "8",
+      "mssv": "2400007896",
+      "name": "Võ Thị Khánh Hiền",
+      "student_class": "24DQH1C"
+    },
+    {
+      "sbd": "9",
+      "mssv": "2400009684",
+      "name": "Đinh Văn Hiệp",
+      "student_class": "24DTC1D"
+    },
+    {
+      "sbd": "10",
+      "mssv": "2311557881",
+      "name": "Trần Quốc Huy",
+      "student_class": "23DQT2A"
+    },
+    {
+      "sbd": "11",
+      "mssv": "2400005768",
+      "name": "Trần Gia Linh",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "12",
+      "mssv": "2400006408",
+      "name": "Nguyễn Hoàng Long",
+      "student_class": "24DTC1D"
+    },
+    {
+      "sbd": "13",
+      "mssv": "2400003321",
+      "name": "Trương Thị Hồng Lựu",
+      "student_class": "24DTD1C"
+    },
+    {
+      "sbd": "14",
+      "mssv": "2400004525",
+      "name": "Nguyễn Thị Thu Ngân",
+      "student_class": "24DQH1B"
+    },
+    {
+      "sbd": "15",
+      "mssv": "2400008652",
+      "name": "Trương Hoàng Nghĩa",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "16",
+      "mssv": "2500009899",
+      "name": "Nguyễn Hoàng Linh Nhi",
+      "student_class": "25DTD1A"
+    },
+    {
+      "sbd": "17",
+      "mssv": "2400007553",
+      "name": "Đào Thảo Như",
+      "student_class": "24DQH1C"
+    },
+    {
+      "sbd": "18",
+      "mssv": "2200002342",
+      "name": "Nguyễn Tấn Phát",
+      "student_class": "22DOT3D"
+    },
+    {
+      "sbd": "19",
+      "mssv": "2400003445",
+      "name": "Nguyễn Gia Phú",
+      "student_class": "24DQQT1A"
+    },
+    {
+      "sbd": "20",
+      "mssv": "2400005480",
+      "name": "Bùi Thị Thu Phương",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "21",
+      "mssv": "2311555237",
+      "name": "Nguyễn Kim Thoa",
+      "student_class": "23DLK1B"
+    },
+    {
+      "sbd": "22",
+      "mssv": "2400003350",
+      "name": "Võ Minh Thư",
+      "student_class": "24DTD2D"
+    },
+    {
+      "sbd": "23",
+      "mssv": "2400003223",
+      "name": "Nguyễn Thị Thúy",
+      "student_class": "24DQH1B"
+    },
+    {
+      "sbd": "24",
+      "mssv": "2400009063",
+      "name": "Đặng Bùi Thùy Trâm",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "25",
+      "mssv": "2400003301",
+      "name": "Phan Thị Quế Trân",
+      "student_class": "24DQN1A"
+    },
+    {
+      "sbd": "26",
+      "mssv": "2400000257",
+      "name": "Vũ Trần Yến Trang",
+      "student_class": "24DTL1B"
+    },
+    {
+      "sbd": "27",
+      "mssv": "2400003082",
+      "name": "Nguyễn Phan Minh Triết",
+      "student_class": "24DTD1C"
+    },
+    {
+      "sbd": "28",
+      "mssv": "2400002144",
+      "name": "Trần Thị Minh Tú",
+      "student_class": "24DTL1B"
+    },
+    {
+      "sbd": "29",
+      "mssv": "2400000736",
+      "name": "Nguyễn Phương Uyên",
+      "student_class": "24DLG1A"
+    },
+    {
+      "sbd": "30",
+      "mssv": "2400002769",
+      "name": "Đỗ Thị Vân Uyên",
+      "student_class": "24DTD2D"
+    },
+    {
+      "sbd": "31",
+      "mssv": "2400002620",
+      "name": "Nguyễn Phú Vinh",
+      "student_class": "24DLG1A"
+    },
+    {
+      "sbd": "32",
+      "mssv": "2400004247",
+      "name": "Bùi Đặng Quang Vinh",
+      "student_class": "24DQQT1A"
+    },
+    {
+      "sbd": "33",
+      "mssv": "2400000259",
+      "name": "Nguyễn Trà Khánh Vy",
+      "student_class": "24DLG1A"
+    },
+    {
+      "sbd": "34",
+      "mssv": "2400003279",
+      "name": "Nguyễn Thị Thúy Vy",
+      "student_class": "24DQN1A"
+    },
+    {
+      "sbd": "35",
+      "mssv": "2400005629",
+      "name": "Phạm Thị Thảo Vy",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "36",
+      "mssv": "2400005646",
+      "name": "Quách Hồng Xuyến",
+      "student_class": "24DQH1D"
+    },
+    {
+      "sbd": "37",
+      "mssv": "2400003000",
+      "name": "Nguyễn Thị Như Ý",
+      "student_class": "24DQH1B"
+    },
+    {
+      "sbd": "38",
+      "mssv": "2400006076",
+      "name": "Trần Mộng Như Ý",
+      "student_class": "24DTL1B"
     }
   ]
 }
