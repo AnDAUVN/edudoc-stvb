@@ -1,9 +1,9 @@
 {
   "is_open": true,
   "enforce_roster": true,
-  "active_doc_type": "cong_van_de_nghi",
+  "active_doc_type": "bai_thu_hoach",
   "message": "Kiểm tra phòng thi WAL mode",
   "active_teacher": "ThS. Cao Thành Trung",
   "active_teacher_id": "GV01",
-  "updated_at": "2026-11-04 18:50:29"
+  "updated_at": "2026-11-04 18:51:51"
 }
