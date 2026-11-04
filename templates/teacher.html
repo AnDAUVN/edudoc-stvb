@@ -140,6 +140,9 @@
         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fw-bold">
           <i class="fa-solid fa-database me-1"></i> SQLite WAL Mode
         </span>
+        <button class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm" onclick="triggerDbBackup()" title="Sao lưu nóng cơ sở dữ liệu">
+          <i class="fa-solid fa-cloud-arrow-down me-1"></i> Sao lưu DB
+        </button>
         <button class="btn btn-info text-white rounded-pill px-3 fw-bold shadow-sm" onclick="openShareLinkModal()">
           <i class="fa-solid fa-share-nodes me-1"></i> Lấy Link Cho Sinh Viên
         </button>
@@ -971,6 +974,30 @@
         } catch (err) {
           Swal.fire('Lỗi', 'Không thể kết nối máy chủ xác thực: ' + err, 'error');
         }
+      }
+    }
+
+    async function triggerDbBackup() {
+      try {
+        const res = await fetch('/api/teacher/database/backup', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'SAO LƯU THÀNH CÔNG!',
+            html: `Đã tạo tệp sao lưu dữ liệu SQLite an toàn:<br><code class="text-primary fs-6">${data.backup_file}</code>`,
+            confirmButtonColor: '#1e3a8a'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'LỖI SAO LƯU',
+            text: data.error || 'Không thể tạo bản sao lưu dữ liệu.',
+            confirmButtonColor: '#d33'
+          });
+        }
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Lỗi', text: err.message });
       }
     }
 

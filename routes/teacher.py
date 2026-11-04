@@ -22,7 +22,8 @@ from engine.common import (
 )
 from engine.db import (
     get_all_submissions, delete_submission_by_mssv,
-    get_all_fraud_logs, delete_fraud_log_by_id, clear_all_fraud_logs
+    get_all_fraud_logs, delete_fraud_log_by_id, clear_all_fraud_logs,
+    get_validation_logs, backup_database, restore_database, list_backups
 )
 
 teacher_bp = Blueprint("teacher", __name__)
@@ -112,24 +113,34 @@ def teacher_portal():
 @teacher_bp.route("/api/teacher/session-state", methods=["POST"])
 @require_teacher_auth
 def api_set_session_state():
-    """Bật / Tắt trạng thái làm bài (Khóa khi giảng lý thuyết, mở khi cho phép làm bài)"""
+    """Bật / Tắt trạng thái làm bài (Khóa khi giảng lý thuyết, mở khi cho phép làm bài - D30)"""
     data = request.json or {}
-    current = get_session_state()
+    class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
+    current = get_session_state(class_code)
     new_is_open = bool(data.get("is_open", current.get("is_open", False))) if "is_open" in data else current.get("is_open", False)
     new_message = str(data.get("message", "")).strip() or current.get("message", "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.")
     enforce_roster = bool(data.get("enforce_roster", current.get("enforce_roster", True)))
     active_doc_type = str(data.get("active_doc_type", current.get("active_doc_type", "cong_van_de_nghi"))).strip()
+    enforce_quiz = bool(data.get("enforce_quiz", current.get("enforce_quiz", True)))
+    max_previews = int(data.get("max_previews", current.get("max_previews", 3)))
+    enforce_preview_limit = bool(data.get("enforce_preview_limit", current.get("enforce_preview_limit", False)))
+    enable_anti_cheat = bool(data.get("enable_anti_cheat", current.get("enable_anti_cheat", False)))
     
     updated_state = {
         "is_open": new_is_open,
         "enforce_roster": enforce_roster,
         "active_doc_type": active_doc_type,
+        "enforce_quiz": enforce_quiz,
+        "max_previews": max_previews,
+        "enforce_preview_limit": enforce_preview_limit,
+        "enable_anti_cheat": enable_anti_cheat,
         "message": new_message,
         "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    save_session_state(updated_state)
+    save_session_state(updated_state, class_code)
     return jsonify({
         "success": True,
+        "class_code": class_code or "ALL",
         "session_state": updated_state,
         "message": "Đã mở quyền làm bài cho sinh viên!" if new_is_open else "Đã khóa hệ thống để sinh viên tập trung nghe giảng!"
     })
@@ -137,17 +148,19 @@ def api_set_session_state():
 @teacher_bp.route("/api/teacher/set-active-doc", methods=["POST"])
 @require_teacher_auth
 def api_set_active_doc():
-    """Chuyển loại văn bản bài tập giao cho sinh viên làm trong ca học"""
+    """Chuyển loại văn bản bài tập giao cho sinh viên làm trong ca học (D30)"""
     data = request.json or {}
+    class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
     doc_type = str(data.get("doc_type", "")).strip()
     if not doc_type:
         return jsonify({"error": "Vui lòng chọn loại văn bản hợp lệ!"}), 400
-    state = get_session_state()
+    state = get_session_state(class_code)
     state["active_doc_type"] = doc_type
     state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_session_state(state)
+    save_session_state(state, class_code)
     return jsonify({
         "success": True,
+        "class_code": class_code or "ALL",
         "active_doc_type": doc_type,
         "session_state": state,
         "message": f"Đã chuyển loại văn bản giao làm bài sang: [{doc_type}]"
@@ -156,17 +169,19 @@ def api_set_active_doc():
 @teacher_bp.route("/api/teacher/roster-toggle", methods=["POST"])
 @require_teacher_auth
 def toggle_roster_mode():
-    """Bật / Tắt chế độ bắt buộc sinh viên phải có tên trong danh sách lớp"""
+    """Bật / Tắt chế độ bắt buộc sinh viên phải có tên trong danh sách lớp (D30)"""
     data = request.json or {}
-    state = get_session_state()
+    class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
+    state = get_session_state(class_code)
     if "enforce_roster" in data:
         state["enforce_roster"] = bool(data["enforce_roster"])
     else:
         state["enforce_roster"] = not state.get("enforce_roster", True)
     state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_session_state(state)
+    save_session_state(state, class_code)
     return jsonify({
         "success": True,
+        "class_code": class_code or "ALL",
         "enforce_roster": state["enforce_roster"],
         "message": "Đã BẬT kiểm tra danh sách lớp (chỉ sinh viên trong danh sách mới được làm bài)!" if state["enforce_roster"] else "Đã TẮT kiểm tra danh sách (mở tự do cho mọi sinh viên)."
     })
@@ -174,17 +189,19 @@ def toggle_roster_mode():
 @teacher_bp.route("/api/teacher/anti-cheat-toggle", methods=["POST"])
 @require_teacher_auth
 def toggle_anti_cheat_mode():
-    """Bật / Tắt chế độ kiểm tra chống sao chép và gian lận (Anti-Cheat)"""
+    """Bật / Tắt chế độ kiểm tra chống sao chép và gian lận (Anti-Cheat - D07, D30)"""
     data = request.json or {}
-    state = get_session_state()
+    class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
+    state = get_session_state(class_code)
     if "enable_anti_cheat" in data:
         state["enable_anti_cheat"] = bool(data["enable_anti_cheat"])
     else:
         state["enable_anti_cheat"] = not state.get("enable_anti_cheat", False)
     state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_session_state(state)
+    save_session_state(state, class_code)
     return jsonify({
         "success": True,
+        "class_code": class_code or "ALL",
         "enable_anti_cheat": state["enable_anti_cheat"],
         "message": "Đã BẬT kiểm tra chống sao chép gian lận!" if state["enable_anti_cheat"] else "Đã TẮT toàn bộ kiểm tra copy (cho phép sinh viên nộp bài kiểm tra thể thức tự do)."
     })
@@ -495,14 +512,15 @@ def export_csv():
 @teacher_bp.route("/api/teacher/submissions/delete", methods=["POST"])
 @require_teacher_auth
 def delete_teacher_submission():
-    """Xóa bài nộp của sinh viên khỏi SQLite"""
+    """Xóa bài nộp của sinh viên khỏi SQLite (hỗ trợ phân lập mã lớp - D08)"""
     data = request.json or {}
     mssv = str(data.get("mssv", "")).strip()
     doc_type = str(data.get("doc_type", "")).strip()
+    class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
     if not mssv:
         return jsonify({"error": "Thiếu MSSV cần xóa!"}), 400
     
-    deleted = delete_submission_by_mssv(mssv, doc_type)
+    deleted = delete_submission_by_mssv(mssv, doc_type, class_code=class_code or None)
     return jsonify({"success": True, "message": f"Đã xóa bài nộp của MSSV {mssv}!"})
 
 @teacher_bp.route("/api/teacher/fraud/delete", methods=["POST"])
@@ -823,4 +841,76 @@ def api_tunnel_info():
         "student_local_url": f"http://{local_ip}:5000/thi",
         "public_url": public_url,
         "student_public_url": f"{public_url}/thi" if public_url else ""
+    })
+
+# =========================================================================
+# QUẢN TRỊ CƠ SỞ DỮ LIỆU & SAO LƯU / PHỤC HỒI (D24)
+# =========================================================================
+@teacher_bp.route("/api/teacher/database/backup", methods=["POST"])
+@require_teacher_auth
+def api_backup_database():
+    """Tạo bản sao lưu nóng cơ sở dữ liệu SQLite (D24)"""
+    try:
+        backup_file = backup_database()
+        return jsonify({
+            "success": True,
+            "backup_file": os.path.basename(backup_file),
+            "message": f"Đã sao lưu cơ sở dữ liệu thành công: {os.path.basename(backup_file)}"
+        })
+    except Exception as e:
+        return jsonify({"error": f"Lỗi khi sao lưu cơ sở dữ liệu: {str(e)}"}), 500
+
+@teacher_bp.route("/api/teacher/database/backups", methods=["GET"])
+@require_teacher_auth
+def api_list_backups():
+    """Lấy danh sách các bản sao lưu cơ sở dữ liệu (D24)"""
+    backups = list_backups()
+    return jsonify({
+        "success": True,
+        "total": len(backups),
+        "backups": backups
+    })
+
+@teacher_bp.route("/api/teacher/database/restore", methods=["POST"])
+@require_teacher_auth
+def api_restore_database():
+    """Khôi phục cơ sở dữ liệu từ bản sao lưu (D24)"""
+    data = request.json or {}
+    raw_fn = os.path.basename(str(data.get("filename", "")).strip())
+    filename = re.sub(r'[\/*?:"<>|]', '', raw_fn)
+    if not filename or not filename.endswith(".db"):
+        return jsonify({"error": "Tên tệp sao lưu không hợp lệ!"}), 400
+
+    backup_dir = os.path.join(DATA_DIR, "backups")
+    try:
+        backup_path = safe_storage_path(backup_dir, filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp sao lưu không an toàn!"}), 400
+
+    if not os.path.exists(backup_path):
+        return jsonify({"error": f"Không tìm thấy bản sao lưu: {filename}"}), 404
+
+    try:
+        restore_database(backup_path)
+        return jsonify({
+            "success": True,
+            "message": f"Đã khôi phục cơ sở dữ liệu thành công từ: {filename}"
+        })
+    except Exception as e:
+        return jsonify({"error": f"Lỗi khi khôi phục cơ sở dữ liệu: {str(e)}"}), 500
+
+# =========================================================================
+# NHẬT KÝ THẨM ĐỊNH THỬ - VALIDATION LOGS (D02)
+# =========================================================================
+@teacher_bp.route("/api/teacher/validation-logs", methods=["GET"])
+@require_teacher_auth
+def api_get_validation_logs():
+    """Lấy danh sách nhật ký thẩm định thử của sinh viên (D02)"""
+    class_code = sanitize_identifier(request.args.get("class_code", ""), "").upper()
+    mssv = sanitize_identifier(request.args.get("mssv", ""), "")
+    logs = get_validation_logs(class_code=class_code or None, mssv=mssv or None)
+    return jsonify({
+        "success": True,
+        "total": len(logs),
+        "logs": logs
     })

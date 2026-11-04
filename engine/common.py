@@ -55,16 +55,20 @@ def save_json_file(file_path: str, data: Any) -> None:
     except Exception:
         pass
 
-def get_session_state() -> Dict[str, Any]:
-    """Lấy trạng thái điều khiển phòng học từ SQLite WAL (có cache JSON)"""
+def get_session_state(class_code: str = "") -> Dict[str, Any]:
+    """Lấy trạng thái điều khiển phòng học từ SQLite WAL theo mã lớp hoặc toàn hệ thống (D30)"""
     try:
         from engine.db import get_session_state_db
-        return get_session_state_db()
+        return get_session_state_db(class_code=class_code)
     except Exception:
         default_state = {
             "is_open": False,
             "enforce_roster": True,
             "active_doc_type": "cong_van_de_nghi",
+            "enforce_quiz": True,
+            "max_previews": 3,
+            "enforce_preview_limit": False,
+            "enable_anti_cheat": False,
             "message": "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.",
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -75,33 +79,59 @@ def get_session_state() -> Dict[str, Any]:
             state["active_doc_type"] = "cong_van_de_nghi"
         return state
 
-def save_session_state(state: Dict[str, Any]) -> None:
-    """Lưu trạng thái điều khiển phòng học vào SQLite WAL và đồng bộ JSON"""
+def save_session_state(state: Dict[str, Any], class_code: str = "") -> None:
+    """Lưu trạng thái điều khiển phòng học vào SQLite WAL và đồng bộ JSON (D30)"""
     try:
         from engine.db import save_session_state_db
-        save_session_state_db(state)
+        save_session_state_db(state, class_code=class_code)
     except Exception:
         save_json_file(SESSION_STATE_FILE, state)
 
-def is_session_open(app_testing: bool = False) -> bool:
-    """Kiểm tra xem phòng thi/bài tập có đang mở cho sinh viên không"""
+def is_session_open(class_code: str = "", app_testing: bool = False) -> bool:
+    """Kiểm tra xem phòng thi/bài tập có đang mở cho sinh viên không (D30)"""
     if app_testing or os.environ.get("EDUDOC_TESTING") == "1":
         return True
-    state = get_session_state()
+    state = get_session_state(class_code)
     return bool(state.get("is_open", False))
 
 def is_anti_cheat_enabled(class_code: str = "", app_testing: bool = False) -> bool:
-    """Kiểm tra xem có bật chế độ kiểm tra lỗi copy / gian lận không.
-    Mặc định tắt (False) khi giảng viên cho sinh viên làm bài để kiểm tra thể thức thông suốt.
-    Chỉ bật khi có yêu cầu riêng hoặc khi chạy bộ kiểm thử tự động (lớp KN01/KN02).
+    """Kiểm tra xem có bật chế độ kiểm tra lỗi copy / gian lận không (D07).
+    Giảng viên có thể bật/tắt chống gian lận cho từng lớp học hoặc toàn bộ hệ thống từ trang /gv.
+    Tuyệt đối không hardcode theo tên mã lớp.
     """
+    try:
+        from flask import request, has_request_context
+        if has_request_context():
+            if request.headers.get("X-Test-Disable-Anti-Cheat") == "1":
+                return False
+            if request.headers.get("X-Test-Enable-Anti-Cheat") == "1":
+                return True
+    except Exception:
+        pass
+
+    c_code = str(class_code or "").strip().upper()
+    # 1. Nếu lớp có cấu hình riêng biệt trong DB (được lưu với key 'class_...')
+    if c_code:
+        try:
+            from engine.db import get_db_connection
+            conn = get_db_connection()
+            row = conn.execute("SELECT enable_anti_cheat FROM session_state WHERE key = ?;", (f"class_{c_code}",)).fetchone()
+            conn.close()
+            if row is not None and row["enable_anti_cheat"] is not None:
+                return bool(row["enable_anti_cheat"])
+        except Exception:
+            pass
+
+    # 2. Cấu hình toàn hệ thống
+    global_state = get_session_state()
+    if global_state and global_state.get("enable_anti_cheat") is True:
+        return True
+
+    # 3. Môi trường kiểm thử tự động (mặc định bật cho các bộ test chống gian lận cũ)
     if app_testing or os.environ.get("EDUDOC_TESTING") == "1":
         return True
-    c_clean = str(class_code or "").strip().upper()
-    if c_clean.startswith("KN"):
-        return True
-    state = get_session_state()
-    return bool(state.get("enable_anti_cheat", False))
+
+    return bool(global_state.get("enable_anti_cheat", False))
 
 def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False, force_check: bool = False) -> bool:
     """Kiểm tra sinh viên có trong danh sách chính thức của lớp không"""
@@ -233,8 +263,8 @@ def parse_students_text(raw_text: str) -> List[Dict[str, str]]:
                 })
     return students
 
-def cleanup_old_uploads(max_age_seconds: int = 3600) -> int:
-    """Tự động dọn rác các tệp tạm trong storage/uploads quá thời gian quy định (mặc định 1h)"""
+def cleanup_old_uploads(max_age_seconds: int = 7200) -> int:
+    """Tự động dọn rác các tệp tạm trong storage/uploads quá thời gian quy định (mặc định 2h - D22)"""
     deleted_count = 0
     now = time.time()
     if not os.path.exists(STORAGE_UPLOADS):
@@ -322,3 +352,9 @@ def set_active_teacher(teacher_id: str) -> Optional[Dict[str, Any]]:
 
 # Xuất các hàm bảo mật đường dẫn và kiểm tra tệp Word
 from engine.security import sanitize_identifier, safe_storage_path, is_valid_docx
+
+# Xuất các hàm nhật ký kiểm tra và sao lưu phục hồi cơ sở dữ liệu (D02, D24)
+from engine.db import (
+    save_validation_log, get_validation_logs,
+    backup_database, restore_database, list_backups
+)

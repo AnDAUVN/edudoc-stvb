@@ -10,7 +10,15 @@ import json
 import sqlite3
 import datetime
 import time
+import logging
 from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger("edudoc.db")
+if not logger.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(logging.Formatter('[%(asctime)s] [%(levelname)s] [DB] %(message)s'))
+    logger.addHandler(_h)
+    logger.setLevel(logging.INFO)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -39,11 +47,92 @@ def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
+def _migrate_submissions_schema(conn: sqlite3.Connection) -> None:
+    """Di chuyển cấu trúc bảng submissions sang UNIQUE(class_code, mssv, doc_type) an toàn (D08)"""
+    try:
+        row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='submissions';").fetchone()
+        if row and "UNIQUE(mssv, doc_type)" in row[0]:
+            conn.execute("PRAGMA foreign_keys=off;")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS submissions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_code TEXT,
+                    sbd TEXT,
+                    mssv TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    doc_type TEXT NOT NULL,
+                    doc_name TEXT,
+                    filename TEXT,
+                    submitted_at TEXT,
+                    elapsed_time TEXT,
+                    is_suspicious_speed INTEGER DEFAULT 0,
+                    preview_count INTEGER DEFAULT 0,
+                    flags TEXT DEFAULT '[]',
+                    status TEXT,
+                    score REAL DEFAULT 10.0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(class_code, mssv, doc_type)
+                );
+            """)
+            conn.execute("""
+                INSERT OR REPLACE INTO submissions_new (
+                    id, class_code, sbd, mssv, name, doc_type, doc_name, filename,
+                    submitted_at, elapsed_time, is_suspicious_speed, preview_count,
+                    flags, status, score, created_at
+                )
+                SELECT id, COALESCE(class_code, 'Chung'), sbd, mssv, name, doc_type, doc_name, filename,
+                       submitted_at, elapsed_time, is_suspicious_speed, preview_count,
+                       flags, status, score, created_at
+                FROM submissions;
+            """)
+            conn.execute("DROP TABLE submissions;")
+            conn.execute("ALTER TABLE submissions_new RENAME TO submissions;")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_mssv ON submissions(mssv);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_class ON submissions(class_code);")
+            conn.execute("PRAGMA foreign_keys=on;")
+            logger.info("Đã nâng cấp schema bảng submissions sang UNIQUE(class_code, mssv, doc_type)")
+    except Exception as e:
+        logger.warning(f"Lưu ý khi migrate submissions schema: {e}")
+
+def _migrate_box6_schema(conn: sqlite3.Connection) -> None:
+    """Di chuyển cấu trúc bảng box6_submissions sang UNIQUE(class_code, mssv, doc_type) an toàn (D08)"""
+    try:
+        row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='box6_submissions';").fetchone()
+        if row and "UNIQUE(mssv, doc_type)" in row[0]:
+            conn.execute("PRAGMA foreign_keys=off;")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS box6_submissions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mssv TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    class_code TEXT,
+                    doc_type TEXT NOT NULL,
+                    box6_text TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(class_code, mssv, doc_type)
+                );
+            """)
+            conn.execute("""
+                INSERT OR REPLACE INTO box6_submissions_new (
+                    id, mssv, name, class_code, doc_type, box6_text, updated_at
+                )
+                SELECT id, mssv, name, COALESCE(class_code, 'Chung'), doc_type, box6_text, updated_at
+                FROM box6_submissions;
+            """)
+            conn.execute("DROP TABLE box6_submissions;")
+            conn.execute("ALTER TABLE box6_submissions_new RENAME TO box6_submissions;")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_mssv ON box6_submissions(mssv);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_doc_type ON box6_submissions(doc_type);")
+            conn.execute("PRAGMA foreign_keys=on;")
+            logger.info("Đã nâng cấp schema bảng box6_submissions sang UNIQUE(class_code, mssv, doc_type)")
+    except Exception as e:
+        logger.warning(f"Lưu ý khi migrate box6 schema: {e}")
+
 def init_db(db_path: Optional[str] = None) -> None:
-    """Khởi tạo cấu trúc các bảng SQLite nếu chưa tồn tại"""
+    """Khởi tạo cấu trúc các bảng SQLite nếu chưa tồn tại (D02, D08)"""
     conn = get_db_connection(db_path)
     with conn:
-        # 1. BẢNG BÀI NỘP (SUBMISSIONS)
+        # 1. BẢNG BÀI NỘP CHÍNH THỨC (SUBMISSIONS)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS submissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,9 +151,34 @@ def init_db(db_path: Optional[str] = None) -> None:
             status TEXT,
             score REAL DEFAULT 10.0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(mssv, doc_type)
+            UNIQUE(class_code, mssv, doc_type)
         );
         """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_mssv ON submissions(mssv);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_class ON submissions(class_code);")
+
+        # Nâng cấp bảng cũ sang UNIQUE composite đa lớp nếu cần
+        _migrate_submissions_schema(conn)
+
+        # 1B. BẢNG NHẬT KÝ KIỂM TRA THỬ / THẨM ĐỊNH (VALIDATION_LOGS - D02)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS validation_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            class_code TEXT,
+            sbd TEXT,
+            mssv TEXT NOT NULL,
+            name TEXT NOT NULL,
+            doc_type TEXT NOT NULL,
+            temp_file TEXT,
+            percentage REAL DEFAULT 0.0,
+            score REAL DEFAULT 0.0,
+            status TEXT,
+            preview_index INTEGER DEFAULT 1,
+            validated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_val_logs_mssv ON validation_logs(mssv);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_val_logs_class ON validation_logs(class_code);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_mssv ON submissions(mssv);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_class ON submissions(class_code);")
 
@@ -136,6 +250,18 @@ def init_db(db_path: Optional[str] = None) -> None:
             conn.execute("ALTER TABLE student_sessions ADD COLUMN quiz_passed INTEGER DEFAULT 0;")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN enforce_quiz INTEGER DEFAULT 1;")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN max_previews INTEGER DEFAULT 3;")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN enforce_preview_limit INTEGER DEFAULT 0;")
+        except Exception:
+            pass
 
         # 6. BẢNG NỘI DUNG THÂN BÀI Ô 6 (BOX 6 SUBMISSIONS - ĐỐI CHIẾU ĐẠO VĂN)
         conn.execute("""
@@ -152,6 +278,7 @@ def init_db(db_path: Optional[str] = None) -> None:
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_mssv ON box6_submissions(mssv);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_box6_doc_type ON box6_submissions(doc_type);")
+        _migrate_box6_schema(conn)
     conn.close()
 
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
@@ -385,12 +512,15 @@ def save_submission(sub: Dict[str, Any], db_path: Optional[str] = None) -> None:
         conn.close()
     _sync_to_json_cache()
 
-def delete_submission_by_mssv(mssv: str, doc_type: str, db_path: Optional[str] = None) -> bool:
-    """Xóa bài nộp theo MSSV và loại văn bản"""
+def delete_submission_by_mssv(mssv: str, doc_type: str, class_code: Optional[str] = None, db_path: Optional[str] = None) -> bool:
+    """Xóa bài nộp theo MSSV, loại văn bản và mã lớp (D08)"""
     conn = get_db_connection(db_path)
     try:
         with conn:
-            cur = conn.execute("DELETE FROM submissions WHERE mssv = ? AND doc_type = ?;", (mssv, doc_type))
+            if class_code and class_code.upper() != "ALL":
+                cur = conn.execute("DELETE FROM submissions WHERE class_code = ? AND mssv = ? AND doc_type = ?;", (class_code.upper(), mssv, doc_type))
+            else:
+                cur = conn.execute("DELETE FROM submissions WHERE mssv = ? AND doc_type = ?;", (mssv, doc_type))
             deleted = cur.rowcount > 0
         return deleted
     finally:
@@ -549,28 +679,43 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
 # =========================================================================
 # API SESSION STATE (ĐIỀU KHIỂN PHÒNG HỌC SQLITE WAL)
 # =========================================================================
-def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
-    """Lấy trạng thái điều khiển phòng học từ SQLite"""
+def get_session_state_db(class_code: str = "", db_path: Optional[str] = None) -> Dict[str, Any]:
+    """Lấy trạng thái điều khiển phòng học từ SQLite (hỗ trợ phân tách ca học theo lớp - D30)"""
     conn = get_db_connection(db_path)
     try:
-        row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+        row = None
+        c_clean = str(class_code or "").strip().upper()
+        if c_clean and c_clean != "ALL":
+            row = conn.execute("SELECT * FROM session_state WHERE key = ?;", (f"class_{c_clean}",)).fetchone()
+        if not row:
+            row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+
         if row:
             keys = row.keys()
             act_teacher = row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A"
             act_teacher_id = row["active_teacher_id"] if "active_teacher_id" in keys and row["active_teacher_id"] else "GV01"
             return {
+                "key": row["key"],
                 "is_open": bool(row["is_open"]),
                 "enforce_roster": bool(row["enforce_roster"]),
+                "enforce_quiz": bool(row["enforce_quiz"]) if "enforce_quiz" in keys else True,
+                "enable_anti_cheat": bool(row["enable_anti_cheat"]) if "enable_anti_cheat" in keys else False,
+                "max_previews": int(row["max_previews"]) if "max_previews" in keys and row["max_previews"] is not None else 3,
+                "enforce_preview_limit": bool(row["enforce_preview_limit"]) if "enforce_preview_limit" in keys else False,
                 "active_doc_type": row["active_doc_type"] or "cong_van_de_nghi",
                 "message": row["message"] or "",
                 "active_teacher": act_teacher,
                 "active_teacher_id": act_teacher_id,
-                "enable_anti_cheat": bool(row["enable_anti_cheat"]) if "enable_anti_cheat" in keys else False,
                 "updated_at": row["updated_at"] or ""
             }
         return {
+            "key": "current_session",
             "is_open": True,
             "enforce_roster": True,
+            "enforce_quiz": True,
+            "enable_anti_cheat": False,
+            "max_previews": 3,
+            "enforce_preview_limit": False,
             "active_doc_type": "cong_van_de_nghi",
             "message": "Phòng làm bài đang mở.",
             "active_teacher": "ThS. Nguyễn Văn A",
@@ -580,14 +725,24 @@ def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
     finally:
         conn.close()
 
-def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) -> None:
-    """Lưu hoặc cập nhật trạng thái phòng học vào SQLite (hỗ trợ merge dict)"""
+def save_session_state_db(state: Dict[str, Any], class_code: str = "", db_path: Optional[str] = None) -> None:
+    """Lưu hoặc cập nhật trạng thái phòng học vào SQLite đầy đủ mọi cột (D07, D30)"""
     conn = get_db_connection(db_path)
     try:
-        row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+        c_clean = str(class_code or "").strip().upper()
+        target_key = f"class_{c_clean}" if (c_clean and c_clean != "ALL") else "current_session"
+
+        row = conn.execute("SELECT * FROM session_state WHERE key = ?;", (target_key,)).fetchone()
+        if not row and target_key != "current_session":
+            row = conn.execute("SELECT * FROM session_state WHERE key = 'current_session';").fetchone()
+
         keys = row.keys() if row else []
         cur_is_open = bool(row["is_open"]) if row else True
         cur_enforce = bool(row["enforce_roster"]) if row else True
+        cur_quiz = bool(row["enforce_quiz"]) if row and "enforce_quiz" in keys else True
+        cur_anti_cheat = bool(row["enable_anti_cheat"]) if row and "enable_anti_cheat" in keys else False
+        cur_max_previews = int(row["max_previews"]) if row and "max_previews" in keys and row["max_previews"] is not None else 3
+        cur_enforce_prev = bool(row["enforce_preview_limit"]) if row and "enforce_preview_limit" in keys else False
         cur_active = (row["active_doc_type"] or "cong_van_de_nghi") if row else "cong_van_de_nghi"
         cur_msg = (row["message"] or "") if row else "Phòng làm bài đang mở."
         cur_teacher = (row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A") if row else "ThS. Nguyễn Văn A"
@@ -595,29 +750,42 @@ def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) 
 
         is_open = state["is_open"] if "is_open" in state else cur_is_open
         enforce_roster = state["enforce_roster"] if "enforce_roster" in state else cur_enforce
+        enforce_quiz = state["enforce_quiz"] if "enforce_quiz" in state else cur_quiz
+        enable_anti_cheat = state["enable_anti_cheat"] if "enable_anti_cheat" in state else cur_anti_cheat
+        max_previews = state["max_previews"] if "max_previews" in state else cur_max_previews
+        enforce_preview_limit = state["enforce_preview_limit"] if "enforce_preview_limit" in state else cur_enforce_prev
         active_doc_type = state["active_doc_type"] if "active_doc_type" in state else cur_active
         message = state["message"] if "message" in state else cur_msg
         active_teacher = state["active_teacher"] if "active_teacher" in state else cur_teacher
         active_teacher_id = state["active_teacher_id"] if "active_teacher_id" in state else cur_teacher_id
-        cur_anti_cheat = bool(row["enable_anti_cheat"]) if row and "enable_anti_cheat" in keys else False
-        enable_anti_cheat = state["enable_anti_cheat"] if "enable_anti_cheat" in state else cur_anti_cheat
         updated_at = state.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         with conn:
             conn.execute("""
-                INSERT OR REPLACE INTO session_state (key, is_open, enforce_roster, active_doc_type, message, active_teacher, active_teacher_id, updated_at)
-                VALUES ('current_session', ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO session_state
+                (key, is_open, enforce_roster, enforce_quiz, enable_anti_cheat, max_previews, enforce_preview_limit, active_doc_type, message, active_teacher, active_teacher_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
+                target_key,
                 1 if is_open else 0,
                 1 if enforce_roster else 0,
+                1 if enforce_quiz else 0,
+                1 if enable_anti_cheat else 0,
+                max_previews,
+                1 if enforce_preview_limit else 0,
                 active_doc_type,
                 message,
                 active_teacher,
                 active_teacher_id,
                 updated_at
             ))
+        logger.info(f"Đã lưu session_state cho [{target_key}]: anti_cheat={enable_anti_cheat}, open={is_open}")
+    except Exception as e:
+        logger.error(f"Lỗi khi lưu session_state: {e}")
+        raise
     finally:
         conn.close()
+    _sync_to_json_cache()
     try:
         merged_dict = {
             "is_open": bool(is_open),
@@ -726,3 +894,121 @@ def delete_box6_submission_by_mssv(mssv: str, doc_type: Optional[str] = None, db
             return res.rowcount > 0
     finally:
         conn.close()
+
+
+# =========================================================================
+# API VALIDATION LOGS (NHẬT KÝ THẨM ĐỊNH THỬ - D02)
+# =========================================================================
+def save_validation_log(val_log: Dict[str, Any], db_path: Optional[str] = None) -> None:
+    """Lưu nhật ký một lần kiểm tra thử (Preview) vào SQLite (D02)"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            conn.execute("""
+                INSERT INTO validation_logs
+                (class_code, sbd, mssv, name, doc_type, temp_file, percentage, score, status, preview_index)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                val_log.get("class_code", "Chung"),
+                val_log.get("sbd", ""),
+                val_log.get("mssv", ""),
+                val_log.get("name", ""),
+                val_log.get("doc_type", ""),
+                val_log.get("temp_file", ""),
+                float(val_log.get("percentage", 0.0)),
+                float(val_log.get("score", 0.0)),
+                val_log.get("status", ""),
+                int(val_log.get("preview_index", 1))
+            ))
+    except Exception as e:
+        logger.error(f"Lỗi khi lưu validation_log: {e}")
+    finally:
+        conn.close()
+
+def get_validation_logs(class_code: Optional[str] = None, mssv: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Lấy danh sách nhật ký kiểm tra thử theo lớp hoặc MSSV (D02)"""
+    conn = get_db_connection(db_path)
+    try:
+        query = "SELECT * FROM validation_logs"
+        params = []
+        conditions = []
+        if class_code and class_code != "ALL":
+            conditions.append("class_code = ?")
+            params.append(class_code)
+        if mssv:
+            conditions.append("mssv = ?")
+            params.append(mssv)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY validated_at DESC;"
+        rows = conn.execute(query, tuple(params)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+# =========================================================================
+# API DATABASE BACKUP & RESTORE (SAO LƯU & KHÔI PHỤC - D24)
+# =========================================================================
+def backup_database(backup_dir: Optional[str] = None) -> str:
+    """Sao lưu trực tuyến cơ sở dữ liệu SQLite sang tệp backup có timestamp (D24)"""
+    if not backup_dir:
+        backup_dir = os.path.join(DATA_DIR, "backups")
+    os.makedirs(backup_dir, exist_ok=True)
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file = os.path.join(backup_dir, f"edudoc_backup_{timestamp}.db")
+
+    source_conn = get_db_connection()
+    try:
+        dest_conn = sqlite3.connect(backup_file)
+        with dest_conn:
+            source_conn.backup(dest_conn)
+        dest_conn.close()
+        logger.info(f"Đã tạo bản sao lưu cơ sở dữ liệu: {backup_file}")
+        return backup_file
+    except Exception as e:
+        logger.error(f"Lỗi khi sao lưu cơ sở dữ liệu: {e}")
+        raise
+    finally:
+        source_conn.close()
+
+def restore_database(backup_file: str, db_path: Optional[str] = None) -> bool:
+    """Khôi phục cơ sở dữ liệu SQLite từ bản sao lưu (D24)"""
+    if not os.path.exists(backup_file):
+        raise FileNotFoundError(f"Không tìm thấy file backup: {backup_file}")
+
+    target_path = db_path or DB_PATH
+    backup_conn = sqlite3.connect(backup_file)
+    try:
+        dest_conn = sqlite3.connect(target_path)
+        with dest_conn:
+            backup_conn.backup(dest_conn)
+        dest_conn.close()
+        logger.info(f"Đã khôi phục cơ sở dữ liệu từ: {backup_file}")
+        return True
+    except Exception as e:
+        logger.error(f"Lỗi khi khôi phục cơ sở dữ liệu: {e}")
+        raise
+    finally:
+        backup_conn.close()
+
+def list_backups(backup_dir: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Liệt kê danh sách các bản sao lưu cơ sở dữ liệu đã có (D24)"""
+    if not backup_dir:
+        backup_dir = os.path.join(DATA_DIR, "backups")
+    if not os.path.exists(backup_dir):
+        return []
+
+    files = []
+    for f in os.listdir(backup_dir):
+        if f.endswith(".db"):
+            fp = os.path.join(backup_dir, f)
+            st = os.stat(fp)
+            files.append({
+                "filename": f,
+                "path": fp,
+                "size_bytes": st.st_size,
+                "created_at": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            })
+    files.sort(key=lambda x: x["created_at"], reverse=True)
+    return files

@@ -30,25 +30,29 @@ class TestAntiCheatStages(unittest.TestCase):
         from engine.db import delete_box6_submission_by_mssv
         for m in ["2100009991", "2100009992", "2100008888"]:
             delete_box6_submission_by_mssv(m)
-        if os.path.exists(self.test_dir):
-            for f in os.listdir(self.test_dir):
-                if any(m in f for m in ["2100009991", "2100009992"]):
-                    try:
-                        os.remove(os.path.join(self.test_dir, f))
-                    except Exception:
-                        pass
+        uploads_dir = os.path.join(BASE_DIR, "storage", "uploads")
+        for d in [self.test_dir, uploads_dir]:
+            if os.path.exists(d):
+                for f in os.listdir(d):
+                    if any(m in f for m in ["2100009991", "2100009992"]):
+                        try:
+                            os.remove(os.path.join(d, f))
+                        except Exception:
+                            pass
 
     def tearDown(self):
         from engine.db import delete_box6_submission_by_mssv
         for m in ["2100009991", "2100009992", "2100008888"]:
             delete_box6_submission_by_mssv(m)
-        if os.path.exists(self.test_dir):
-            for f in os.listdir(self.test_dir):
-                if any(m in f for m in ["2100009991", "2100009992"]):
-                    try:
-                        os.remove(os.path.join(self.test_dir, f))
-                    except Exception:
-                        pass
+        uploads_dir = os.path.join(BASE_DIR, "storage", "uploads")
+        for d in [self.test_dir, uploads_dir]:
+            if os.path.exists(d):
+                for f in os.listdir(d):
+                    if any(m in f for m in ["2100009991", "2100009992"]):
+                        try:
+                            os.remove(os.path.join(d, f))
+                        except Exception:
+                            pass
 
     def test_01_space_abuse_detection(self):
         """[GĐ 1] Bắt lỗi sử dụng phím Space liên tiếp (>= 4 space) để căn chỉnh đối phó"""
