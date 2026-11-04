@@ -249,6 +249,48 @@ class TestAntiCheatStages(unittest.TestCase):
         if os.path.exists(tampered_path):
             os.remove(tampered_path)
 
+    def test_07b_honest_student_typing_no_watermarks_not_fraud(self):
+        """[GĐ 2] Sinh viên tự gõ bài làm cho Trường ĐH Nguyễn Tất Thành (watermark bị xóa do kẻ bảng/gõ phím) KHÔNG ĐƯỢC BỊ BÁO LỖI GIAN LẬN"""
+        res_gen = self.client.post("/api/template/generate", json={
+            "class_code": "KN01",
+            "sbd": "30",
+            "mssv": "2400002769",
+            "name": "Đỗ Thị Vân Uyên",
+            "doc_type": "bai_thu_hoach"
+        })
+        self.assertEqual(res_gen.status_code, 200)
+        filename = res_gen.get_json()["filename"]
+        template_file_path = os.path.join(self.test_dir, filename)
+
+        # Giả lập sinh viên kẻ bảng Header và tự gõ nội dung vào ô bảng (loại bỏ hoàn toàn các dòng nhãn thô có watermark)
+        doc = Document(template_file_path)
+        for p in list(doc.paragraphs):
+            p._element.getparent().remove(p._element)
+        for t in list(doc.tables):
+            t._element.getparent().remove(t._element)
+
+        # Kẻ bảng Ô 1-4 chứa cơ quan Trường ĐH Nguyễn Tất Thành
+        tbl = doc.add_table(rows=2, cols=2)
+        tbl.cell(0, 0).paragraphs[0].text = "TRƯỜNG ĐẠI HỌC NGUYỄN TẤT THÀNH"
+        tbl.cell(0, 1).paragraphs[0].text = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc"
+        tbl.cell(1, 0).paragraphs[0].text = "Số: 12/CV-DNTT"
+        tbl.cell(1, 1).paragraphs[0].text = "Thành phố Hồ Chí Minh, ngày 15 tháng 01 năm 2026"
+
+        # Tự gõ phần Thân bài Ô 6 (bằng bàn phím thông thường, không chứa ký tự zero-width)
+        doc.add_paragraph("Kính gửi: Ban Giám hiệu Nhà trường.")
+        doc.add_paragraph("Căn cứ kế hoạch học tập thực hành thể thức văn bản theo Nghị định 30/2020/NĐ-CP...")
+
+        honest_path = os.path.join(self.test_dir, f"honest_{filename}")
+        doc.save(honest_path)
+
+        # Kiểm tra check_anti_cheat: Không được báo gian lận!
+        fraud_check = check_anti_cheat(honest_path, "30", "2400002769", "Đỗ Thị Vân Uyên", doc_type="bai_thu_hoach", class_code="KN01")
+        self.assertFalse(fraud_check["is_fraud"], "Sinh viên tự gõ bài làm trên phôi mẫu không được phép bị báo gian lận!")
+        print("✔ [GĐ 2] Sinh viên tự gõ bài tập NTTU trên file mẫu đã được xác thực hợp lệ tuyệt đối, không bị false-positive!")
+
+        if os.path.exists(honest_path):
+            os.remove(honest_path)
+
 
     def test_08_detect_box6_cross_student_plagiarism(self):
         """[GĐ 2 - Chống sao chép Ô 6] Bắt gian lận: SV B copy nội dung Thân bài (Ô 6) từ file của SV A dán vào file của mình"""

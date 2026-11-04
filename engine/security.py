@@ -452,8 +452,31 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             }
 
         # 2b. Phát hiện copy nội dung bên ngoài dán đè vào file mẫu:
-        # File có mã bảo mật phôi STVB nhưng toàn bộ thủy ấn MSSV của chính sinh viên đã bị xóa sạch!
-        if str(current_mssv).strip() not in all_found_mssvs:
+        # File có mã bảo mật phôi STVB nhưng toàn bộ thủy ấn MSSV của chính sinh viên đã bị xóa sạch
+        # VÀ tài liệu không chứa bất kỳ từ khóa cơ quan/đơn vị ban hành nào của phôi mẫu (NTTU).
+        # (Nghĩa là sinh viên dán đè một văn bản hoàn toàn từ bên ngoài như Công ty Ánh Dương, Sở Công Thương...).
+        # Nếu sinh viên tự gõ bài làm bình thường cho Trường ĐH Nguyễn Tất Thành thì hoàn toàn hợp lệ.
+        effective_doc_type = doc_type or (parts[3] if 'parts' in locals() and len(parts) >= 4 else None)
+        
+        nttu_keywords = ["NGUYỄN TẤT THÀNH", "NGUYEN TAT THANH", "DNTT", "ĐẠI HỌC NGUYỄN TẤT THÀNH"]
+        try:
+            from engine.common import DATA_DIR, load_json_file
+            templates_path = os.path.join(DATA_DIR, "document_templates.json")
+            all_tmpls = load_json_file(templates_path, {})
+            curr_tmpl = all_tmpls.get(effective_doc_type, {})
+            header_part = curr_tmpl.get("header_part", "")
+            for line in header_part.split("\n"):
+                if "cơ quan" in line.lower() and ":" in line:
+                    agency = line.split(":", 1)[1].strip().upper()
+                    if agency and len(agency) >= 4 and agency not in nttu_keywords:
+                        nttu_keywords.append(agency)
+        except Exception:
+            pass
+
+        full_text_upper = full_text.upper()
+        has_template_agency = any(kw in full_text_upper for kw in nttu_keywords)
+
+        if str(current_mssv).strip() not in all_found_mssvs and not has_template_agency:
             return {
                 "is_fraud": True,
                 "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",
@@ -466,8 +489,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
                 "evidence": f"Sinh viên {current_name} (MSSV: {current_mssv}) đã copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu! Bài làm không còn chứa mã thủy ấn số bảo mật của phôi đề thi được hệ thống cấp phát."
             }
 
-                # 3. KIỂM TRA ĐẠO VĂN NỘI DUNG THÂN BÀI (Ô 6) GIỮA CÁC SINH VIÊN
-        effective_doc_type = doc_type or (parts[3] if 'parts' in locals() and len(parts) >= 4 else None)
+        # 3. KIỂM TRA ĐẠO VĂN NỘI DUNG THÂN BÀI (Ô 6) GIỮA CÁC SINH VIÊN
         box6_result = check_box6_plagiarism(
             docx_path=docx_path,
             current_sbd=current_sbd,
