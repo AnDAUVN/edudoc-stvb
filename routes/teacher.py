@@ -680,3 +680,28 @@ def api_delete_teacher():
         "teachers": new_list,
         "active_teacher_id": t_data.get("active_teacher_id")
     })
+
+@teacher_bp.route("/api/tunnel-info", methods=["GET"])
+def api_tunnel_info():
+    """Lấy thông tin Link Trực tuyến (Cloudflare Tunnel) và Link LAN để gửi cho Sinh viên"""
+    import socket
+    local_ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
+    tunnel_file = os.path.join(DATA_DIR, "tunnel_info.json")
+    tunnel_data = load_json_file(tunnel_file, {})
+    public_url = tunnel_data.get("public_url", "")
+
+    return jsonify({
+        "local_ip": local_ip,
+        "local_url": f"http://{local_ip}:5000",
+        "student_local_url": f"http://{local_ip}:5000/thi",
+        "public_url": public_url,
+        "student_public_url": f"{public_url}/thi" if public_url else ""
+    })
