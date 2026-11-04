@@ -95,7 +95,7 @@ def create_clean_package():
                 # Bỏ qua __pycache__ và thư mục ẩn
                 dirs[:] = [sub for sub in dirs if not any(p in sub for p in exclude_patterns)]
                 for file in files:
-                    if file.endswith((".pyc", ".pyo", ".docx", ".zip", ".rar")):
+                    if file.endswith((".pyc", ".pyo", ".docx", ".zip", ".rar", ".exe")):
                         continue
                     file_path = os.path.join(root, file)
                     rel_path = os.path.relpath(file_path, ROOT_DIR)
