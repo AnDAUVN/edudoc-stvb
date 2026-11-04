@@ -18,7 +18,8 @@ from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
     CLASSES_FILE, QUESTIONS_FILE, STUDENTS_ROSTER_FILE,
     load_json_file, save_json_file, get_session_state, is_session_open,
-    is_student_in_roster, get_student_from_roster, cleanup_old_uploads
+    is_student_in_roster, get_student_from_roster, cleanup_old_uploads,
+    sanitize_identifier, safe_storage_path, is_valid_docx
 )
 from engine.db import (
     get_all_submissions, save_submission,
@@ -48,8 +49,8 @@ def api_get_session_state():
 def verify_student():
     """Xác thực Mã sinh viên trong danh sách lớp chính thức"""
     data = request.json or {}
-    class_code = str(data.get("class_code", "")).strip().upper()
-    mssv = str(data.get("mssv", "")).strip()
+    class_code = sanitize_identifier(data.get("class_code"), "").upper()
+    mssv = sanitize_identifier(data.get("mssv"), "")
 
     if not class_code or not mssv:
         return jsonify({"valid": False, "error": "Vui lòng chọn Mã lớp và nhập MSSV!"}), 400
@@ -113,20 +114,34 @@ def get_quiz():
         }), 403
 
     data = request.json or {}
-    class_code = str(data.get("class_code", "")).strip().upper()
-    mssv = str(data.get("mssv", "")).strip()
+    class_code = sanitize_identifier(data.get("class_code"), "").upper()
+    mssv = sanitize_identifier(data.get("mssv"), "")
+    doc_type = sanitize_identifier(data.get("doc_type"), "")
 
-    if class_code and mssv and not is_student_in_roster(class_code, mssv, current_app.testing):
+    # D05: Ràng buộc danh tính khi thi nếu bật enforce_roster
+    if (request.headers.get("X-Test-Enforce-Roster") == "1" or not (current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")):
+        state = get_session_state()
+        if state.get("enforce_roster", True):
+            if not class_code or not mssv:
+                return jsonify({
+                    "error": "Vui lòng chọn Mã lớp và nhập MSSV trước khi bắt đầu bài trắc nghiệm!",
+                    "not_in_roster": True
+                }), 400
+            if not is_student_in_roster(class_code, mssv, current_app.testing):
+                return jsonify({
+                    "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép làm bài!",
+                    "not_in_roster": True
+                }), 403
+    elif class_code and mssv and not is_student_in_roster(class_code, mssv, current_app.testing):
         return jsonify({
             "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép làm bài!",
             "not_in_roster": True
         }), 403
 
-    doc_type = data.get("doc_type")
     all_questions = load_json_file(QUESTIONS_FILE, {})
     raw_questions = all_questions.get(doc_type, [])
     if not raw_questions:
-        return jsonify({"questions": [], "total": 0, "pass_score": 0, "time_limit_seconds": 300})
+        return jsonify({"questions": [], "total": 0, "pass_score": 0, "time_limit_seconds": 300, "error": "Loại đề không tồn tại hoặc chưa có câu hỏi!"}), 400
 
     sample_size = min(len(raw_questions), 5)
     selected_questions = random.sample(raw_questions, sample_size)
@@ -151,7 +166,7 @@ def get_quiz():
 
 @student_bp.route("/api/quiz/submit", methods=["POST"])
 def submit_quiz():
-    """Chấm điểm bài trắc nghiệm thể thức văn bản"""
+    """Chấm điểm bài trắc nghiệm thể thức văn bản (D03, D04)"""
     if not is_session_open(current_app.testing):
         return jsonify({
             "error": "Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết! Vui lòng chờ Giảng viên cho phép bắt đầu.",
@@ -159,37 +174,65 @@ def submit_quiz():
         }), 403
 
     data = request.json or {}
-    doc_type = data.get("doc_type")
+    doc_type = sanitize_identifier(data.get("doc_type"))
     user_answers = data.get("answers", {})
+    mssv = sanitize_identifier(data.get("mssv"))
+    class_code = sanitize_identifier(data.get("class_code"))
 
     all_questions = load_json_file(QUESTIONS_FILE, {})
     questions_list = all_questions.get(doc_type, [])
-    q_map = {str(q["id"]): q for q in questions_list}
 
+    # D04: Chặn đề thi không tồn tại hoặc rỗng
+    if not doc_type or not questions_list:
+        return jsonify({
+            "passed": False,
+            "error": "Loại văn bản không hợp lệ hoặc chưa có bộ câu hỏi trắc nghiệm!",
+            "score": 0,
+            "total": 0,
+            "pass_score": 0,
+            "feedback": []
+        }), 400
+
+    # D03: Mẫu số tính điểm cố định theo số câu hỏi thực tế của đề thi (5 câu)
+    total_q = min(len(questions_list), 5)
+    pass_score = max(1, math.ceil(total_q * 0.8))
+
+    q_map = {str(q["id"]): q for q in questions_list}
     correct_count = 0
     feedback = []
-    for q_id_str, selected_opt in user_answers.items():
-        q = q_map.get(str(q_id_str))
-        if not q:
-            continue
-        try:
-            selected_int = int(selected_opt)
-        except (ValueError, TypeError):
-            selected_int = -1
 
-        is_correct = (selected_int == q["correct"])
-        if is_correct:
-            correct_count += 1
-        feedback.append({
-            "id": q["id"],
-            "is_correct": is_correct,
-            "correct_option": q["correct"],
-            "explanation": q.get("explanation", "")
-        })
+    if isinstance(user_answers, dict):
+        for q_id_str, selected_opt in user_answers.items():
+            q = q_map.get(str(q_id_str))
+            if not q:
+                continue
+            try:
+                selected_int = int(selected_opt)
+            except (ValueError, TypeError):
+                selected_int = -1
 
-    total_q = len(user_answers) if user_answers else len(questions_list)
-    pass_score = max(1, math.ceil(total_q * 0.8)) if total_q else 0
-    passed = (correct_count >= pass_score)
+            is_correct = (selected_int == q["correct"])
+            if is_correct:
+                correct_count += 1
+            feedback.append({
+                "id": q["id"],
+                "is_correct": is_correct,
+                "correct_option": q["correct"],
+                "explanation": q.get("explanation", "")
+            })
+
+    # D03: Chỉ đỗ khi số câu đúng đạt tối thiểu 80% trên TỔNG SỐ CÂU CỦA ĐỀ THI và trả lời đủ số câu
+    passed = (correct_count >= pass_score and len(user_answers) >= total_q)
+
+    # Ghi nhận trạng thái vượt qua trắc nghiệm (D06)
+    if passed and mssv:
+        sess_key = f"{mssv}_{doc_type}"
+        cur_sess = get_student_session(sess_key) or {}
+        cur_sess["quiz_passed"] = True
+        cur_sess["timestamp"] = cur_sess.get("timestamp", time.time())
+        cur_sess["started_at"] = cur_sess.get("started_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        save_student_session(sess_key, cur_sess)
+
     return jsonify({
         "score": correct_count,
         "total": total_q,
@@ -208,11 +251,11 @@ def generate_template():
         }), 403
 
     data = request.json or {}
-    class_code = str(data.get("class_code", "")).strip().upper()
-    sbd = str(data.get("sbd", "")).strip()
-    mssv = str(data.get("mssv", "")).strip()
+    class_code = sanitize_identifier(data.get("class_code"), "Chung").upper()
+    sbd = sanitize_identifier(data.get("sbd"))
+    mssv = sanitize_identifier(data.get("mssv"))
     name = str(data.get("name", "")).strip()
-    doc_type = str(data.get("doc_type", "")).strip()
+    doc_type = sanitize_identifier(data.get("doc_type"))
     
     if not (sbd and mssv and name and doc_type):
         return jsonify({"error": "Vui lòng nhập đầy đủ SBD, MSSV, Họ và tên và Chọn loại văn bản!"}), 400
@@ -222,6 +265,17 @@ def generate_template():
             "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nhận file mẫu bài tập!",
             "not_in_roster": True
         }), 403
+
+    # D06: Ràng buộc phải vượt qua trắc nghiệm mới được cấp phôi
+    state = get_session_state()
+    if state.get("enforce_quiz", True) and (request.headers.get("X-Test-Enforce-Quiz") == "1" or not (current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")):
+        sess_key = f"{mssv}_{doc_type}"
+        sess = get_student_session(sess_key)
+        if not sess or not sess.get("quiz_passed"):
+            return jsonify({
+                "error": "Bạn chưa hoàn thành bài trắc nghiệm thể thức văn bản (yêu cầu đạt tối thiểu 80%). Vui lòng hoàn thành trắc nghiệm trước khi lấy file mẫu!",
+                "quiz_required": True
+            }), 403
         
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     tmpl = templates_data.get(doc_type)
@@ -234,8 +288,12 @@ def generate_template():
     file_suffix = tmpl.get("filename_suffix", doc_type)
     if doc_type == "bai_thu_hoach":
         file_suffix = "Bài thu hoạch"
+    file_suffix = re.sub(r'[\\/*?:"<>|]', '', file_suffix)
     filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
-    output_path = os.path.join(STORAGE_TEMPLATES, filename)
+    try:
+        output_path = safe_storage_path(STORAGE_TEMPLATES, filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp không hợp lệ (Phát hiện Path Traversal)!"}), 400
     
     if tmpl.get("is_body_blank", False):
         body_content = "[Nội dung văn bản: Sinh viên tự giả định nội dung theo thực tế bài giảng, không tuân thủ đề cố định. Sơ đồ bố trí bắt buộc tuân thủ Sơ đồ Công văn (Hình 2 theo Nghị định 30)]"
@@ -271,13 +329,15 @@ def generate_template():
         "download_url": f"/api/template/download/{filename}"
     })
 
-@student_bp.route("/api/template/download/<filename>")
+@student_bp.route("/api/template/download/<path:filename>")
 def download_template(filename):
-    """Tải tệp phôi bài Word về máy sinh viên"""
-    safe_name = os.path.basename(filename)
-    path = os.path.join(STORAGE_TEMPLATES, safe_name)
-    if os.path.exists(path):
-        return send_file(path, as_attachment=True, download_name=safe_name)
+    """Tải tệp phôi bài Word về máy sinh viên (D21)"""
+    try:
+        path = safe_storage_path(STORAGE_TEMPLATES, filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp không hợp lệ (Phát hiện Path Traversal)!"}), 400
+    if os.path.exists(path) and os.path.isfile(path):
+        return send_file(path, as_attachment=True, download_name=os.path.basename(path))
     return "File không tồn tại", 404
 
 @student_bp.route("/api/validate", methods=["POST"])
@@ -298,11 +358,11 @@ def validate_student_work():
         return jsonify({"error": "Chưa chọn file tải lên!"}), 400
         
     file = request.files["file"]
-    class_code = str(request.form.get("class_code", "")).strip().upper() or "Chung"
-    sbd = request.form.get("sbd", "").strip()
-    mssv = request.form.get("mssv", "").strip()
-    name = request.form.get("name", "").strip()
-    doc_type = request.form.get("doc_type", "").strip()
+    class_code = sanitize_identifier(request.form.get("class_code", "Chung"), "Chung").upper()
+    sbd = sanitize_identifier(request.form.get("sbd"))
+    mssv = sanitize_identifier(request.form.get("mssv"))
+    name = str(request.form.get("name", "")).strip()
+    doc_type = sanitize_identifier(request.form.get("doc_type"))
     
     if not (file.filename and sbd and mssv and name and doc_type):
         return jsonify({"error": "Thiếu thông tin xác thực bài làm!"}), 400
@@ -313,14 +373,29 @@ def validate_student_work():
             "not_in_roster": True
         }), 403
 
-    # Dọn dẹp các tiền tố temp_ lặp đi lặp lại
+    # Dọn dẹp các tiền tố temp_ lặp đi lặp lại & chống Path Traversal (D21)
     raw_fn = os.path.basename(file.filename)
     clean_fn = re.sub(r'^(?:temp_[a-zA-Z0-9]+_)+', '', raw_fn)
+    clean_fn = re.sub(r'[\/*?:"<>|]', '', clean_fn)
+    if not clean_fn.lower().endswith(".docx"):
+        clean_fn += ".docx"
     temp_filename = f"temp_{mssv}_{clean_fn}"
-    temp_save_path = os.path.join(STORAGE_UPLOADS, temp_filename)
+    try:
+        temp_save_path = safe_storage_path(STORAGE_UPLOADS, temp_filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp không hợp lệ (Phát hiện Path Traversal)!"}), 400
     
     # Lưu tệp tạm
     file.save(temp_save_path)
+
+    # D01: Kiểm tra tệp Word docx chuẩn
+    if not is_valid_docx(temp_save_path):
+        if os.path.exists(temp_save_path):
+            try:
+                os.remove(temp_save_path)
+            except Exception:
+                pass
+        return jsonify({"error": "Tệp tải lên không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!"}), 400
     
     try:
         # 1. BƯỚC 1: KIỂM TRA GIAN LẬN (CHỐNG CHÉP BÀI QUA WATERMARK)
@@ -401,7 +476,7 @@ def validate_student_work():
             if doc_type == "bai_thu_hoach":
                 file_suffix = "Bài thu hoạch"
             final_filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
-            final_path = os.path.join(STORAGE_SUBMITTED, final_filename)
+            final_path = safe_storage_path(STORAGE_SUBMITTED, final_filename)
             shutil.copy2(temp_save_path, final_path)
 
             pct = result.get("percentage", 0.0)
@@ -449,6 +524,7 @@ def submit_final():
     - Di chuyển tệp từ storage/uploads/ sang storage/submitted/
     - Sử dụng try...finally xóa ngay tệp tạm trong storage/uploads/
     - Ghi nhận kết quả vào SQLite
+    - Khắc phục triệt để D01, D16, D21
     """
     if not is_session_open(current_app.testing):
         return jsonify({
@@ -457,12 +533,12 @@ def submit_final():
         }), 403
 
     data = request.json or {}
-    class_code = str(data.get("class_code", "")).strip().upper()
-    sbd = data.get("sbd")
-    mssv = data.get("mssv")
-    name = data.get("name")
-    doc_type = data.get("doc_type")
-    temp_file = data.get("temp_file")
+    class_code = sanitize_identifier(data.get("class_code", "Chung"), "Chung").upper()
+    sbd = sanitize_identifier(data.get("sbd"))
+    mssv = sanitize_identifier(data.get("mssv"))
+    name = str(data.get("name", "")).strip()
+    doc_type = sanitize_identifier(data.get("doc_type"))
+    temp_file = str(data.get("temp_file", "")).strip()
     
     if not (sbd and mssv and name and doc_type and temp_file):
         return jsonify({"error": "Thiếu thông tin nộp bài!"}), 400
@@ -474,9 +550,24 @@ def submit_final():
         }), 403
         
     safe_temp_name = os.path.basename(temp_file)
-    temp_path = os.path.join(STORAGE_UPLOADS, safe_temp_name)
+    try:
+        temp_path = safe_storage_path(STORAGE_UPLOADS, safe_temp_name)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp tạm không hợp lệ (Phát hiện Path Traversal)!"}), 400
+
     if not os.path.exists(temp_path):
         return jsonify({"error": "Không tìm thấy file bài làm tạm thời để nộp!"}), 404
+
+    # D16: Xác minh quyền sở hữu tệp tạm (Ngăn chặn nộp chéo file sinh viên khác)
+    expected_prefix = f"temp_{mssv}_"
+    if not safe_temp_name.startswith(expected_prefix):
+        return jsonify({
+            "error": "Tệp bài làm tạm không thuộc về sinh viên này (Phát hiện nộp chéo tệp tạm)!"
+        }), 403
+
+    # D01: Kiểm tra tệp Word docx chuẩn
+    if not is_valid_docx(temp_path):
+        return jsonify({"error": "Tệp bài làm không phải là định dạng Word (.docx) hợp lệ hoặc đã bị hỏng!"}), 400
 
     # Kiểm tra gian lận lại một lần nữa trước khi ghi nhận bài nộp chính thức (nếu bật chế độ chống copy)
     fraud_check = {"is_fraud": False}
@@ -525,7 +616,10 @@ def submit_final():
     if doc_type == "bai_thu_hoach":
         file_suffix = "Bài thu hoạch"
     final_filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
-    final_path = os.path.join(STORAGE_SUBMITTED, final_filename)
+    try:
+        final_path = safe_storage_path(STORAGE_SUBMITTED, final_filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp bài nộp không hợp lệ (Phát hiện Path Traversal)!"}), 400
     
     # Di chuyển sang thư mục submitted và dọn sạch file tạm trong khối try...finally
     try:
@@ -562,12 +656,13 @@ def submit_final():
     try:
         val_sub = Decree30Validator(final_path, doc_type, tmpl, mssv=mssv)
         val_res = val_sub.validate_document()
-        pct = val_res.get("percentage", 100.0)
+        pct = val_res.get("percentage", 0.0)
         calc_score = round(pct / 10.0, 1)
         calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
-    except Exception:
-        calc_score = 10.0
-        calc_status = "Hoàn thành 100% Nghị định 30"
+    except Exception as e_val:
+        # D01: Tuyệt đối không gán 10.0 khi phát sinh lỗi
+        calc_score = 0.0
+        calc_status = f"Lỗi thẩm định tệp: {str(e_val)}"
 
     new_sub = {
         "class_code": class_code or "Chung",

@@ -132,6 +132,10 @@ def init_db(db_path: Optional[str] = None) -> None:
             conn.execute("ALTER TABLE session_state ADD COLUMN enable_anti_cheat INTEGER DEFAULT 0;")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE student_sessions ADD COLUMN quiz_passed INTEGER DEFAULT 0;")
+        except Exception:
+            pass
 
         # 6. BẢNG NỘI DUNG THÂN BÀI Ô 6 (BOX 6 SUBMISSIONS - ĐỐI CHIẾU ĐẠO VĂN)
         conn.execute("""
@@ -481,10 +485,12 @@ def get_all_student_sessions(db_path: Optional[str] = None) -> Dict[str, Dict[st
         rows = conn.execute("SELECT * FROM student_sessions;").fetchall()
         result = {}
         for r in rows:
+            keys = r.keys()
             result[r["session_key"]] = {
                 "started_at": r["started_at"],
                 "timestamp": r["timestamp"],
-                "preview_count": r["preview_count"]
+                "preview_count": r["preview_count"],
+                "quiz_passed": bool(r["quiz_passed"]) if "quiz_passed" in keys else False
             }
         return result
     finally:
@@ -496,10 +502,12 @@ def get_student_session(session_key: str, db_path: Optional[str] = None) -> Opti
     try:
         row = conn.execute("SELECT * FROM student_sessions WHERE session_key = ?;", (session_key,)).fetchone()
         if row:
+            keys = row.keys()
             return {
                 "started_at": row["started_at"],
                 "timestamp": row["timestamp"],
-                "preview_count": row["preview_count"]
+                "preview_count": row["preview_count"],
+                "quiz_passed": bool(row["quiz_passed"]) if "quiz_passed" in keys else False
             }
         return None
     finally:
@@ -513,17 +521,26 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
     
     conn = get_db_connection(db_path)
     try:
+        # Bảo toàn trạng thái quiz_passed nếu có từ trước
+        existing_row = conn.execute("SELECT * FROM student_sessions WHERE session_key = ?;", (session_key,)).fetchone()
+        existing_quiz = False
+        if existing_row and "quiz_passed" in existing_row.keys():
+            existing_quiz = bool(existing_row["quiz_passed"])
+        
+        quiz_passed = 1 if data.get("quiz_passed", existing_quiz) else 0
+
         with conn:
             conn.execute("""
-                INSERT OR REPLACE INTO student_sessions (session_key, mssv, doc_type, started_at, timestamp, preview_count, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR REPLACE INTO student_sessions (session_key, mssv, doc_type, started_at, timestamp, preview_count, quiz_passed, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (
                 session_key,
                 mssv,
                 doc_type,
                 data.get("started_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                 float(data.get("timestamp", time.time())),
-                int(data.get("preview_count", 0))
+                int(data.get("preview_count", 0)),
+                quiz_passed
             ))
     finally:
         conn.close()

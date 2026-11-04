@@ -103,17 +103,27 @@ def is_anti_cheat_enabled(class_code: str = "", app_testing: bool = False) -> bo
     state = get_session_state()
     return bool(state.get("enable_anti_cheat", False))
 
-def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False) -> bool:
+def is_student_in_roster(class_code: str, mssv: str, app_testing: bool = False, force_check: bool = False) -> bool:
     """Kiểm tra sinh viên có trong danh sách chính thức của lớp không"""
-    if app_testing or os.environ.get("EDUDOC_TESTING") == "1":
+    c_code = str(class_code or "").strip().upper()
+    m_clean = str(mssv or "").strip().lower()
+    
+    # D05: Thiếu mã lớp hoặc MSSV luôn bị từ chối
+    if not c_code or not m_clean:
+        return False
+
+    if not force_check:
+        try:
+            from flask import request, has_request_context
+            if has_request_context() and request.headers.get("X-Test-Enforce-Roster") == "1":
+                force_check = True
+        except Exception:
+            pass
+
+    if not force_check and (app_testing or os.environ.get("EDUDOC_TESTING") == "1"):
         return True
     state = get_session_state()
     if not state.get("enforce_roster", True):
-        return True
-
-    c_code = str(class_code or "").strip().upper()
-    m_clean = str(mssv or "").strip().lower()
-    if not c_code or not m_clean:
         return True
 
     roster = load_json_file(STUDENTS_ROSTER_FILE, {})
@@ -309,3 +319,6 @@ def set_active_teacher(teacher_id: str) -> Optional[Dict[str, Any]]:
         save_session_state(state)
         return found
     return None
+
+# Xuất các hàm bảo mật đường dẫn và kiểm tra tệp Word
+from engine.security import sanitize_identifier, safe_storage_path, is_valid_docx

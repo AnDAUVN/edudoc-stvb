@@ -149,6 +149,9 @@
         <a href="/thi" target="_blank" class="btn btn-outline-light rounded-pill px-3 fw-semibold shadow-sm">
           <i class="fa-solid fa-graduation-cap me-1"></i> Xem Cổng Thi Sinh Viên (/thi)
         </a>
+        <button class="btn btn-sm btn-outline-light px-3 py-2 rounded-pill shadow-sm" onclick="teacherLogout()" title="Đăng xuất Bàn làm việc">
+          <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Đăng xuất
+        </button>
       </div>
     </div>
   </header>
@@ -900,9 +903,7 @@
     let currentRosterClass = 'ALL';
 
     document.addEventListener('DOMContentLoaded', () => {
-      loadTeachers();
-      loadTeacherData();
-      loadTeacherQuizQuestions();
+      checkTeacherAuthAndInit();
       const tabQuiz = document.getElementById('tab-quiz');
       if (tabQuiz) {
         tabQuiz.addEventListener('shown.bs.tab', () => {
@@ -911,9 +912,94 @@
       }
     });
 
+    async function checkTeacherAuthAndInit() {
+      try {
+        const res = await fetch('/api/teacher/auth-status');
+        const st = await res.json();
+        if (!st.authenticated) {
+          promptTeacherPIN();
+          return;
+        }
+        initDashboard();
+      } catch (e) {
+        initDashboard();
+      }
+    }
+
+    async function promptTeacherPIN() {
+      const { value: pin } = await Swal.fire({
+        title: 'XÁC THỰC GIẢNG VIÊN',
+        text: 'Vui lòng nhập Mã PIN Giảng viên để mở khóa Bàn làm việc:',
+        input: 'password',
+        inputPlaceholder: 'Nhập mã PIN (Mặc định: gv2026)...',
+        confirmButtonText: '<i class="fa-solid fa-lock-open me-2"></i>Mở khóa Bàn làm việc',
+        confirmButtonColor: '#1e3a8a',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Vui lòng nhập Mã PIN!';
+          }
+        }
+      });
+
+      if (pin) {
+        try {
+          const authRes = await fetch('/api/teacher/auth', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ pin: pin })
+          });
+          const authData = await authRes.json();
+          if (authRes.ok && authData.success) {
+            Swal.fire({
+              icon: 'success',
+              title: 'XÁC THỰC THÀNH CÔNG',
+              text: 'Chào mừng Thầy/Cô vào Bàn làm việc Quản trị Khảo thí!',
+              timer: 1500,
+              showConfirmButton: false
+            });
+            initDashboard();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'MÃ PIN KHÔNG ĐÚNG',
+              text: authData.error || 'Mã PIN Giảng viên không chính xác. Vui lòng thử lại!',
+              confirmButtonText: 'Nhập lại'
+            }).then(() => promptTeacherPIN());
+          }
+        } catch (err) {
+          Swal.fire('Lỗi', 'Không thể kết nối máy chủ xác thực: ' + err, 'error');
+        }
+      }
+    }
+
+    async function teacherLogout() {
+      await fetch('/api/teacher/logout', { method: 'POST' });
+      Swal.fire({
+        icon: 'info',
+        title: 'ĐÃ ĐĂNG XUẤT',
+        text: 'Đã khóa phiên làm việc Giảng viên.',
+        timer: 1200,
+        showConfirmButton: false
+      }).then(() => {
+        window.location.reload();
+      });
+    }
+
+    function initDashboard() {
+      loadTeachers();
+      loadTeacherData();
+      loadTeacherQuizQuestions();
+    }
+
     async function loadTeacherData() {
       try {
         const res = await fetch('/api/teacher/data');
+        if (res.status === 401) {
+          promptTeacherPIN();
+          return;
+        }
         if (!res.ok) return;
         allTeacherData = await res.json();
         
@@ -1837,6 +1923,10 @@
       const docType = document.getElementById('sel-teacher-quiz-doc').value;
       try {
         const res = await fetch(`/api/teacher/quiz/${docType}`);
+        if (res.status === 401) {
+          promptTeacherPIN();
+          return;
+        }
         const data = await res.json();
         currentTeacherQuizList = data.questions || [];
         renderTeacherQuizList(currentTeacherQuizList);

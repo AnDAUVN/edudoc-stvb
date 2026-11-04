@@ -1395,10 +1395,13 @@
         return;
       }
 
+      const mssv = document.getElementById('inp-mssv') ? document.getElementById('inp-mssv').value.trim() : '';
+      const classCode = document.getElementById('sel-class') ? document.getElementById('sel-class').value.trim() : '';
+
       const res = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ doc_type: docType, answers: answers })
+        body: JSON.stringify({ doc_type: docType, answers: answers, mssv: mssv, class_code: classCode })
       });
       const data = await res.json();
 

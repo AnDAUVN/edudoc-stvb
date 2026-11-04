@@ -4,6 +4,7 @@ import hmac
 import hashlib
 import datetime
 import re
+import zipfile
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 
@@ -510,3 +511,53 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             "fraud_type": "ERROR_READING_FILE",
             "message": f"Không thể đọc file: {str(e)}"
         }
+
+def sanitize_identifier(value: str, default: str = "") -> str:
+    """
+    Làm sạch định danh (sbd, mssv, doc_type, class_code) để chống Path Traversal (D21).
+    Chỉ cho phép ký tự an toàn: a-z, A-Z, 0-9, gạch dưới, gạch ngang.
+    Loại bỏ mọi ký tự phân cách thư mục (/, \\) và ký tự điều hướng (..).
+    """
+    if value is None:
+        return default
+    s = str(value).strip()
+    cleaned = re.sub(r'[^a-zA-Z0-9_\-]', '', s)
+    return cleaned if cleaned else default
+
+def safe_storage_path(base_dir: str, filename: str) -> str:
+    """
+    Đảm bảo đường dẫn tệp nằm hoàn toàn bên trong base_dir (chống Path Traversal - D21).
+    Ngăn chặn việc ghi hoặc đọc tệp ra ngoài thư mục lưu trữ được chỉ định.
+    """
+    if not filename:
+        raise ValueError("Filename không được để trống!")
+    
+    # Phát hiện nỗ lực thoát thư mục (Path Traversal)
+    if ".." in filename or filename.startswith("/") or filename.startswith("\\"):
+        raise ValueError(f"Phát hiện hành vi Path Traversal không hợp lệ: {filename}")
+
+    safe_name = os.path.basename(filename)
+    safe_name = re.sub(r'[\\/]', '', safe_name)
+    resolved_base = os.path.realpath(base_dir)
+    full_path = os.path.realpath(os.path.join(resolved_base, safe_name))
+    if not (full_path == resolved_base or full_path.startswith(resolved_base + os.sep)):
+        raise ValueError(f"Phát hiện hành vi Path Traversal không hợp lệ: {filename}")
+    return full_path
+
+def is_valid_docx(file_path: str) -> bool:
+    """
+    Kiểm tra xem tệp có phải là định dạng Word .docx chuẩn và không bị hỏng (D01).
+    Xác minh chữ ký ZIP hợp lệ và cấu trúc tệp OpenXML chuẩn.
+    """
+    if not file_path or not os.path.exists(file_path):
+        return False
+    try:
+        if os.path.getsize(file_path) == 0:
+            return False
+        if not zipfile.is_zipfile(file_path):
+            return False
+        with zipfile.ZipFile(file_path, "r") as z:
+            names = z.namelist()
+            return "[Content_Types].xml" in names or "word/document.xml" in names
+    except Exception:
+        return False

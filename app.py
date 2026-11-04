@@ -28,6 +28,7 @@ from routes.teacher import teacher_bp
 def create_app():
     """Khởi tạo ứng dụng Flask với các Blueprints độc lập"""
     application = Flask(__name__, template_folder="templates", static_folder="static")
+    application.secret_key = os.environ.get("SECRET_KEY", "edudoc_secret_key_2026_nttu_secure_wal")
     
     # Khởi tạo cơ sở dữ liệu SQLite WAL
     init_db()

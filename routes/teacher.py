@@ -10,13 +10,15 @@ import re
 import csv
 import json
 import datetime
-from flask import Blueprint, request, jsonify, render_template, send_file, Response, current_app
+import functools
+from flask import Blueprint, request, jsonify, render_template, send_file, Response, current_app, session
 
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
     CLASSES_FILE, SESSION_STATE_FILE, STUDENTS_ROSTER_FILE, QUESTIONS_FILE, TEACHERS_FILE,
     load_json_file, save_json_file, get_session_state, save_session_state, parse_students_text,
-    get_teachers_data, get_active_teacher, set_active_teacher
+    get_teachers_data, get_active_teacher, set_active_teacher,
+    sanitize_identifier, safe_storage_path
 )
 from engine.db import (
     get_all_submissions, delete_submission_by_mssv,
@@ -24,6 +26,77 @@ from engine.db import (
 )
 
 teacher_bp = Blueprint("teacher", __name__)
+
+def is_teacher_authenticated() -> bool:
+    """Kiem tra xem yeu cau hien tai co quyen Giang vien hay khong (D20)"""
+    # Cho phep bypass khi kiem thu tu dong, tru khi test chi dinh kiem tra phan quyen qua header
+    if (current_app.testing or os.environ.get("EDUDOC_TESTING") == "1") and request.headers.get("X-Test-Auth-Required") != "1":
+        return True
+
+    expected_pin = os.environ.get("TEACHER_PIN", "gv2026")
+
+    # Kiem tra Flask session
+    if session.get("is_teacher_auth"):
+        return True
+
+    # Kiem tra Header X-Teacher-PIN
+    if request.headers.get("X-Teacher-PIN") == expected_pin:
+        return True
+
+    # Kiem tra query param hoac JSON body
+    if request.args.get("teacher_pin") == expected_pin:
+        return True
+    if request.is_json and isinstance(request.json, dict) and request.json.get("teacher_pin") == expected_pin:
+        return True
+
+    return False
+
+def require_teacher_auth(f):
+    """Decorator bat buoc xac thuc Giang vien cho cac endpoint nhay cam (D20)"""
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_teacher_authenticated():
+            return jsonify({
+                "error": "Yêu cầu quyền truy cập Giảng viên! Vui lòng nhập Mã PIN bảo mật.",
+                "auth_required": True
+            }), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+@teacher_bp.route("/api/teacher/auth", methods=["POST"])
+def teacher_auth():
+    """Xác thực mã PIN Giảng viên và cấp phiên đăng nhập (D20)"""
+    data = request.json or {}
+    pin = str(data.get("pin", "")).strip()
+    expected_pin = os.environ.get("TEACHER_PIN", "gv2026")
+    if pin == expected_pin:
+        session["is_teacher_auth"] = True
+        return jsonify({
+            "success": True,
+            "message": "Xác thực Giảng viên thành công!"
+        })
+    return jsonify({
+        "success": False,
+        "error": "Mã PIN Giảng viên không chính xác!"
+    }), 401
+
+@teacher_bp.route("/api/teacher/logout", methods=["POST"])
+def teacher_logout():
+    """Đăng xuất phiên làm việc của Giảng viên (D20)"""
+    session.pop("is_teacher_auth", None)
+    return jsonify({
+        "success": True,
+        "message": "Đã đăng xuất khỏi Bàn làm việc Giảng viên."
+    })
+
+@teacher_bp.route("/api/teacher/auth-status", methods=["GET"])
+def teacher_auth_status():
+    """Kiểm tra trạng thái đăng nhập Giảng viên thời gian thực"""
+    is_auth = is_teacher_authenticated()
+    return jsonify({
+        "authenticated": is_auth
+    })
+
 
 @teacher_bp.route("/gv")
 @teacher_bp.route("/quan-tri")
@@ -37,6 +110,7 @@ def teacher_portal():
     return render_template("teacher.html", mode="teacher", active_doc_type=active_doc_type)
 
 @teacher_bp.route("/api/teacher/session-state", methods=["POST"])
+@require_teacher_auth
 def api_set_session_state():
     """Bật / Tắt trạng thái làm bài (Khóa khi giảng lý thuyết, mở khi cho phép làm bài)"""
     data = request.json or {}
@@ -61,6 +135,7 @@ def api_set_session_state():
     })
 
 @teacher_bp.route("/api/teacher/set-active-doc", methods=["POST"])
+@require_teacher_auth
 def api_set_active_doc():
     """Chuyển loại văn bản bài tập giao cho sinh viên làm trong ca học"""
     data = request.json or {}
@@ -79,6 +154,7 @@ def api_set_active_doc():
     })
 
 @teacher_bp.route("/api/teacher/roster-toggle", methods=["POST"])
+@require_teacher_auth
 def toggle_roster_mode():
     """Bật / Tắt chế độ bắt buộc sinh viên phải có tên trong danh sách lớp"""
     data = request.json or {}
@@ -96,6 +172,7 @@ def toggle_roster_mode():
     })
 
 @teacher_bp.route("/api/teacher/anti-cheat-toggle", methods=["POST"])
+@require_teacher_auth
 def toggle_anti_cheat_mode():
     """Bật / Tắt chế độ kiểm tra chống sao chép và gian lận (Anti-Cheat)"""
     data = request.json or {}
@@ -113,6 +190,7 @@ def toggle_anti_cheat_mode():
     })
 
 @teacher_bp.route("/api/teacher/students", methods=["GET"])
+@require_teacher_auth
 def get_teacher_students():
     """Lấy danh sách sinh viên của một lớp hoặc tất cả các lớp"""
     class_code = str(request.args.get("class_code", "")).strip().upper()
@@ -133,6 +211,7 @@ def get_teacher_students():
         })
 
 @teacher_bp.route("/api/teacher/students/add", methods=["POST"])
+@require_teacher_auth
 def add_student_to_roster():
     """Thêm một sinh viên vào danh sách lớp"""
     data = request.json or {}
@@ -180,6 +259,7 @@ def add_student_to_roster():
     })
 
 @teacher_bp.route("/api/teacher/students/import", methods=["POST"])
+@require_teacher_auth
 def import_students_batch():
     """Nhập danh sách sinh viên hàng loạt từ Excel / Text"""
     data = request.json or {}
@@ -237,6 +317,7 @@ def import_students_batch():
     })
 
 @teacher_bp.route("/api/teacher/students/delete", methods=["POST"])
+@require_teacher_auth
 def delete_student_from_roster():
     """Xóa một sinh viên khỏi danh sách lớp"""
     data = request.json or {}
@@ -261,6 +342,7 @@ def delete_student_from_roster():
     return jsonify({"error": f"Không tìm thấy sinh viên [{mssv}] trong lớp [{class_code}]!"}), 404
 
 @teacher_bp.route("/api/teacher/students/clear", methods=["POST"])
+@require_teacher_auth
 def clear_class_roster():
     """Xóa toàn bộ sinh viên của một lớp"""
     data = request.json or {}
@@ -276,6 +358,7 @@ def clear_class_roster():
     return jsonify({"success": True, "message": f"Đã xóa sạch toàn bộ danh sách lớp [{class_code}]!"})
 
 @teacher_bp.route("/api/classes/add", methods=["POST"])
+@require_teacher_auth
 def add_class():
     """Thêm mã lớp học kỹ năng mới"""
     data = request.json or {}
@@ -294,6 +377,7 @@ def add_class():
     return jsonify({"success": True, "classes": c_list, "message": f"Đã thêm lớp {code} thành công!"})
 
 @teacher_bp.route("/api/classes/delete", methods=["POST"])
+@require_teacher_auth
 def delete_class():
     """Xóa một mã lớp học kỹ năng (bao gồm cả mã lớp và danh sách sinh viên của lớp)"""
     data = request.json or {}
@@ -321,6 +405,7 @@ def delete_class():
     return jsonify({"error": f"Không tìm thấy lớp {code}!"}), 404
 
 @teacher_bp.route("/api/teacher/data", methods=["GET"])
+@require_teacher_auth
 def teacher_data():
     """Lấy dữ liệu tổng hợp từ SQLite phục vụ Bàn làm việc Giảng viên"""
     submissions = get_all_submissions()
@@ -346,16 +431,20 @@ def teacher_data():
         "active_teacher_id": t_data.get("active_teacher_id", active_teacher.get("id"))
     })
 
-@teacher_bp.route("/api/download/submitted/<filename>")
+@teacher_bp.route("/api/download/submitted/<path:filename>")
+@require_teacher_auth
 def download_submitted(filename):
     """Tải tệp bài nộp chính thức của sinh viên"""
-    safe_name = os.path.basename(filename)
-    path = os.path.join(STORAGE_SUBMITTED, safe_name)
-    if os.path.exists(path):
-        return send_file(path, as_attachment=True, download_name=safe_name)
+    try:
+        path = safe_storage_path(STORAGE_SUBMITTED, filename)
+    except ValueError:
+        return jsonify({"error": "Đường dẫn tệp không hợp lệ!"}), 400
+    if os.path.exists(path) and os.path.isfile(path):
+        return send_file(path, as_attachment=True, download_name=os.path.basename(path))
     return "File không tồn tại", 404
 
 @teacher_bp.route("/api/teacher/export-csv", methods=["GET"])
+@require_teacher_auth
 def export_csv():
     """Xuất bảng điểm bài tập ra định dạng CSV có UTF-8 BOM hiển thị chuẩn trong Excel"""
     class_filter = request.args.get("class_code", "ALL")
@@ -404,6 +493,7 @@ def export_csv():
     )
 
 @teacher_bp.route("/api/teacher/submissions/delete", methods=["POST"])
+@require_teacher_auth
 def delete_teacher_submission():
     """Xóa bài nộp của sinh viên khỏi SQLite"""
     data = request.json or {}
@@ -416,6 +506,7 @@ def delete_teacher_submission():
     return jsonify({"success": True, "message": f"Đã xóa bài nộp của MSSV {mssv}!"})
 
 @teacher_bp.route("/api/teacher/fraud/delete", methods=["POST"])
+@require_teacher_auth
 def delete_fraud_log():
     """Xóa một bản ghi nhật ký gian lận khỏi SQLite"""
     data = request.json or {}
@@ -427,18 +518,21 @@ def delete_fraud_log():
     return jsonify({"success": True, "message": "Đã xóa biên bản vi phạm thành công!"})
 
 @teacher_bp.route("/api/teacher/fraud/clear", methods=["POST"])
+@require_teacher_auth
 def clear_fraud_logs():
     """Xóa toàn bộ nhật ký gian lận khỏi SQLite"""
     clear_all_fraud_logs()
     return jsonify({"success": True, "message": "Đã xóa toàn bộ nhật ký vi phạm của hệ thống!"})
 
 @teacher_bp.route("/api/teacher/templates", methods=["GET"])
+@require_teacher_auth
 def teacher_templates():
     """Lấy danh sách các mẫu văn bản gốc để giảng viên tùy chỉnh"""
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     return jsonify(templates_data)
 
 @teacher_bp.route("/api/teacher/templates/save", methods=["POST"])
+@require_teacher_auth
 def save_teacher_template():
     """Lưu cập nhật nội dung bài tập của văn bản"""
     data = request.json or {}
@@ -467,6 +561,7 @@ def save_teacher_template():
     return jsonify({"success": True, "message": "Đã lưu cập nhật nội dung bài tập thành công!"})
 
 @teacher_bp.route("/api/teacher/quiz/<doc_type>", methods=["GET"])
+@require_teacher_auth
 def get_teacher_quiz(doc_type):
     """Lấy ngân hàng câu hỏi trắc nghiệm của một loại văn bản"""
     all_questions = load_json_file(QUESTIONS_FILE, {})
@@ -474,6 +569,7 @@ def get_teacher_quiz(doc_type):
     return jsonify({"questions": questions, "doc_type": doc_type, "total": len(questions)})
 
 @teacher_bp.route("/api/teacher/quiz/save", methods=["POST"])
+@require_teacher_auth
 def save_teacher_quiz():
     """Lưu hoặc cập nhật câu hỏi trắc nghiệm"""
     data = request.json or {}
@@ -536,6 +632,7 @@ def save_teacher_quiz():
     return jsonify({"success": True, "message": "Đã lưu câu hỏi trắc nghiệm thành công!", "questions": q_list})
 
 @teacher_bp.route("/api/teacher/quiz/delete", methods=["POST"])
+@require_teacher_auth
 def delete_teacher_quiz():
     """Xóa câu hỏi trắc nghiệm"""
     data = request.json or {}
@@ -563,6 +660,7 @@ def delete_teacher_quiz():
 # API QUẢN LÝ DANH SÁCH & HỒ SƠ GIẢNG VIÊN (MULTI-TEACHER SUPPORT)
 # =========================================================================
 @teacher_bp.route("/api/teacher/teachers", methods=["GET"])
+@require_teacher_auth
 def api_get_teachers():
     """Lấy danh sách tất cả giảng viên và giảng viên đang làm việc"""
     t_data = get_teachers_data()
@@ -574,6 +672,7 @@ def api_get_teachers():
     })
 
 @teacher_bp.route("/api/teacher/teachers/select", methods=["POST"])
+@require_teacher_auth
 def api_select_teacher():
     """Giảng viên chọn hồ sơ / tài khoản làm việc hiện tại"""
     data = request.json or {}
@@ -591,6 +690,7 @@ def api_select_teacher():
     return jsonify({"error": f"Không tìm thấy giảng viên có mã {teacher_id}!"}), 404
 
 @teacher_bp.route("/api/teacher/teachers/save", methods=["POST"])
+@require_teacher_auth
 def api_save_teacher():
     """Thêm mới hoặc cập nhật thông tin giảng viên"""
     data = request.json or {}
@@ -665,6 +765,7 @@ def api_save_teacher():
     })
 
 @teacher_bp.route("/api/teacher/teachers/delete", methods=["POST"])
+@require_teacher_auth
 def api_delete_teacher():
     """Xóa giảng viên khỏi danh sách"""
     data = request.json or {}
