@@ -128,6 +128,10 @@ def init_db(db_path: Optional[str] = None) -> None:
             conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher_id TEXT DEFAULT 'GV01';")
         except Exception:
             pass
+        try:
+            conn.execute("ALTER TABLE session_state ADD COLUMN enable_anti_cheat INTEGER DEFAULT 0;")
+        except Exception:
+            pass
 
         # 6. BẢNG NỘI DUNG THÂN BÀI Ô 6 (BOX 6 SUBMISSIONS - ĐỐI CHIẾU ĐẠO VĂN)
         conn.execute("""
@@ -544,6 +548,7 @@ def get_session_state_db(db_path: Optional[str] = None) -> Dict[str, Any]:
                 "message": row["message"] or "",
                 "active_teacher": act_teacher,
                 "active_teacher_id": act_teacher_id,
+                "enable_anti_cheat": bool(row["enable_anti_cheat"]) if "enable_anti_cheat" in keys else False,
                 "updated_at": row["updated_at"] or ""
             }
         return {
@@ -577,6 +582,8 @@ def save_session_state_db(state: Dict[str, Any], db_path: Optional[str] = None) 
         message = state["message"] if "message" in state else cur_msg
         active_teacher = state["active_teacher"] if "active_teacher" in state else cur_teacher
         active_teacher_id = state["active_teacher_id"] if "active_teacher_id" in state else cur_teacher_id
+        cur_anti_cheat = bool(row["enable_anti_cheat"]) if row and "enable_anti_cheat" in keys else False
+        enable_anti_cheat = state["enable_anti_cheat"] if "enable_anti_cheat" in state else cur_anti_cheat
         updated_at = state.get("updated_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         with conn:

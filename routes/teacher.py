@@ -95,6 +95,23 @@ def toggle_roster_mode():
         "message": "Đã BẬT kiểm tra danh sách lớp (chỉ sinh viên trong danh sách mới được làm bài)!" if state["enforce_roster"] else "Đã TẮT kiểm tra danh sách (mở tự do cho mọi sinh viên)."
     })
 
+@teacher_bp.route("/api/teacher/anti-cheat-toggle", methods=["POST"])
+def toggle_anti_cheat_mode():
+    """Bật / Tắt chế độ kiểm tra chống sao chép và gian lận (Anti-Cheat)"""
+    data = request.json or {}
+    state = get_session_state()
+    if "enable_anti_cheat" in data:
+        state["enable_anti_cheat"] = bool(data["enable_anti_cheat"])
+    else:
+        state["enable_anti_cheat"] = not state.get("enable_anti_cheat", False)
+    state["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    save_session_state(state)
+    return jsonify({
+        "success": True,
+        "enable_anti_cheat": state["enable_anti_cheat"],
+        "message": "Đã BẬT kiểm tra chống sao chép gian lận!" if state["enable_anti_cheat"] else "Đã TẮT toàn bộ kiểm tra copy (cho phép sinh viên nộp bài kiểm tra thể thức tự do)."
+    })
+
 @teacher_bp.route("/api/teacher/students", methods=["GET"])
 def get_teacher_students():
     """Lấy danh sách sinh viên của một lớp hoặc tất cả các lớp"""
