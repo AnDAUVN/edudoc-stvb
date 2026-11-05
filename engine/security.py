@@ -13,17 +13,25 @@ SECRET_KEY = os.environ.get("EDUDOC_SECRET_KEY", "STVB_NTTU_EDUCATIONAL_SECRET_2
 ZERO_BIN_0 = '\u200b'  # Zero-width space -> bit 0
 ZERO_BIN_1 = '\u200c'  # Zero-width non-joiner -> bit 1
 
-def generate_anti_cheat_token(sbd, mssv, doc_type, timestamp):
+def generate_anti_cheat_token(sbd, mssv, doc_type, timestamp, class_code=""):
     """Tạo mã xác thực HMAC cho phôi bài tập sinh viên (D14)"""
-    message = f"{str(sbd).strip()}_{str(mssv).strip()}_{str(doc_type).strip()}_{str(timestamp).strip()}"
+    msg_parts = [str(sbd).strip(), str(mssv).strip(), str(doc_type).strip(), str(timestamp).strip()]
+    if class_code:
+        msg_parts.append(str(class_code).strip().upper())
+    message = "_".join(msg_parts)
     return hmac.new(SECRET_KEY.encode('utf-8'), message.encode('utf-8'), hashlib.sha256).hexdigest()
 
-def verify_anti_cheat_token(token, sbd, mssv, doc_type, timestamp):
+def verify_anti_cheat_token(token, sbd, mssv, doc_type, timestamp, class_code=""):
     """Xác minh mã HMAC bảo mật phôi bài bằng compare_digest (D14)"""
     if not token:
         return False
-    expected = generate_anti_cheat_token(sbd, mssv, doc_type, timestamp)
-    return hmac.compare_digest(str(token).strip(), expected)
+    t_clean = str(token).strip()
+    if class_code:
+        expected_with_class = generate_anti_cheat_token(sbd, mssv, doc_type, timestamp, class_code)
+        if hmac.compare_digest(t_clean, expected_with_class):
+            return True
+    expected_legacy = generate_anti_cheat_token(sbd, mssv, doc_type, timestamp, "")
+    return hmac.compare_digest(t_clean, expected_legacy)
 
 def encode_hidden_mssv_to_text(text, mssv):
     """
@@ -100,7 +108,7 @@ def extract_all_hidden_mssvs(text):
             
     return found_mssvs
 
-def create_student_raw_template(sbd, mssv, student_name, doc_type_id, raw_text, output_path):
+def create_student_raw_template(sbd, mssv, student_name, doc_type_id, raw_text, output_path, class_code=""):
     """
     Khởi tạo file docx thô:
     - Chưa căn lề Nghị định 30 (để lề mặc định 1 inch)
@@ -120,11 +128,14 @@ def create_student_raw_template(sbd, mssv, student_name, doc_type_id, raw_text, 
         
     # 2. Tạo Token bảo mật & Ghi vào Metadata ẩn của file Word
     now_str = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    token = generate_anti_cheat_token(sbd, mssv, doc_type_id, now_str)
+    token = generate_anti_cheat_token(sbd, mssv, doc_type_id, now_str, class_code)
     
     core_props = doc.core_properties
     core_props.identifier = f"STVB_SIGNATURE:{token}"
-    core_props.keywords = f"{sbd}|{mssv}|{student_name}|{doc_type_id}|{now_str}"
+    kw_parts = [str(sbd), str(mssv), str(student_name), str(doc_type_id), str(now_str)]
+    if class_code:
+        kw_parts.append(str(class_code).strip().upper())
+    core_props.keywords = "|".join(kw_parts)
     core_props.author = f"STVB Educational System - NTTU"
     core_props.comments = f"Bai tap STVB - Sinh vien: {student_name} - MSSV: {mssv}"
     
@@ -251,10 +262,12 @@ def extract_box6_from_docx(doc_or_path) -> str:
         if cleaned:
             paras.append(cleaned)
 
-    # 2. S04: Duyệt nội dung các ô trong bảng (tránh bỏ sót khi SV đưa thân bài vào ô bảng)
+    # 2. S04: Duyệt đệ quy nội dung các ô trong bảng và bảng lồng nhau (tránh bỏ sót khi SV đưa thân bài vào bảng)
     seen_cells = set()
-    for table in doc.tables:
-        for row in table.rows:
+    def traverse_table(tbl, depth=0):
+        if depth > 5:
+            return
+        for row in tbl.rows:
             for cell in row.cells:
                 cell_id = id(cell._tc)
                 if cell_id in seen_cells:
@@ -264,6 +277,11 @@ def extract_box6_from_docx(doc_or_path) -> str:
                     cleaned = clean_box6_paragraph(p.text)
                     if cleaned and cleaned not in paras:
                         paras.append(cleaned)
+                for nested_tbl in cell.tables:
+                    traverse_table(nested_tbl, depth + 1)
+
+    for table in doc.tables:
+        traverse_table(table, 0)
 
     return '\n'.join(paras)
 
@@ -362,9 +380,22 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                 if str(current_mssv) in fn:
                     continue
                 fn_class = "Chung"
-                fn_parts = fn.split("_")
-                if len(fn_parts) >= 4 and not fn.startswith("temp_"):
-                    fn_class = fn_parts[0]
+                # P1: Tra cứu mã lớp chính xác từ CSDL submissions để tránh chia cắt nhầm lớp có dấu gạch dưới (VD: TEST_PHASE2_A)
+                try:
+                    from engine.db import get_db_connection
+                    c_conn = get_db_connection()
+                    db_row = c_conn.execute("SELECT class_code, mssv, name, doc_type FROM submissions WHERE filename = ? LIMIT 1;", (fn,)).fetchone()
+                    c_conn.close()
+                    if db_row and db_row["class_code"]:
+                        fn_class = db_row["class_code"]
+                    else:
+                        fn_parts = fn.split("_")
+                        if len(fn_parts) >= 4 and not fn.startswith("temp_"):
+                            fn_class = fn_parts[0]
+                except Exception:
+                    fn_parts = fn.split("_")
+                    if len(fn_parts) >= 4 and not fn.startswith("temp_"):
+                        fn_class = fn_parts[0]
 
                 # S11: Chỉ đối chiếu trong cùng phạm vi lớp học, không lẫn lộn giữa các lớp
                 if class_code and class_code.upper() != "CHUNG" and fn_class != "Chung":
@@ -456,6 +487,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             }
 
         orig_sbd, orig_mssv, orig_name, orig_doc_type, timestamp = parts[0], parts[1], parts[2], parts[3], parts[4]
+        orig_class = parts[5] if len(parts) >= 6 else (class_code or "")
 
         # S10: Đối chiếu loại văn bản được cấp phôi với loại văn bản đang nộp/thẩm định
         if doc_type and orig_doc_type and orig_doc_type.strip() != str(doc_type).strip():
@@ -468,7 +500,7 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
 
         # D14 & S08: Xác minh mã bảo mật HMAC phôi bài bằng hmac.compare_digest
         token_val = token_header[len("STVB_SIGNATURE:"):].strip()
-        if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp):
+        if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp, orig_class):
             return {
                 "is_fraud": True,
                 "fraud_type": "FILE_KHONG_HOP_LE",

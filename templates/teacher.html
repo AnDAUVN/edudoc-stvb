@@ -301,6 +301,12 @@
           <i class="fa-solid fa-chart-pie me-1"></i> Phân tích Lỗi Cả Lớp
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link" id="tab-devices" data-bs-toggle="tab" data-bs-target="#content-devices">
+          <i class="fa-solid fa-laptop-code me-1"></i> Yêu cầu đổi máy (CN18)
+          <span class="badge bg-danger rounded-pill ms-1" id="badge-device-reqs" style="display:none;">0</span>
+        </button>
+      </li>
     </ul>
 
     <!-- TAB CONTENTS -->
@@ -913,6 +919,123 @@
     let allTeacherData = {};
     let currentRosterClass = 'ALL';
 
+    
+    // =========================================================================
+    // CN17 & CN18: CẤP QUYỀN LÀM LẠI & PHÊ DUYỆT ĐỔI THIẾT BỊ
+    // =========================================================================
+    async function grantReattempt(classCode, mssv, docType, studentName) {
+      const { value: reason } = await Swal.fire({
+        title: 'Cấp quyền làm lại bài',
+        html: `<p>Cho phép sinh viên <strong>${escapeHtml(studentName)}</strong> (MSSV: <strong>${escapeHtml(mssv)}</strong>) làm lại bài <strong>${escapeHtml(docType)}</strong>?</p><p class="text-secondary small">Sinh viên sẽ được làm lại bài trắc nghiệm và nộp lại bài Word mới. Bài nộp cũ sẽ được lưu trữ vào Lịch sử kiểm toán.</p>`,
+        input: 'text',
+        inputLabel: 'Lý do cấp quyền làm lại:',
+        inputValue: 'Giảng viên cho phép làm lại',
+        showCancelButton: true,
+        confirmButtonText: 'Đồng ý cấp quyền',
+        cancelButtonText: 'Hủy'
+      });
+      if (reason) {
+        try {
+          const res = await fetch('/api/teacher/reattempt/grant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType, reason: reason })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            Swal.fire('Thành công', data.message || 'Đã cấp quyền làm lại bài cho sinh viên!', 'success');
+          } else {
+            Swal.fire('Lỗi', data.error || 'Không thể cấp quyền làm lại', 'error');
+          }
+        } catch (e) {
+          Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+        }
+      }
+    }
+
+    async function loadDeviceRequests() {
+      try {
+        const res = await fetch('/api/teacher/device/requests?status=PENDING');
+        const data = await res.json();
+        const reqs = data.requests || [];
+        const badge = document.getElementById('badge-device-reqs');
+        if (badge) {
+          badge.innerText = reqs.length;
+          badge.style.display = reqs.length > 0 ? 'inline-block' : 'none';
+        }
+        const tbody = document.getElementById('tbl-device-requests-body');
+        if (!tbody) return;
+        if (reqs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fa-solid fa-check-circle text-success me-1"></i> Không có yêu cầu đổi thiết bị nào đang chờ duyệt.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = reqs.map(r => `
+          <tr>
+            <td><span class="badge bg-primary-subtle text-primary">${r.class_code}</span></td>
+            <td class="badge-mono fw-bold">${r.mssv}</td>
+            <td class="fw-semibold">${r.student_name || ''}</td>
+            <td><small class="badge-mono text-muted">${(r.new_device_id || '').slice(0, 16)}...</small></td>
+            <td><small class="text-secondary">${r.reason || 'Đổi máy tính'}</small></td>
+            <td><small class="text-muted">${r.requested_at}</small></td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-success me-1" onclick="approveDeviceRequest('${r.request_id}')" title="Phê duyệt đổi máy"><i class="fa-solid fa-check"></i> Duyệt</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="rejectDeviceRequest('${r.request_id}')" title="Từ chối"><i class="fa-solid fa-xmark"></i> Từ chối</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Error loading device requests:', e);
+      }
+    }
+
+    async function approveDeviceRequest(requestId) {
+      const ok = await Swal.fire({
+        title: 'Phê duyệt đổi thiết bị?',
+        text: 'Sinh viên sẽ được kích hoạt thiết bị mới và thiết bị cũ sẽ bị khóa.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Phê duyệt'
+      });
+      if (ok.isConfirmed) {
+        const res = await fetch('/api/teacher/device/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: requestId })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          Swal.fire('Thành công', d.message || 'Đã phê duyệt đổi thiết bị!', 'success');
+          loadDeviceRequests();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Lỗi khi phê duyệt', 'error');
+        }
+      }
+    }
+
+    async function rejectDeviceRequest(requestId) {
+      const ok = await Swal.fire({
+        title: 'Từ chối đổi thiết bị?',
+        text: 'Yêu cầu của sinh viên sẽ bị từ chối.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Từ chối'
+      });
+      if (ok.isConfirmed) {
+        const res = await fetch('/api/teacher/device/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: requestId })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          Swal.fire('Đã từ chối', d.message || 'Đã từ chối yêu cầu đổi thiết bị!', 'info');
+          loadDeviceRequests();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Lỗi khi từ chối', 'error');
+        }
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       checkTeacherAuthAndInit();
       const tabQuiz = document.getElementById('tab-quiz');
@@ -1308,6 +1431,9 @@
               <a href="/api/download/submitted/${s.filename}" class="btn btn-sm btn-outline-primary me-1" title="Tải bài Word">
                 <i class="fa-solid fa-download"></i>
               </a>
+              <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattempt('${s.class_code || 'Chung'}', '${s.mssv}', '${s.doc_type}', '${s.name}')" title="Cấp quyền làm lại bài (CN17)">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
               <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission('${s.mssv}', '${s.doc_type}')" title="Xóa bài nộp">
                 <i class="fa-solid fa-trash"></i>
               </button>

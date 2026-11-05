@@ -32,6 +32,7 @@ TEST_SUITES = [
     "test_audit_phase3.py",
     "test_audit_phase4.py",
     "test_audit_priorities.py",
+    "test_audit_cn17_cn18.py",
     "comprehensive_audit_suite.py"
 ]
 

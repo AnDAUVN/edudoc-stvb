@@ -1091,3 +1091,69 @@ def api_get_analytics():
         "group_stats": group_stats,
         "top_errors": top_errors
     })
+
+
+# =========================================================================
+# CN18 & CN17: QUẢN TRỊ THIẾT BỊ VÀ CẤP QUYỀN LÀM LẠI BÀI CHO GIẢNG VIÊN
+# =========================================================================
+
+@teacher_bp.route("/api/teacher/device/requests", methods=["GET"])
+def get_teacher_device_requests():
+    """Lấy danh sách yêu cầu đổi thiết bị của sinh viên (CN18 - NT09)"""
+    class_code = request.args.get("class_code")
+    status = request.args.get("status", "PENDING")
+    from engine.db import get_device_change_requests
+    reqs = get_device_change_requests(class_code=class_code, status=status)
+    return jsonify({"requests": reqs, "total": len(reqs)})
+
+@teacher_bp.route("/api/teacher/device/approve", methods=["POST"])
+def approve_teacher_device():
+    """Phê duyệt yêu cầu đổi thiết bị (CN18 - NT10)"""
+    data = request.json or {}
+    req_id = data.get("request_id")
+    if not req_id:
+        return jsonify({"error": "Thiếu request_id"}), 400
+    teacher_name = request.cookies.get("teacher_name", "Giảng viên")
+    from engine.db import approve_device_change_request
+    ok = approve_device_change_request(req_id, approved_by=teacher_name)
+    if ok:
+        return jsonify({"success": True, "message": "Đã phê duyệt đổi thiết bị cho sinh viên!"})
+    return jsonify({"error": "Không tìm thấy yêu cầu hoặc yêu cầu đã được xử lý!"}), 404
+
+@teacher_bp.route("/api/teacher/device/reject", methods=["POST"])
+def reject_teacher_device():
+    """Từ chối yêu cầu đổi thiết bị (CN18 - NT11)"""
+    data = request.json or {}
+    req_id = data.get("request_id")
+    if not req_id:
+        return jsonify({"error": "Thiếu request_id"}), 400
+    teacher_name = request.cookies.get("teacher_name", "Giảng viên")
+    from engine.db import reject_device_change_request
+    ok = reject_device_change_request(req_id, rejected_by=teacher_name)
+    if ok:
+        return jsonify({"success": True, "message": "Đã từ chối yêu cầu đổi thiết bị!"})
+    return jsonify({"error": "Không tìm thấy yêu cầu hoặc yêu cầu đã được xử lý!"}), 404
+
+@teacher_bp.route("/api/teacher/reattempt/grant", methods=["POST"])
+def grant_reattempt():
+    """Giảng viên cấp quyền làm lại bài cho sinh viên (CN17 - NT06)"""
+    data = request.json or {}
+    class_code = str(data.get("class_code", "")).strip().upper()
+    mssv = str(data.get("mssv", "")).strip()
+    doc_type = str(data.get("doc_type", "")).strip()
+    reason = str(data.get("reason", "Giảng viên cho phép làm lại")).strip()
+    if not (class_code and mssv and doc_type):
+        return jsonify({"error": "Thiếu thông tin (class_code, mssv, doc_type)!"}), 400
+    teacher_name = request.cookies.get("teacher_name", "Giảng viên")
+    from engine.db import grant_reattempt_permission
+    pid = grant_reattempt_permission(class_code, mssv, doc_type, permitted_by=teacher_name, reason=reason)
+    return jsonify({"success": True, "permission_id": pid, "message": f"Đã cấp quyền làm lại bài cho sinh viên {mssv}!"})
+
+@teacher_bp.route("/api/teacher/submissions/history", methods=["GET"])
+def get_teacher_submissions_history():
+    """Truy vấn lịch sử các bài nộp đã lưu trữ (CN17 - NT08)"""
+    class_code = request.args.get("class_code")
+    mssv = request.args.get("mssv")
+    from engine.db import get_submissions_history
+    hist = get_submissions_history(class_code=class_code, mssv=mssv)
+    return jsonify({"history": hist, "total": len(hist)})

@@ -905,6 +905,71 @@
   </div>
 
   <script>
+    function getOrCreateDeviceId() {
+      let devId = localStorage.getItem('edudoc_device_id');
+      if (!devId) {
+        devId = 'dev_' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+        localStorage.setItem('edudoc_device_id', devId);
+      }
+      return devId;
+    }
+
+    function handleDeviceLock(data, classCode, mssv, name) {
+      Swal.fire({
+        icon: 'warning',
+        title: '🔒 THIẾT BỊ ĐÃ BỊ KHÓA',
+        html: `<div class="text-start">
+          <p>Tài khoản sinh viên <strong>${escapeHtml(mssv)}</strong> (${escapeHtml(name || '')}) đã được liên kết với một thiết bị khác!</p>
+          <p class="text-danger small">Theo quy chế thi (CN18), mỗi sinh viên chỉ được làm bài trên 1 máy tính duy nhất.</p>
+          <p class="text-secondary small">Nếu bạn cần đổi máy thi do máy hỏng hoặc sự cố kỹ thuật, vui lòng gửi yêu cầu để Giảng viên phê duyệt.</p>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-paper-plane me-1"></i> Gửi yêu cầu đổi máy',
+        cancelButtonText: 'Đóng',
+        confirmButtonColor: '#e056fd'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { value: reason } = await Swal.fire({
+            title: 'Lý do đổi máy thi',
+            input: 'text',
+            inputLabel: 'Nhập lý do đổi máy tính (VD: Máy tính bị hỏng, đổi chỗ ngồi):',
+            inputValue: 'Đổi máy tính làm bài',
+            showCancelButton: true,
+            confirmButtonText: 'Gửi yêu cầu'
+          });
+          if (reason) {
+            try {
+              const r = await fetch('/api/student/device/request-change', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Device-Id': getOrCreateDeviceId()
+                },
+                body: JSON.stringify({
+                  class_code: classCode,
+                  mssv: mssv,
+                  name: name,
+                  new_device_id: getOrCreateDeviceId(),
+                  reason: reason
+                })
+              });
+              const resData = await r.json();
+              if (r.ok) {
+                Swal.fire('Đã gửi yêu cầu!', resData.message || 'Yêu cầu đổi thiết bị đã được gửi tới Giảng viên. Vui lòng báo Giảng viên phê duyệt!', 'success');
+              } else {
+                Swal.fire('Lỗi', resData.error || 'Không thể gửi yêu cầu', 'error');
+              }
+            } catch (e) {
+              Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+            }
+          }
+        }
+      });
+    }
+
     let currentQuizQuestions = [];
     let currentGeneratedFile = null;
     let currentTempFile = null;
@@ -1115,7 +1180,7 @@
       try {
         const res = await fetch('/api/classes/add', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({ class_code: val })
         });
         const data = await res.json();
@@ -1154,7 +1219,7 @@
       try {
         const res = await fetch('/api/classes/delete', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({ class_code: classCode })
         });
         const data = await res.json();
@@ -1231,7 +1296,7 @@
       try {
         const res = await fetch('/api/quiz/get', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({
             doc_type: docType,
             class_code: classCode,
@@ -1240,6 +1305,14 @@
         });
         const data = await res.json();
         if (res.status === 403) {
+          if (data.device_locked) {
+            handleDeviceLock(data, classCode, mssv, name);
+            return;
+          }
+          if (data.device_locked) {
+            handleDeviceLock(data, classCode, mssv, name);
+            return;
+          }
           if (data.not_in_roster) {
             Swal.fire({
               icon: 'error',
@@ -1404,7 +1477,7 @@
       try {
         const res = await fetch('/api/quiz/submit', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({
             attempt_id: window.currentQuizAttemptId || '',
             doc_type: docType,
@@ -1416,6 +1489,19 @@
         const data = await res.json();
 
         if (!res.ok) {
+          if (res.status === 403 && data.device_locked) {
+            handleDeviceLock(data, classCode, mssv, name);
+            return;
+          }
+          if (res.status === 409 && data.already_submitted) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'BẠN ĐÃ NỘP BÀI CHÍNH THỨC',
+              text: data.error || 'Mỗi sinh viên chỉ được nộp bài 1 lượt duy nhất. Vui lòng liên hệ Giảng viên để được cấp quyền nộp lại nếu có sự cố!',
+              confirmButtonText: 'Đã hiểu'
+            });
+            return;
+          }
           if (res.status === 403) {
             Swal.fire({
               icon: data.not_in_roster ? 'error' : 'warning',
@@ -1477,7 +1563,7 @@
       try {
         const res = await fetch('/api/template/generate', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({ class_code: classCode, sbd, mssv, name, doc_type: docType })
         });
         const data = await res.json();
@@ -2020,7 +2106,7 @@
       try {
         const res = await fetch('/api/submit', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({
             class_code: classCode, sbd, mssv, name, doc_type: docType, temp_file: currentTempFile
           })
@@ -2192,7 +2278,7 @@
       try {
         const res = await fetch('/api/student/verify', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: {'Content-Type': 'application/json', 'X-Device-Id': getOrCreateDeviceId()},
           body: JSON.stringify({ class_code: classCode, mssv: mssv })
         });
         const data = await res.json();

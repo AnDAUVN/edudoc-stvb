@@ -10,6 +10,7 @@ import json
 import sqlite3
 import datetime
 import time
+import uuid
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -302,6 +303,82 @@ def init_db(db_path: Optional[str] = None) -> None:
         );
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_quiz_attempts_student ON quiz_attempts(class_code, mssv, doc_type);")
+
+        # 8. BẢNG LIÊN KẾT THIẾT BỊ SINH VIÊN (CN18 - SINGLE DEVICE PER STUDENT)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS device_bindings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            class_code TEXT NOT NULL,
+            mssv TEXT NOT NULL,
+            device_id TEXT NOT NULL,
+            device_name TEXT,
+            user_agent TEXT,
+            ip_address TEXT,
+            status TEXT DEFAULT 'ACTIVE',
+            bound_at TEXT NOT NULL,
+            last_active_at TEXT NOT NULL,
+            UNIQUE(class_code, mssv)
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_device_bindings_student ON device_bindings(class_code, mssv);")
+
+        # 9. BẢNG YÊU CẦU ĐỔI THIẾT BỊ (CN18 - DEVICE CHANGE REQUESTS)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS device_change_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT UNIQUE NOT NULL,
+            class_code TEXT NOT NULL,
+            mssv TEXT NOT NULL,
+            student_name TEXT,
+            old_device_id TEXT,
+            new_device_id TEXT NOT NULL,
+            new_user_agent TEXT,
+            new_ip_address TEXT,
+            reason TEXT DEFAULT 'Đổi máy tính làm bài',
+            status TEXT DEFAULT 'PENDING',
+            requested_at TEXT NOT NULL,
+            resolved_at TEXT,
+            resolved_by TEXT
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_device_requests_status ON device_change_requests(status);")
+
+        # 10. BẢNG QUYỀN LÀM LẠI BÀI (CN17 - RE-ATTEMPT PERMISSIONS)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS reattempt_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            class_code TEXT NOT NULL,
+            mssv TEXT NOT NULL,
+            doc_type TEXT NOT NULL,
+            permitted_by TEXT NOT NULL,
+            permitted_at TEXT NOT NULL,
+            reason TEXT,
+            used INTEGER DEFAULT 0,
+            used_at TEXT
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_reattempt_student ON reattempt_permissions(class_code, mssv, doc_type);")
+
+        # 11. BẢNG LỊCH SỬ BÀI NỘP TRƯỚC ĐÓ (CN17 - SUBMISSIONS HISTORY)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS submissions_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            class_code TEXT,
+            sbd TEXT,
+            mssv TEXT NOT NULL,
+            name TEXT NOT NULL,
+            doc_type TEXT NOT NULL,
+            doc_name TEXT,
+            filename TEXT,
+            submitted_at TEXT,
+            elapsed_time TEXT,
+            score REAL,
+            checksum TEXT,
+            archived_at TEXT NOT NULL,
+            archive_reason TEXT
+        );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_submissions_hist_student ON submissions_history(class_code, mssv, doc_type);")
 
         # Đảm bảo cột checksum tồn tại trong submissions (PRIORITY 2)
         try:
@@ -704,6 +781,12 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
                 int(data.get("preview_count", 0)),
                 quiz_passed
             ))
+            # Nếu cập nhật legacy key (chứa mssv_doctype không có mã lớp), đồng bộ trạng thái sang các composite key liên quan
+            if "quiz_passed" in data and "_" in session_key:
+                conn.execute("""
+                    UPDATE student_sessions SET quiz_passed = ?
+                    WHERE session_key LIKE ?;
+                """, (quiz_passed, f"%_{session_key}"))
     finally:
         conn.close()
     _sync_to_json_cache()
@@ -1147,6 +1230,294 @@ def get_atomic_preview_count(class_code: str, mssv: str, doc_type: str, db_path:
                 WHERE LOWER(mssv) = ? AND doc_type = ?;
             """, (m_clean, d_type)).fetchone()
         return row[0] if row else 0
+    finally:
+        conn.close()
+
+
+# =========================================================================
+# CN18: API LIÊN KẾT VÀ XÁC MINH THIẾT BỊ LÀM BÀI (SINGLE DEVICE BINDING)
+# =========================================================================
+def get_device_binding(class_code: str, mssv: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Lấy thông tin thiết bị đang liên kết của sinh viên"""
+    conn = get_db_connection(db_path)
+    try:
+        c_clean = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        row = conn.execute("""
+            SELECT * FROM device_bindings
+            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND status = 'ACTIVE';
+        """, (c_clean, m_clean)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def bind_device(class_code: str, mssv: str, device_id: str, device_name: str = "", user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> None:
+    """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c_clean = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        with conn:
+            conn.execute("""
+                INSERT INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+                ON CONFLICT(class_code, mssv) DO UPDATE SET
+                    device_id = excluded.device_id,
+                    device_name = excluded.device_name,
+                    user_agent = excluded.user_agent,
+                    ip_address = excluded.ip_address,
+                    status = 'ACTIVE',
+                    last_active_at = excluded.last_active_at;
+            """, (c_clean, m_clean, device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str))
+    finally:
+        conn.close()
+
+def verify_or_bind_device(class_code: str, mssv: str, device_id: str, user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+    """
+    Xác minh thiết bị làm bài:
+    - Nếu chưa có thiết bị: Tự động liên kết thiết bị đầu tiên (NT08)
+    - Nếu đã có thiết bị và khớp device_id: Cho phép làm bài
+    - Nếu khác device_id: Từ chối và yêu cầu đổi thiết bị (NT08, NT09)
+    """
+    if not device_id or not mssv or not class_code:
+        return True, "Không đủ tham số thiết bị", None
+
+    binding = get_device_binding(class_code, mssv, db_path)
+    if not binding:
+        # Lần đầu đăng nhập / làm bài: Tự động đăng ký thiết bị ban đầu (NT08)
+        bind_device(class_code, mssv, device_id, user_agent=user_agent, ip_address=ip_address, db_path=db_path)
+        new_b = get_device_binding(class_code, mssv, db_path)
+        return True, "Đã liên kết thiết bị thành công", new_b
+
+    if binding["device_id"] == device_id:
+        # Cập nhật thời gian hoạt động gần nhất
+        conn = get_db_connection(db_path)
+        try:
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with conn:
+                conn.execute("""
+                    UPDATE device_bindings SET last_active_at = ?, user_agent = ?, ip_address = ?
+                    WHERE id = ?;
+                """, (now_str, user_agent, ip_address, binding["id"]))
+        finally:
+            conn.close()
+        return True, "Thiết bị hợp lệ", binding
+
+    # Thiết bị khác với thiết bị đã đăng ký -> Từ chối (NT08)
+    return False, "Tài khoản MSSV này đã liên kết với thiết bị khác", binding
+
+def create_device_change_request(class_code: str, mssv: str, student_name: str, old_device_id: str, new_device_id: str, new_user_agent: str = "", new_ip: str = "", reason: str = "", db_path: Optional[str] = None) -> str:
+    """Tạo yêu cầu đổi thiết bị gửi Giảng viên phê duyệt (NT09)"""
+    conn = get_db_connection(db_path)
+    try:
+        req_id = f"DCR_{uuid.uuid4().hex[:8]}"
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            conn.execute("""
+                INSERT INTO device_change_requests (request_id, class_code, mssv, student_name, old_device_id, new_device_id, new_user_agent, new_ip_address, reason, status, requested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?);
+            """, (req_id, class_code.upper(), mssv, student_name, old_device_id, new_device_id, new_user_agent, new_ip, reason or "Đổi thiết bị làm bài", now_str))
+        return req_id
+    finally:
+        conn.close()
+
+def get_device_change_requests(class_code: Optional[str] = None, status: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Lấy danh sách các yêu cầu đổi thiết bị (NT10)"""
+    conn = get_db_connection(db_path)
+    try:
+        query = "SELECT * FROM device_change_requests WHERE 1=1"
+        params = []
+        if class_code and class_code != "ALL":
+            query += " AND UPPER(class_code) = ?"
+            params.append(class_code.upper())
+        if status:
+            query += " AND status = ?"
+            params.append(status.upper())
+        query += " ORDER BY requested_at DESC;"
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+def approve_device_change_request(request_id: str, approved_by: str = "Giảng viên", db_path: Optional[str] = None) -> bool:
+    """Giảng viên phê duyệt yêu cầu đổi thiết bị: thu hồi thiết bị cũ và kích hoạt thiết bị mới (NT09, NT10)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            row = conn.execute("SELECT * FROM device_change_requests WHERE request_id = ? AND status = 'PENDING';", (request_id,)).fetchone()
+            if not row:
+                return False
+            # Cập nhật trạng thái yêu cầu
+            conn.execute("""
+                UPDATE device_change_requests
+                SET status = 'APPROVED', resolved_at = ?, resolved_by = ?
+                WHERE request_id = ?;
+            """, (now_str, approved_by, request_id))
+            # Cập nhật bảng device_bindings sang thiết bị mới
+            conn.execute("""
+                INSERT INTO device_bindings (class_code, mssv, device_id, user_agent, ip_address, status, bound_at, last_active_at)
+                VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
+                ON CONFLICT(class_code, mssv) DO UPDATE SET
+                    device_id = excluded.device_id,
+                    user_agent = excluded.user_agent,
+                    ip_address = excluded.ip_address,
+                    status = 'ACTIVE',
+                    bound_at = excluded.bound_at,
+                    last_active_at = excluded.last_active_at;
+            """, (row["class_code"], row["mssv"], row["new_device_id"], row["new_user_agent"], row["new_ip_address"], now_str, now_str))
+            return True
+    finally:
+        conn.close()
+
+def reject_device_change_request(request_id: str, rejected_by: str = "Giảng viên", db_path: Optional[str] = None) -> bool:
+    """Giảng viên từ chối yêu cầu đổi thiết bị"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            cur = conn.execute("""
+                UPDATE device_change_requests
+                SET status = 'REJECTED', resolved_at = ?, resolved_by = ?
+                WHERE request_id = ? AND status = 'PENDING';
+            """, (now_str, rejected_by, request_id))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# =========================================================================
+# CN17: MỘT LƯỢT CHO MỖI BÀI VÀ QUẢN LÝ QUYỀN LÀM LẠI (SINGLE ATTEMPT / RE-ATTEMPT)
+# =========================================================================
+def get_latest_quiz_attempt(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Truy vấn phiên trắc nghiệm gần nhất của sinh viên cho bài học cụ thể"""
+    conn = get_db_connection(db_path)
+    try:
+        c_clean = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_type = str(doc_type or "").strip()
+        row = conn.execute("""
+            SELECT * FROM quiz_attempts
+            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ?
+            ORDER BY created_at DESC, started_at DESC LIMIT 1;
+        """, (c_clean, m_clean, d_type)).fetchone()
+        if not row:
+            return None
+        res = dict(row)
+        if res.get("question_ids") and isinstance(res["question_ids"], str):
+            try:
+                res["question_ids"] = json.loads(res["question_ids"])
+            except Exception:
+                pass
+        return res
+    finally:
+        conn.close()
+
+def get_submission_by_composite(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Lấy bài nộp chính thức theo tổ hợp duy nhất (class_code, mssv, doc_type)"""
+    conn = get_db_connection(db_path)
+    try:
+        c_clean = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_type = str(doc_type or "").strip()
+        row = conn.execute("""
+            SELECT * FROM submissions
+            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ?;
+        """, (c_clean, m_clean, d_type)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def grant_reattempt_permission(class_code: str, mssv: str, doc_type: str, permitted_by: str = "Giảng viên", reason: str = "", db_path: Optional[str] = None) -> int:
+    """Giảng viên cấp quyền làm lại bài cho sinh viên (NT06, NT07)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            cur = conn.execute("""
+                INSERT INTO reattempt_permissions (class_code, mssv, doc_type, permitted_by, permitted_at, reason, used)
+                VALUES (?, ?, ?, ?, ?, ?, 0);
+            """, (class_code.upper(), mssv, doc_type, permitted_by, now_str, reason or "Giảng viên cho phép làm lại"))
+            return cur.lastrowid
+    finally:
+        conn.close()
+
+def get_active_reattempt_permission(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Kiểm tra sinh viên có quyền làm lại chưa sử dụng không (NT06)"""
+    conn = get_db_connection(db_path)
+    try:
+        c_clean = str(class_code or "").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_type = str(doc_type or "").strip()
+        row = conn.execute("""
+            SELECT * FROM reattempt_permissions
+            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ? AND used = 0
+            ORDER BY permitted_at DESC LIMIT 1;
+        """, (c_clean, m_clean, d_type)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+def consume_reattempt_permission(permit_id: int, db_path: Optional[str] = None) -> bool:
+    """Đánh dấu quyền làm lại đã được sử dụng (NT07)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            cur = conn.execute("""
+                UPDATE reattempt_permissions
+                SET used = 1, used_at = ?
+                WHERE id = ? AND used = 0;
+            """, (now_str, permit_id))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+def archive_submission_record(sub_record: Dict[str, Any], archive_reason: str = "", db_path: Optional[str] = None) -> None:
+    """Lưu bài nộp cũ vào lịch sử kiểm toán trước khi cho phép nộp bài mới (NT08)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            conn.execute("""
+                INSERT INTO submissions_history (
+                    class_code, sbd, mssv, name, doc_type, doc_name, filename,
+                    submitted_at, elapsed_time, score, checksum, archived_at, archive_reason
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                sub_record.get("class_code"),
+                sub_record.get("sbd"),
+                sub_record.get("mssv"),
+                sub_record.get("name"),
+                sub_record.get("doc_type"),
+                sub_record.get("doc_name"),
+                sub_record.get("filename"),
+                sub_record.get("submitted_at"),
+                sub_record.get("elapsed_time"),
+                sub_record.get("score"),
+                sub_record.get("checksum", ""),
+                now_str,
+                archive_reason or "Lưu trữ trước khi nộp lại"
+            ))
+    finally:
+        conn.close()
+
+def get_submissions_history(class_code: Optional[str] = None, mssv: Optional[str] = None, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Truy vấn lịch sử các lần nộp bài đã được lưu trữ (Audit Trail)"""
+    conn = get_db_connection(db_path)
+    try:
+        query = "SELECT * FROM submissions_history WHERE 1=1"
+        params = []
+        if class_code and class_code != "ALL":
+            query += " AND UPPER(class_code) = ?"
+            params.append(class_code.upper())
+        if mssv:
+            query += " AND LOWER(mssv) = ?"
+            params.append(mssv.lower())
+        query += " ORDER BY archived_at DESC;"
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 
