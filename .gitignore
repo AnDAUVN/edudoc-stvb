@@ -24,13 +24,14 @@ data/*.db-wal
 data/*.db-shm
 data/*.sqlite*
 data/edudoc.db*
-data/backups/*.db
-data/backups/*.sqlite*
+data/backups/*
+!data/backups/.gitkeep
 
 # Environment & IDE
 .env
 data/.session-key
 data/.teacher-pin
+data/.hmac-key
 data/.credential-*
 venv/
 env/

@@ -12,11 +12,12 @@ for (const file of ['teacher.html', 'index.html']) {
 }
 const elements = new Map();
 const context = vm.createContext({document: {getElementById(id) {
-  if (!elements.has(id)) elements.set(id, {value: '', innerHTML: ''});
+  if (!elements.has(id)) elements.set(id, {value: '', innerHTML: '', style: {}});
   return elements.get(id);
 }}});
 function load(name) {
-  const start = html.indexOf(`    function ${name}(`);
+  let start = html.indexOf(`    function ${name}(`);
+  if (start < 0) start = html.indexOf(`    async function ${name}(`);
   assert.ok(start >= 0, `function ${name} exists`);
   const tail = html.slice(start + 1);
   const end = tail.search(/\n    (?:async )?function |\n  <\/script>/);
@@ -62,4 +63,19 @@ load('renderTeacherQuizList');
 context.questions = [{id:1,question:payload, options:[payload],correct:0,explanation:payload}];
 vm.runInContext('renderTeacherQuizList(questions)', context);
 assert.ok(!get('teacher-quiz-list').innerHTML.includes('<img'));
-console.log('PASS: both scripts parse; submission/roster/class/teacher/quiz escaping; safe action arguments; actual result display');
+// R2-17: Test analytics top_errors escaping
+load('renderClassAnalytics');
+context.currentAnalyticsClass = 'ALL';
+context.getTeacherHeaders = () => ({});
+context.fetch = async () => ({
+  ok: true,
+  json: async () => ({
+    has_data: true,
+    group_stats: [],
+    top_errors: [{rank: 1, target: payload, count: 5, rate: '10%', solution: payload}]
+  })
+});
+vm.runInContext('renderClassAnalytics([{score:10, status:"100%"}], [])', context).then(() => {
+  assert.ok(!get('tbl-top-errors-body').innerHTML.includes('<img'), 'analytics top_errors must remain escaped text');
+  console.log('PASS: both scripts parse; submission/roster/class/teacher/quiz/analytics escaping; safe action arguments; actual result display');
+});

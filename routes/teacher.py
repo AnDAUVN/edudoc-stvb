@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 Blueprint dành cho Cổng Giảng viên:
 Quản lý ca thi (mở/khóa làm bài), phân công bài tập, quản lý danh sách lớp (Roster),
@@ -12,12 +13,13 @@ import json
 import datetime
 import functools
 import hmac
+from typing import Optional, Tuple, List, Dict, Any, Union
 from flask import Blueprint, request, jsonify, render_template, send_file, Response, current_app, session
 
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
     CLASSES_FILE, SESSION_STATE_FILE, STUDENTS_ROSTER_FILE, QUESTIONS_FILE, TEACHERS_FILE,
-    load_json_file, save_json_file, get_session_state, save_session_state, parse_students_text,
+    load_json_file, save_json_file, update_json_atomic, get_session_state, save_session_state, parse_students_text,
     get_teachers_data, get_active_teacher, set_active_teacher,
     sanitize_identifier, safe_storage_path
 )
@@ -118,24 +120,80 @@ def teacher_portal():
     # Render teacher.html chuyên biệt, an toàn và tối ưu tải trang
     return render_template("teacher.html", mode="teacher", active_doc_type=active_doc_type)
 
+VALID_DOC_TYPES = [
+    "cong_van_de_nghi", "thong_bao_nhiem_vu", "thong_bao_hoat_dong",
+    "to_trinh_xin_kinh_phi", "to_trinh_nhan_su", "to_trinh_thiet_bi",
+    "bao_cao", "bai_thu_hoach"
+]
+
+def _parse_strict_bool(val: Any, field_name: str) -> bool:
+    """Xác thực kiểu boolean nghiêm ngặt cho cấu hình phòng học (R2 11)"""
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)) and val in (0, 1):
+        return bool(val)
+    if isinstance(val, str):
+        v = val.strip().lower()
+        if v in ("true", "1"):
+            return True
+        if v in ("false", "0"):
+            return False
+    raise ValueError(f"Trường [{field_name}] phải có kiểu giá trị boolean thực (True/False)")
+
 @teacher_bp.route("/api/teacher/session-state", methods=["POST"])
 @require_teacher_auth
 def api_set_session_state():
-    """Bật / Tắt trạng thái làm bài (Khóa khi giảng lý thuyết, mở khi cho phép làm bài - D30)"""
+    """Bật / Tắt trạng thái làm bài (Khóa khi giảng lý thuyết, mở khi cho phép làm bài - D30, R2 11)"""
     data = request.json or {}
     class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
     current = get_session_state(class_code)
-    new_is_open = bool(data.get("is_open", current.get("is_open", False))) if "is_open" in data else current.get("is_open", False)
-    new_message = str(data.get("message", "")).strip() or current.get("message", "Giảng viên đang giảng lý thuyết. Hệ thống làm bài tập đang tạm khóa để các bạn tập trung nghe giảng.")
-    enforce_roster = bool(data.get("enforce_roster", current.get("enforce_roster", True)))
-    active_doc_type = str(data.get("active_doc_type", current.get("active_doc_type", "cong_van_de_nghi"))).strip()
-    enforce_quiz = bool(data.get("enforce_quiz", current.get("enforce_quiz", True)))
+
     try:
-        max_previews = int(data.get("max_previews", current.get("max_previews", 3)))
-    except (ValueError, TypeError):
+        new_is_open = current.get("is_open", False)
+        if "is_open" in data:
+            new_is_open = _parse_strict_bool(data["is_open"], "is_open")
+
+        enforce_roster = current.get("enforce_roster", True)
+        if "enforce_roster" in data:
+            enforce_roster = _parse_strict_bool(data["enforce_roster"], "enforce_roster")
+
+        enforce_quiz = current.get("enforce_quiz", True)
+        if "enforce_quiz" in data:
+            enforce_quiz = _parse_strict_bool(data["enforce_quiz"], "enforce_quiz")
+
+        enforce_preview_limit = current.get("enforce_preview_limit", False)
+        if "enforce_preview_limit" in data:
+            enforce_preview_limit = _parse_strict_bool(data["enforce_preview_limit"], "enforce_preview_limit")
+
+        enable_anti_cheat = current.get("enable_anti_cheat", False)
+        if "enable_anti_cheat" in data:
+            enable_anti_cheat = _parse_strict_bool(data["enable_anti_cheat"], "enable_anti_cheat")
+
         max_previews = current.get("max_previews", 3)
-    enforce_preview_limit = bool(data.get("enforce_preview_limit", current.get("enforce_preview_limit", False)))
-    enable_anti_cheat = bool(data.get("enable_anti_cheat", current.get("enable_anti_cheat", False)))
+        if "max_previews" in data:
+            raw_mp = data["max_previews"]
+            if not isinstance(raw_mp, int) or isinstance(raw_mp, bool):
+                try:
+                    raw_mp = int(raw_mp)
+                except (ValueError, TypeError):
+                    raise ValueError("Trường [max_previews] phải là số nguyên hợp lệ trong khoảng 1 đến 100")
+            if raw_mp < 1 or raw_mp > 100:
+                raise ValueError("Trường [max_previews] giới hạn trong khoảng từ 1 đến 100 lần thẩm định")
+            max_previews = raw_mp
+
+        active_doc_type = current.get("active_doc_type", "cong_van_de_nghi")
+        if "active_doc_type" in data:
+            raw_dt = str(data["active_doc_type"]).strip()
+            if raw_dt and raw_dt not in VALID_DOC_TYPES:
+                raise ValueError(f"Loại văn bản [{raw_dt}] không nằm trong danh mục chuẩn của hệ thống")
+            if raw_dt:
+                active_doc_type = raw_dt
+
+        new_message = current.get("message", "")
+        if "message" in data:
+            new_message = str(data["message"]).strip()
+    except ValueError as ve:
+        return jsonify({"error": str(ve), "invalid_field": True}), 400
     
     updated_state = {
         "is_open": new_is_open,
@@ -435,15 +493,22 @@ def delete_class():
 @teacher_bp.route("/api/teacher/data", methods=["GET"])
 @require_teacher_auth
 def teacher_data():
-    """Lấy dữ liệu tổng hợp từ SQLite phục vụ Bàn làm việc Giảng viên"""
+    """Lấy dữ liệu tổng hợp từ SQLite phục vụ Bàn làm việc Giảng viên (giao với quyền lớp - R2 03)"""
     submissions = get_all_submissions()
     fraud_logs = get_all_fraud_logs()
     classes_data = load_json_file(CLASSES_FILE, {"classes": ["KN01", "KN02", "KN03", "KN04", "KN05"]})
     classes = classes_data.get("classes", []) if isinstance(classes_data, dict) else classes_data
     session_state = get_session_state()
     roster = load_json_file(STUDENTS_ROSTER_FILE, {})
-    total_roster_students = sum(len(s_list) for s_list in roster.values())
 
+    allowed_list = get_teacher_allowed_classes()
+    if allowed_list is not None:
+        submissions = [s for s in submissions if str(s.get("class_code", "")).strip().upper() in allowed_list]
+        fraud_logs = [f for f in fraud_logs if str(f.get("class_code", "")).strip().upper() in allowed_list]
+        classes = [c for c in classes if str(c).strip().upper() in allowed_list]
+        roster = {c: stus for c, stus in roster.items() if str(c).strip().upper() in allowed_list}
+
+    total_roster_students = sum(len(s_list) for s_list in roster.values())
     t_data = get_teachers_data()
     active_teacher = get_active_teacher()
 
@@ -474,9 +539,16 @@ def download_submitted(filename):
 @teacher_bp.route("/api/teacher/export-csv", methods=["GET"])
 @require_teacher_auth
 def export_csv():
-    """Xuất bảng điểm bài tập ra định dạng CSV có UTF-8 BOM hiển thị chuẩn trong Excel"""
-    class_filter = request.args.get("class_code", "ALL")
-    submissions = get_all_submissions(class_code=class_filter)
+    """Xuất bảng điểm bài tập ra định dạng CSV có UTF-8 BOM hiển thị chuẩn trong Excel (R2 03)"""
+    class_filter = sanitize_identifier(request.args.get("class_code", "ALL"), "ALL").upper()
+    allowed, actor = check_teacher_class_access(class_filter)
+    if not allowed:
+        return jsonify({"error": f"Giảng viên {actor} không có quyền xuất bảng điểm lớp {class_filter}!"}), 403
+    allowed_list = get_teacher_allowed_classes()
+    if allowed_list is not None and class_filter == "ALL":
+        submissions = [s for s in get_all_submissions() if str(s.get("class_code", "")).strip().upper() in allowed_list]
+    else:
+        submissions = get_all_submissions(class_code=class_filter)
         
     output = io.StringIO()
     output.write('\ufeff')
@@ -530,16 +602,27 @@ def export_csv():
 @teacher_bp.route("/api/teacher/submissions/delete", methods=["POST"])
 @require_teacher_auth
 def delete_teacher_submission():
-    """Xóa bài nộp của sinh viên khỏi SQLite (hỗ trợ phân lập mã lớp - D08)"""
+    """Xóa bài nộp của sinh viên khỏi SQLite (hỗ trợ phân lập mã lớp - R2 01, D08)"""
     data = request.json or {}
     mssv = str(data.get("mssv", "")).strip()
     doc_type = str(data.get("doc_type", "")).strip()
     class_code = sanitize_identifier(data.get("class_code", ""), "").upper()
-    if not mssv:
-        return jsonify({"error": "Thiếu MSSV cần xóa!"}), 400
-    
-    deleted = delete_submission_by_mssv(mssv, doc_type, class_code=class_code or None)
-    return jsonify({"success": True, "message": f"Đã xóa bài nộp của MSSV {mssv}!"})
+    if not mssv or not doc_type or not class_code or class_code == "ALL":
+        return jsonify({"error": "Thiếu thông tin xác thực bài nộp cần xóa (cần class_code cụ thể, mssv, doc_type)!"}), 400
+
+    allowed, actor = check_teacher_class_access(class_code)
+    if not allowed:
+        return jsonify({"error": f"Giảng viên {actor} không có quyền quản lý bài nộp của lớp {class_code}!"}), 403
+
+    try:
+        deleted = delete_submission_by_mssv(mssv, doc_type, class_code=class_code)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    if not deleted:
+        return jsonify({"success": False, "error": f"Không tìm thấy bài nộp của MSSV {mssv} thuộc lớp {class_code} cho loại văn bản {doc_type}!"}), 404
+
+    return jsonify({"success": True, "message": f"Đã xóa bài nộp của MSSV {mssv} thuộc lớp {class_code}!"})
 
 @teacher_bp.route("/api/teacher/fraud/delete", methods=["POST"])
 @require_teacher_auth
@@ -570,31 +653,38 @@ def teacher_templates():
 @teacher_bp.route("/api/teacher/templates/save", methods=["POST"])
 @require_teacher_auth
 def save_teacher_template():
-    """Lưu cập nhật nội dung bài tập của văn bản"""
+    """Lưu cập nhật nội dung bài tập của văn bản (R2 10, R2 21)"""
     data = request.json or {}
-    doc_type = data.get("doc_type")
-    is_body_blank = bool(data.get("is_body_blank", False))
-    header_part = data.get("header_part", "").strip()
-    body_part = data.get("body_part", "").strip()
-    footer_part = data.get("footer_part", "").strip()
+    doc_type = str(data.get("doc_type", "")).strip()
+    tmpl_path = os.path.join(DATA_DIR, "document_templates.json")
 
-    templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
-    if doc_type not in templates_data:
-        return jsonify({"error": "Không tìm thấy loại văn bản!"}), 404
+    def _updater(templates_data):
+        if doc_type not in templates_data:
+            return False, "Không tìm thấy loại văn bản!"
 
-    templates_data[doc_type]["is_body_blank"] = is_body_blank
-    if header_part:
-        templates_data[doc_type]["header_part"] = header_part
-    templates_data[doc_type]["body_part"] = body_part
-    if footer_part:
-        templates_data[doc_type]["footer_part"] = footer_part
+        if "is_body_blank" in data:
+            templates_data[doc_type]["is_body_blank"] = bool(data["is_body_blank"])
 
-    placeholder = "[Nội dung văn bản: Sinh viên tự giả định nội dung theo thực tế bài giảng, không tuân thủ đề cố định. Sơ đồ bố trí bắt buộc tuân thủ Sơ đồ Công văn (Hình 2 theo Nghị định 30)]"
-    b = placeholder if is_body_blank else body_part
-    templates_data[doc_type]["raw_text"] = f"{header_part}\n\n{b}\n\n{footer_part}"
+        # R2 10: Phân biệt trường có mặt trong payload (kể cả chuỗi rỗng) với trường bị bỏ qua
+        if "header_part" in data:
+            templates_data[doc_type]["header_part"] = str(data["header_part"]).strip()
+        if "body_part" in data:
+            templates_data[doc_type]["body_part"] = str(data["body_part"]).strip()
+        if "footer_part" in data:
+            templates_data[doc_type]["footer_part"] = str(data["footer_part"]).strip()
 
-    save_json_file(os.path.join(DATA_DIR, "document_templates.json"), templates_data)
-    return jsonify({"success": True, "message": "Đã lưu cập nhật nội dung bài tập thành công!"})
+        h = templates_data[doc_type].get("header_part", "")
+        b = templates_data[doc_type].get("body_part", "")
+        f = templates_data[doc_type].get("footer_part", "")
+        placeholder = "[Nội dung văn bản: Sinh viên tự giả định nội dung theo thực tế bài giảng, không tuân thủ đề cố định. Sơ đồ bố trí bắt buộc tuân thủ Sơ đồ Công văn (Hình 2 theo Nghị định 30)]"
+        actual_b = placeholder if templates_data[doc_type].get("is_body_blank") else b
+        templates_data[doc_type]["raw_text"] = f"{h}\n\n{actual_b}\n\n{f}".strip()
+        return True, "Đã lưu cập nhật nội dung bài tập thành công!"
+
+    success, msg = update_json_atomic(tmpl_path, _updater, {})
+    if not success:
+        return jsonify({"error": msg}), 404
+    return jsonify({"success": True, "message": msg})
 
 @teacher_bp.route("/api/teacher/quiz/<doc_type>", methods=["GET"])
 @require_teacher_auth
@@ -892,12 +982,13 @@ def api_backup_database():
 @teacher_bp.route("/api/teacher/database/download", methods=["GET"])
 @require_teacher_auth
 def api_download_database():
-    """Tải xuống tệp cơ sở dữ liệu SQLite edudoc.db để sao lưu ngoại vi an toàn (Priority 6)"""
-    db_file = os.path.join(DATA_DIR, "edudoc.db")
-    if not os.path.exists(db_file):
-        return jsonify({"error": "Không tìm thấy tệp cơ sở dữ liệu!"}), 404
-    from flask import send_file
-    return send_file(db_file, as_attachment=True, download_name="edudoc.db")
+    """Tải xuống bản sao lưu snapshot nhất quán của cơ sở dữ liệu SQLite edudoc.db (R2 04, Priority 6)"""
+    try:
+        backup_file = backup_database()
+        from flask import send_file
+        return send_file(backup_file, as_attachment=True, download_name="edudoc.db")
+    except Exception as e:
+        return jsonify({"error": f"Không thể tạo snapshot cơ sở dữ liệu để tải xuống: {str(e)}"}), 500
 
 @teacher_bp.route("/api/teacher/database/backups", methods=["GET"])
 @require_teacher_auth
@@ -1002,6 +1093,7 @@ def api_get_analytics():
         4: {"name": "Chữ ký & Nơi nhận", "passed": 0, "total": 0}
     }
     
+    missing_evidence_count = 0
     error_freq = {}
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
 
@@ -1068,11 +1160,8 @@ def api_get_analytics():
                                 }
                             error_freq[short_target]["count"] += 1
         else:
-            is_100 = (s.get("score") == 10.0 or "100%" in str(s.get("status", "")))
-            for grp_id in [1, 2, 3, 4]:
-                group_counts[grp_id]["total"] += 1
-                if is_100:
-                    group_counts[grp_id]["passed"] += 1
+            # R2 14: Thiếu tệp Word/snapshot không được ngụy tạo kết quả 100%; ghi nhận vào bài thiếu bằng chứng
+            missing_evidence_count += 1
 
     group_stats = []
     for grp_id in [1, 2, 3, 4]:
@@ -1107,7 +1196,8 @@ def api_get_analytics():
         "total_submissions": total,
         "avg_score": avg_score,
         "group_stats": group_stats,
-        "top_errors": top_errors
+        "top_errors": top_errors,
+        "missing_evidence_count": missing_evidence_count
     })
 
 
@@ -1115,19 +1205,37 @@ def api_get_analytics():
 # CN18 & CN17: QUẢN TRỊ THIẾT BỊ VÀ CẤP QUYỀN LÀM LẠI BÀI CHO GIẢNG VIÊN
 # =========================================================================
 
+def get_teacher_allowed_classes() -> Optional[List[str]]:
+    """Lấy danh sách các lớp giảng viên được phân công phụ trách (R2 03). Trả về None nếu toàn quyền."""
+    allowed = session.get("assigned_classes") or request.headers.get("X-Teacher-Assigned-Classes")
+    if not allowed:
+        active_t = get_active_teacher()
+        if active_t and "assigned_classes" in active_t:
+            allowed = active_t.get("assigned_classes")
+    if not allowed:
+        return None
+    if isinstance(allowed, str):
+        allowed_list = [c.strip().upper() for c in allowed.split(",") if c.strip()]
+    else:
+        allowed_list = [str(c).strip().upper() for c in allowed if str(c).strip()]
+    if "ALL" in allowed_list:
+        return None
+    return allowed_list
+
 def check_teacher_class_access(class_code: Optional[str]) -> Tuple[bool, str]:
     """
-    Kiểm tra quyền phụ trách lớp của giảng viên (R6 09 - RBAC Per Class).
+    Kiểm tra quyền phụ trách lớp của giảng viên (R2 03, R6 09 - RBAC Per Class).
     Trả về (allowed: bool, teacher_actor_name: str).
     """
-    actor = session.get("active_teacher") or request.headers.get("X-Teacher-Name") or "Giảng viên"
-    allowed_classes = session.get("assigned_classes") or request.headers.get("X-Teacher-Assigned-Classes")
-    if allowed_classes and class_code and str(class_code).strip().upper() != "ALL":
-        if isinstance(allowed_classes, str):
-            allowed_list = [c.strip().upper() for c in allowed_classes.split(",") if c.strip()]
-        else:
-            allowed_list = [str(c).strip().upper() for c in allowed_classes]
-        if str(class_code).strip().upper() not in allowed_list and "ALL" not in allowed_list:
+    actor = session.get("active_teacher") or request.headers.get("X-Teacher-Name") or get_active_teacher().get("name", "Giảng viên")
+    allowed_list = get_teacher_allowed_classes()
+    if allowed_list is not None:
+        if not class_code:
+            return False, actor
+        c_clean = str(class_code).strip().upper()
+        if c_clean == "ALL":
+            return True, actor
+        if c_clean not in allowed_list:
             return False, actor
     return True, actor
 

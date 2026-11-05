@@ -4,7 +4,8 @@ from pathlib import Path
 import secrets
 import time
 
-from engine.common import DATA_DIR
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
 def installation_secret(env_name, filename):

@@ -23,6 +23,7 @@ from engine.common import (
     sanitize_identifier, safe_storage_path, is_valid_docx
 )
 from engine.db import (
+    is_quiz_passed_for_student, reserve_preview_slot, complete_preview_slot, release_preview_slot,
     get_all_submissions, save_submission,
     add_fraud_log, get_student_session, save_student_session,
     save_box6_submission, save_validation_log,
@@ -219,11 +220,23 @@ def get_quiz():
                 "error": "Vui lòng chọn Mã lớp và nhập MSSV trước khi bắt đầu bài trắc nghiệm!",
                 "not_in_roster": True
             }), 400
-        if not is_student_in_roster(class_code, mssv, current_app.testing, force_check=enforce_roster):
+        roster_stu = get_student_from_roster(class_code, mssv)
+        if not roster_stu:
             return jsonify({
                 "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép làm bài!",
                 "not_in_roster": True
             }), 403
+        # R2 20: Ngăn chặn chiếm đoạt thiết bị người khác: nếu client gửi tên, tên phải khớp với danh sách lớp
+        req_name = str(data.get("name", "")).strip()
+        if req_name:
+            r_name = str(roster_stu.get("name", "")).strip()
+            clean_r = "".join(r_name.lower().split())
+            clean_q = "".join(req_name.lower().split())
+            if clean_r and clean_q and clean_r != clean_q:
+                return jsonify({
+                    "error": f"Họ và tên [{req_name}] không khớp với hồ sơ sinh viên [{r_name}] trong danh sách lớp!",
+                    "not_in_roster": True
+                }), 403
 
     # CN18: Kiểm tra thiết bị duy nhất
     if class_code and mssv:
@@ -382,19 +395,6 @@ def submit_quiz():
             "is_locked": True
         }), 403
 
-    # D04: Chặn đề thi không tồn tại hoặc rỗng trước khi kiểm tra các điều kiện khác
-    all_questions = load_json_file(QUESTIONS_FILE, {})
-    questions_list = all_questions.get(doc_type, []) if doc_type else []
-    if not doc_type or not questions_list:
-        return jsonify({
-            "passed": False,
-            "error": "Loại văn bản không hợp lệ hoặc chưa có bộ câu hỏi trắc nghiệm!",
-            "score": 0,
-            "total": 0,
-            "pass_score": 0,
-            "feedback": []
-        }), 400
-
     is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
     # P0/P1 Audit: Bắt buộc attempt_id theo server policy
     enforce_attempt = (request.headers.get("X-Test-Enforce-Attempt") == "1") or not is_testing
@@ -422,7 +422,7 @@ def submit_quiz():
                 "feedback": []
             }), 400
 
-        # V5 06 / R6 02: Bắt buộc mssv khi nộp lượt attempt_id, chống việc máy B nộp thay không cần MSSV
+        # V5 06 / R6 02: Bắt buộc mssv khi nộp lượt attempt_id
         if not mssv:
             return jsonify({
                 "passed": False,
@@ -433,6 +433,35 @@ def submit_quiz():
                 "feedback": []
             }), 400
 
+        if not class_code and attempt.get("class_code"):
+            class_code = attempt.get("class_code")
+            effective_class = class_code
+        if not doc_type and attempt.get("doc_type"):
+            doc_type = attempt.get("doc_type")
+
+    # R2 08: Chấm điểm theo snapshot của lượt thi đã phát (đảm bảo tính bất biến khi ngân hàng bị sửa/xóa)
+    questions_list = []
+    if attempt and attempt.get("questions_spec"):
+        try:
+            questions_list = json.loads(attempt["questions_spec"]) if isinstance(attempt["questions_spec"], str) else attempt["questions_spec"]
+        except Exception:
+            questions_list = []
+
+    if not questions_list:
+        all_questions = load_json_file(QUESTIONS_FILE, {})
+        questions_list = all_questions.get(doc_type, []) if doc_type else []
+
+    if not doc_type or not questions_list:
+        return jsonify({
+            "passed": False,
+            "error": "Loại văn bản không hợp lệ hoặc chưa có bộ câu hỏi trắc nghiệm!",
+            "score": 0,
+            "total": 0,
+            "pass_score": 0,
+            "feedback": []
+        }), 400
+
+    if attempt:
         # R6 02: Lấy mã lớp chuẩn từ attempt đã lưu, không cho phép bỏ qua kiểm tra khi client gửi class_code rỗng
         stored_class = attempt.get("class_code", "")
         if class_code and stored_class and str(stored_class).strip().upper() != str(class_code).strip().upper():
@@ -623,16 +652,7 @@ def generate_template():
         enforce_quiz = state.get("enforce_quiz", True)
 
     if enforce_quiz:
-        composite_key = f"{class_code}_{mssv}_{doc_type}"
-        sess = get_student_session(composite_key)
-        if not sess:
-            leg = get_student_session(f"{mssv}_{doc_type}")
-            # D06/D30: Chống dùng chéo quyền trắc nghiệm giữa các lớp khác nhau
-            if leg:
-                leg_class = leg.get("class_code")
-                if not leg_class or leg_class == class_code or leg_class == "Chung":
-                    sess = leg
-        if not sess or not sess.get("quiz_passed"):
+        if not is_quiz_passed_for_student(class_code, mssv, doc_type):
             return jsonify({
                 "error": "Bạn chưa hoàn thành bài trắc nghiệm thể thức văn bản (yêu cầu đạt tối thiểu 80%). Vui lòng hoàn thành trắc nghiệm trước khi lấy file mẫu!",
                 "quiz_required": True
@@ -877,18 +897,20 @@ def validate_student_work():
             "timestamp": time.time(),
             "preview_count": 0
         }
-        # D15: Sử dụng bộ đếm nguyên tử từ SQLite validation_logs
-        atomic_count = get_atomic_preview_count(class_code, mssv, doc_type)
-        preview_count = max(current_sess.get("preview_count", 0), atomic_count)
-
-        # D15: Ràng buộc hạn mức thẩm định thử tối đa
+        # R2 07: Ràng buộc và giữ chỗ hạn mức thẩm định thử NGUYÊN TỬ (Atomic Reservation)
         st = get_session_state(class_code)
-        max_previews = int(st.get("max_previews", 3))
+        try:
+            max_previews = int(st.get("max_previews", 3))
+        except (ValueError, TypeError):
+            max_previews = 3
         enforce_preview_limit = bool(st.get("enforce_preview_limit", False))
         if request.headers.get("X-Test-Enforce-Preview-Limit") == "1":
             enforce_preview_limit = True
 
-        if enforce_preview_limit and preview_count >= max_previews:
+        allowed_slot, current_preview_cnt, reservation_id = reserve_preview_slot(
+            class_code, mssv, doc_type, max_previews, enforce_limit=enforce_preview_limit
+        )
+        if not allowed_slot:
             if os.path.exists(temp_save_path):
                 try:
                     os.remove(temp_save_path)
@@ -897,11 +919,11 @@ def validate_student_work():
             return jsonify({
                 "error": f"Bạn đã sử dụng hết hạn mức thẩm định thử cho phép ({max_previews}/{max_previews} lần)! Vui lòng kiểm tra và bấm 'Nộp bài chính thức'.",
                 "preview_limit_exceeded": True,
-                "preview_count": preview_count,
+                "preview_count": current_preview_cnt,
                 "max_previews": max_previews
             }), 429
 
-        current_sess["preview_count"] = preview_count + 1
+        current_sess["preview_count"] = current_preview_cnt
         save_student_session(sess_key, current_sess)
         if class_code:
             save_student_session(f"{mssv}_{doc_type}", current_sess)
@@ -910,34 +932,21 @@ def validate_student_work():
         templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
         tmpl_info = templates_data.get(doc_type, {})
         
-        validator = Decree30Validator(temp_save_path, doc_type, tmpl_info, mssv=mssv)
-        result = validator.validate_document()
-
-        # D02: Ghi nhận nhật ký thẩm định thử vào validation_logs, KHÔNG ghi đè bảng submissions
-        pct = result.get("percentage", 0.0)
-        calc_score = round(pct / 10.0, 1)
-        calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
-        
         try:
-            val_log = {
-                "class_code": class_code or "Chung",
-                "sbd": sbd,
-                "mssv": mssv,
-                "name": name,
-                "doc_type": doc_type,
-                "temp_file": temp_filename,
-                "percentage": pct,
-                "score": calc_score,
-                "status": calc_status,
-                "preview_index": current_sess["preview_count"]
-            }
-            save_validation_log(val_log)
-        except Exception as err_log:
-            pass
+            validator = Decree30Validator(temp_save_path, doc_type, tmpl_info, mssv=mssv)
+            result = validator.validate_document()
+
+            pct = result.get("percentage", 0.0)
+            calc_score = round(pct / 10.0, 1)
+            calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
+            complete_preview_slot(reservation_id, sbd, name, temp_filename, calc_score, pct, calc_status)
+        except Exception as e_val:
+            release_preview_slot(reservation_id)
+            raise e_val
 
         result["status"] = "SUCCESS"
         result["temp_file"] = temp_filename
-        result["preview_count"] = current_sess["preview_count"]
+        result["preview_count"] = current_preview_cnt
         result["max_previews"] = max_previews
         return jsonify(result)
         
@@ -979,6 +988,16 @@ def submit_final():
         return jsonify({
             "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nộp bài!",
             "not_in_roster": True
+        }), 403
+
+    # R2 09: Bắt buộc hoàn thành và đạt bài trắc nghiệm thể thức nếu bật enforce_quiz
+    is_testing_q = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
+    st_q = get_session_state(class_code)
+    enforce_quiz_sub = (request.headers.get("X-Test-Enforce-Quiz") == "1") if is_testing_q else st_q.get("enforce_quiz", True)
+    if enforce_quiz_sub and not is_quiz_passed_for_student(class_code, mssv, doc_type):
+        return jsonify({
+            "error": "Bạn chưa hoàn thành hoặc chưa đạt điểm bài trắc nghiệm thể thức cho loại văn bản này! Vui lòng làm bài trắc nghiệm trước khi nộp bài.",
+            "quiz_required": True
         }), 403
 
     # CN18: Kiểm tra thiết bị nộp bài

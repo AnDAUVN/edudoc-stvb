@@ -8,7 +8,9 @@ import zipfile
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 
-SECRET_KEY = os.environ.get("EDUDOC_SECRET_KEY", "STVB_NTTU_EDUCATIONAL_SECRET_2026")
+from engine.config import installation_secret
+_DEFAULT_HMAC_KEY = installation_secret("EDUDOC_SECRET_KEY", ".hmac-key")
+SECRET_KEY = os.environ.get("EDUDOC_SECRET_KEY", _DEFAULT_HMAC_KEY)
 
 ZERO_BIN_0 = '\u200b'  # Zero-width space -> bit 0
 ZERO_BIN_1 = '\u200c'  # Zero-width non-joiner -> bit 1

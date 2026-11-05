@@ -652,14 +652,21 @@ def save_submission(sub: Dict[str, Any], db_path: Optional[str] = None) -> None:
     _sync_to_json_cache()
 
 def delete_submission_by_mssv(mssv: str, doc_type: str, class_code: Optional[str] = None, db_path: Optional[str] = None) -> bool:
-    """Xóa bài nộp theo MSSV, loại văn bản và mã lớp (D08)"""
+    """Xóa bài nộp theo MSSV, loại văn bản và mã lớp (R2 01, D08)"""
     conn = get_db_connection(db_path)
     try:
         with conn:
-            if class_code and class_code.upper() != "ALL":
-                cur = conn.execute("DELETE FROM submissions WHERE class_code = ? AND mssv = ? AND doc_type = ?;", (class_code.upper(), mssv, doc_type))
+            c_clean = str(class_code or "").strip().upper()
+            if c_clean and c_clean != "ALL":
+                cur = conn.execute(
+                    "DELETE FROM submissions WHERE UPPER(class_code) = ? AND mssv = ? AND doc_type = ?;",
+                    (c_clean, mssv, doc_type)
+                )
             else:
-                cur = conn.execute("DELETE FROM submissions WHERE mssv = ? AND doc_type = ?;", (mssv, doc_type))
+                cur = conn.execute(
+                    "DELETE FROM submissions WHERE mssv = ? AND doc_type = ?;",
+                    (mssv, doc_type)
+                )
             deleted = cur.rowcount > 0
         return deleted
     finally:
@@ -671,7 +678,7 @@ def delete_submission_by_index(index: int, db_path: Optional[str] = None) -> boo
     subs = get_all_submissions(db_path=db_path)
     if 0 <= index < len(subs):
         target = subs[index]
-        return delete_submission_by_mssv(target["mssv"], target["doc_type"], db_path=db_path)
+        return delete_submission_by_mssv(target["mssv"], target["doc_type"], class_code=target.get("class_code", "Chung"), db_path=db_path)
     return False
 
 # =========================================================================
@@ -782,11 +789,33 @@ def get_student_session(session_key: str, db_path: Optional[str] = None) -> Opti
     finally:
         conn.close()
 
+def parse_student_session_key(session_key: str) -> Tuple[str, str, str]:
+    """Phân tách session_key thành (class_code, mssv, doc_type) chuẩn xác."""
+    VALID_DOC_TYPES = [
+        "cong_van_de_nghi", "thong_bao_nhiem_vu", "thong_bao_hoat_dong",
+        "to_trinh_xin_kinh_phi", "to_trinh_nhan_su", "to_trinh_thiet_bi",
+        "bao_cao", "bai_thu_hoach"
+    ]
+    doc_type = ""
+    prefix = session_key
+    for dt in sorted(VALID_DOC_TYPES, key=len, reverse=True):
+        if session_key.endswith("_" + dt):
+            doc_type = dt
+            prefix = session_key[:-len(dt)-1]
+            break
+    if not doc_type:
+        parts = session_key.rsplit("_", 1)
+        if len(parts) == 2:
+            prefix, doc_type = parts[0], parts[1]
+    if "_" in prefix:
+        class_code, mssv = prefix.rsplit("_", 1)
+    else:
+        class_code, mssv = "", prefix
+    return class_code, mssv, doc_type
+
 def save_student_session(session_key: str, data: Dict[str, Any], db_path: Optional[str] = None) -> None:
-    """Lưu hoặc cập nhật phiên làm bài của sinh viên"""
-    parts = session_key.split("_", 1)
-    mssv = parts[0] if len(parts) > 0 else ""
-    doc_type = parts[1] if len(parts) > 1 else ""
+    """Lưu hoặc cập nhật phiên làm bài của sinh viên (R2 02, D30)"""
+    class_code, mssv, doc_type = parse_student_session_key(session_key)
     
     conn = get_db_connection(db_path)
     try:
@@ -811,12 +840,17 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
                 int(data.get("preview_count", 0)),
                 quiz_passed
             ))
-            # D30 / R6: Phân lập session_key theo lớp; chỉ đồng bộ khi cập nhật base legacy key (bắt đầu bằng MSSV)
-            if "quiz_passed" in data and session_key.startswith(f"{mssv}_"):
-                conn.execute("""
-                    UPDATE student_sessions SET quiz_passed = ?
-                    WHERE session_key LIKE ?;
-                """, (quiz_passed, f"%_{session_key}"))
+            # R2 02: Nếu ghi bằng legacy key (không có mã lớp) và chỉ định rõ quiz_passed, đồng bộ cho các composite sessions của sinh viên đó
+            if not class_code and mssv and doc_type and "quiz_passed" in data:
+                conn.execute(
+                    "UPDATE student_sessions SET quiz_passed = ? WHERE LOWER(mssv) = ? AND doc_type = ?;",
+                    (quiz_passed, mssv.lower(), doc_type)
+                )
+                if not quiz_passed:
+                    conn.execute(
+                        "UPDATE quiz_attempts SET status = 'RESET' WHERE LOWER(mssv) = ? AND doc_type = ?;",
+                        (mssv.lower(), doc_type)
+                    )
     finally:
         conn.close()
     _sync_to_json_cache()
@@ -1323,6 +1357,104 @@ def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Op
     finally:
         conn.close()
 
+def is_quiz_passed_for_student(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> bool:
+    """Kiểm tra sinh viên đã hoàn thành và đạt bài trắc nghiệm của đúng lớp và loại bài hay chưa (R2 02)."""
+    conn = get_db_connection(db_path)
+    try:
+        c_clean = str(class_code or "Chung").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_clean = str(doc_type or "").strip()
+        # 1. Kiểm tra từ bảng quiz_attempts
+        row = conn.execute("""
+            SELECT COUNT(*) FROM quiz_attempts
+            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ?
+              AND status = 'COMPLETED' AND score >= 8.0;
+        """, (c_clean, m_clean, d_clean)).fetchone()
+        if row and row[0] > 0:
+            return True
+
+        # 2. Kiểm tra từ student_sessions với composite key cụ thể
+        comp_key = f"{c_clean}_{m_clean}_{d_clean}"
+        s_row = conn.execute("SELECT quiz_passed FROM student_sessions WHERE session_key = ?;", (comp_key,)).fetchone()
+        if s_row and bool(s_row[0]):
+            return True
+        return False
+    finally:
+        conn.close()
+
+def reserve_preview_slot(class_code: str, mssv: str, doc_type: str, max_previews: int, enforce_limit: bool = True, db_path: Optional[str] = None) -> Tuple[bool, int, Optional[int]]:
+    """
+    Giữ chỗ lượt xem trước (preview) nguyên tử trong SQLite (R2 07).
+    Trả về (allowed: bool, current_count: int, log_id: Optional[int]).
+    """
+    conn = get_db_connection(db_path)
+    try:
+        c_code = str(class_code or "Chung").strip().upper()
+        m_clean = str(mssv or "").strip().lower()
+        d_type = str(doc_type or "").strip()
+
+        with conn:
+            if c_code and c_code != "CHUNG":
+                row = conn.execute("""
+                    SELECT COUNT(*) FROM validation_logs
+                    WHERE LOWER(mssv) = ? AND doc_type = ? AND UPPER(class_code) = ?;
+                """, (m_clean, d_type, c_code)).fetchone()
+            else:
+                row = conn.execute("""
+                    SELECT COUNT(*) FROM validation_logs
+                    WHERE LOWER(mssv) = ? AND doc_type = ?;
+                """, (m_clean, d_type)).fetchone()
+            # Đồng thời kiểm tra preview_count đã có trong student_sessions (D15)
+            sess_row = conn.execute("""
+                SELECT preview_count FROM student_sessions
+                WHERE session_key = ? OR session_key = ?;
+            """, (f"{c_code}_{m_clean}_{d_type}", f"{m_clean}_{d_type}")).fetchone()
+            sess_cnt = int(sess_row[0]) if (sess_row and sess_row[0] is not None) else 0
+
+            current_count = max(row[0] if row else 0, sess_cnt)
+
+            if enforce_limit and current_count >= max_previews:
+                return False, current_count, None
+
+            cur = conn.execute("""
+                INSERT INTO validation_logs (
+                    class_code, sbd, mssv, name, doc_type, temp_file, percentage, score, status, preview_index
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                c_code, "", m_clean, "", d_type, "", 0.0, 0.0, "RESERVED", current_count + 1
+            ))
+            return True, current_count + 1, cur.lastrowid
+    finally:
+        conn.close()
+
+def complete_preview_slot(log_id: int, sbd: str, name: str, temp_file: str, score: float, percentage: float, status: str, db_path: Optional[str] = None) -> bool:
+    """Cập nhật kết quả thẩm định vào slot đã giữ chỗ (R2 07)."""
+    if not log_id:
+        return False
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            cur = conn.execute("""
+                UPDATE validation_logs
+                SET sbd = ?, name = ?, temp_file = ?, score = ?, percentage = ?, status = ?
+                WHERE id = ?;
+            """, (sbd, name, temp_file, score, percentage, status, log_id))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
+def release_preview_slot(log_id: int, db_path: Optional[str] = None) -> bool:
+    """Giải phóng slot nếu tệp lỗi hoặc không thể thẩm định (R2 07)."""
+    if not log_id:
+        return False
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            cur = conn.execute("DELETE FROM validation_logs WHERE id = ? AND status = 'RESERVED';", (log_id,))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
 def get_atomic_preview_count(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> int:
     """Đếm số lần sinh viên đã kiểm tra thử trực tiếp từ SQLite validation_logs (Atomic - D15)"""
     conn = get_db_connection(db_path)
@@ -1666,66 +1798,103 @@ def archive_submission_record(sub_record: Dict[str, Any], archive_reason: str = 
 
 def save_submission_atomic(new_sub: Dict[str, Any], existing_sub: Optional[Dict[str, Any]] = None, permit_id: Optional[int] = None, archive_reason: str = "", db_path: Optional[str] = None) -> bool:
     """
-    Lưu bài nộp chính thức, lưu lịch sử bài cũ và tiêu quyền làm lại trong MỘT GIAO DỊCH NGUYÊN TỬ DUY NHẤT (R6 08 - Atomic Commit & Rollback).
-    Nếu bất kỳ bước nào gặp sự cố, toàn bộ giao dịch được hoàn tác; không tiêu quyền và không tạo lịch sử rác.
+    Lưu bài nộp chính thức, lưu lịch sử bài cũ và tiêu quyền làm lại trong MỘT GIAO DỊCH NGUYÊN TỬ DUY NHẤT (R2 05, R2 06, R6 08).
+    Kiểm tra trạng thái bài cũ và permit TRỰC TIẾP TRONG GIAO DỊCH (Immediate Lock), ngăn chặn ghi đè race-condition.
     """
     conn = get_db_connection(db_path)
     try:
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c_code = str(new_sub.get("class_code") or "Chung").strip().upper()
+        m_clean = str(new_sub.get("mssv") or "").strip()
+        d_type = str(new_sub.get("doc_type") or "").strip()
+
         with conn:
-            # 1. Nếu có bài cũ, lưu vào submissions_history
-            if existing_sub:
-                c_code = existing_sub.get("class_code") or ""
-                m_clean = existing_sub.get("mssv") or ""
-                d_type = existing_sub.get("doc_type") or ""
-                sbd_val = existing_sub.get("sbd") or ""
-                name_val = existing_sub.get("name") or ""
-                doc_name_val = existing_sub.get("doc_name") or d_type
-                fn_val = existing_sub.get("filename") or ""
-                sub_at = existing_sub.get("submitted_at") or now_str
-                el_time = existing_sub.get("elapsed_time") or "0 phút 0 giây"
-                score_val = existing_sub.get("score", 0)
-                chk_val = existing_sub.get("checksum") or ""
+            # 1. Đọc lại bài hiện có ngay trong giao dịch
+            cur = conn.execute(
+                "SELECT * FROM submissions WHERE class_code = ? AND mssv = ? AND doc_type = ?;",
+                (c_code, m_clean, d_type)
+            )
+            existing_row = cur.fetchone()
+
+            if existing_row:
+                # Đã có bài nộp trước đó -> BẮT BUỘC phải có permit_id hợp lệ
+                if not permit_id:
+                    raise ValueError(f"Sinh viên [{m_clean}] đã có bài nộp trước đó trong lớp [{c_code}]. Bắt buộc phải có quyền nộp lại (permit)!")
+
+                # Xác minh permit ngay trong giao dịch
+                p_cur = conn.execute(
+                    "SELECT id, used FROM reattempt_permissions WHERE id = ? AND class_code = ? AND mssv = ? AND doc_type = ?;",
+                    (permit_id, c_code, m_clean, d_type)
+                )
+                p_row = p_cur.fetchone()
+                if not p_row:
+                    raise ValueError(f"Không tìm thấy quyền làm lại hợp lệ (permit_id={permit_id}) cho sinh viên [{m_clean}]!")
+                if p_row["used"] != 0:
+                    raise ValueError(f"Quyền làm lại (permit_id={permit_id}) đã được sử dụng trước đó!")
+
+                # Tiêu thụ permit có điều kiện used = 0
+                upd_p = conn.execute(
+                    "UPDATE reattempt_permissions SET used = 1, used_at = ?, status = 'CONSUMED' WHERE id = ? AND used = 0;",
+                    (now_str, permit_id)
+                )
+                if upd_p.rowcount != 1:
+                    raise ValueError(f"Xung đột đồng thời: Quyền làm lại (permit_id={permit_id}) đã bị tiêu thụ bởi tiến trình khác!")
+
+                # Lưu bài cũ vào submissions_history
                 conn.execute("""
                     INSERT INTO submissions_history (
                         class_code, sbd, mssv, name, doc_type, doc_name, filename,
                         submitted_at, elapsed_time, score, checksum, archived_at, archive_reason
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-                """, (c_code, sbd_val, m_clean, name_val, d_type, doc_name_val, fn_val, sub_at, el_time, score_val, chk_val, now_str, archive_reason or "Làm lại bài"))
+                """, (
+                    existing_row["class_code"], existing_row["sbd"], existing_row["mssv"],
+                    existing_row["name"], existing_row["doc_type"], existing_row["doc_name"],
+                    existing_row["filename"], existing_row["submitted_at"], existing_row["elapsed_time"],
+                    existing_row["score"], existing_row["checksum"], now_str, archive_reason or "Làm lại bài"
+                ))
 
-            # 2. Lưu bài nộp mới vào bảng submissions
-            flags_json = json.dumps(new_sub.get("flags", {}), ensure_ascii=False)
-            conn.execute("""
-                INSERT OR REPLACE INTO submissions (
-                    sbd, mssv, name, doc_type, doc_name, filename, submitted_at,
-                    elapsed_time, is_suspicious_speed, preview_count, flags, status,
-                    score, checksum, class_code
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """, (
-                new_sub.get("sbd", ""),
-                new_sub.get("mssv", ""),
-                new_sub.get("name", ""),
-                new_sub.get("doc_type", ""),
-                new_sub.get("doc_name", ""),
-                new_sub.get("filename", ""),
-                new_sub.get("submitted_at", now_str),
-                new_sub.get("elapsed_time", "0 phút 0 giây"),
-                1 if new_sub.get("is_suspicious_speed") else 0,
-                new_sub.get("preview_count", 0),
-                flags_json,
-                new_sub.get("status", "SUCCESS"),
-                new_sub.get("score", 0),
-                new_sub.get("checksum", ""),
-                new_sub.get("class_code", "Chung")
-            ))
-
-            # 3. Tiêu thụ permit (nếu có)
-            if permit_id:
+                # Cập nhật bản ghi trong submissions
+                flags_json = json.dumps(new_sub.get("flags", {}), ensure_ascii=False)
                 conn.execute("""
-                    UPDATE reattempt_permissions
-                    SET used = 1, used_at = ?, status = 'CONSUMED'
-                    WHERE id = ? AND used = 0;
-                """, (now_str, permit_id))
+                    UPDATE submissions SET
+                        sbd = ?, name = ?, doc_name = ?, filename = ?, submitted_at = ?,
+                        elapsed_time = ?, is_suspicious_speed = ?, preview_count = ?,
+                        flags = ?, status = ?, score = ?, checksum = ?
+                    WHERE class_code = ? AND mssv = ? AND doc_type = ?;
+                """, (
+                    new_sub.get("sbd", ""), new_sub.get("name", ""), new_sub.get("doc_name", d_type),
+                    new_sub.get("filename", ""), new_sub.get("submitted_at", now_str),
+                    new_sub.get("elapsed_time", "0 phút 0 giây"),
+                    1 if new_sub.get("is_suspicious_speed") else 0,
+                    new_sub.get("preview_count", 0), flags_json,
+                    new_sub.get("status", "SUCCESS"), new_sub.get("score", 0),
+                    new_sub.get("checksum", ""), c_code, m_clean, d_type
+                ))
+
+            else:
+                # Chưa có bài nộp trước đó -> NỘP LẦN ĐẦU
+                if permit_id:
+                    conn.execute(
+                        "UPDATE reattempt_permissions SET used = 1, used_at = ?, status = 'CONSUMED' WHERE id = ? AND used = 0;",
+                        (now_str, permit_id)
+                    )
+
+                # Dùng INSERT thường: nếu 2 request đồng thời cùng chèn thì SQLite UNIQUE constraint sẽ bắn IntegrityError
+                flags_json = json.dumps(new_sub.get("flags", {}), ensure_ascii=False)
+                conn.execute("""
+                    INSERT INTO submissions (
+                        sbd, mssv, name, doc_type, doc_name, filename, submitted_at,
+                        elapsed_time, is_suspicious_speed, preview_count, flags, status,
+                        score, checksum, class_code
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, (
+                    new_sub.get("sbd", ""), new_sub.get("mssv", ""), new_sub.get("name", ""),
+                    new_sub.get("doc_type", ""), new_sub.get("doc_name", ""), new_sub.get("filename", ""),
+                    new_sub.get("submitted_at", now_str), new_sub.get("elapsed_time", "0 phút 0 giây"),
+                    1 if new_sub.get("is_suspicious_speed") else 0, new_sub.get("preview_count", 0),
+                    flags_json, new_sub.get("status", "SUCCESS"), new_sub.get("score", 0),
+                    new_sub.get("checksum", ""), c_code
+                ))
 
         _sync_to_json_cache()
         return True

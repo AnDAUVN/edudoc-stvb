@@ -36,7 +36,8 @@ TEST_SUITES = [
     "test_audit_priorities.py",
     "test_audit_cn17_cn18.py",
     "comprehensive_audit_suite.py",
-    "test_audit_repairs.py"
+    "test_audit_repairs.py",
+    "test_audit_r2.py"
 ]
 
 def is_server_running(host="127.0.0.1", port=5000):

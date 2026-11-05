@@ -338,7 +338,9 @@ class Decree30Validator:
             })
         else:
             rows_cnt_f = len(footer_table.rows)
-            cols_cnt_f = len(footer_table.columns) if hasattr(footer_table, 'columns') else len(footer_table.rows[0].cells)
+            cols_cnt_f = 0
+            if rows_cnt_f > 0:
+                cols_cnt_f = len(footer_table.columns) if hasattr(footer_table, 'columns') else len(footer_table.rows[0].cells)
             if rows_cnt_f != 1 or cols_cnt_f != 2:
                 errors.append({
                     "issue": f"Bảng cuối trang bắt buộc phải gồm đúng 2 CỘT và 1 DÒNG (Hiện tại: {rows_cnt_f} dòng, {cols_cnt_f} cột).",
@@ -1894,10 +1896,10 @@ class Decree30Validator:
                 same_row_so_dia_danh = True
 
         # TẦNG 2: BẢNG CUỐI TRANG (2 CỘT x 1 DÒNG)
-        if footer_table and footer_table != header_table:
+        if footer_table and footer_table != header_table and len(footer_table.rows) > 0:
             row_f = footer_table.rows[0]
             # Cột 1: Ô 9b (Nơi nhận)
-            cell_left = row_f.cells[0]
+            cell_left = row_f.cells[0] if len(row_f.cells) > 0 else None
             for p in cell_left.paragraphs:
                 t = self._clean_text(p)
                 if not t: continue

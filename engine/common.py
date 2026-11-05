@@ -44,6 +44,26 @@ def load_json_file(file_path: str, default_val: Any) -> Any:
             return default_val
     return default_val
 
+import threading
+_JSON_FILE_LOCK = threading.RLock()
+
+def update_json_atomic(file_path: str, updater_fn, default_val=None):
+    """
+    Cập nhật tệp JSON nguyên tử bảo vệ toàn bộ chu trình Đọc - Sửa - Ghi (R2 21).
+    Ngăn chặn mất cập nhật khi nhiều tiến trình/luồng ghi đồng thời.
+    """
+    with _JSON_FILE_LOCK:
+        current_data = load_json_file(file_path, default_val if default_val is not None else {})
+        res = updater_fn(current_data)
+        if isinstance(res, tuple):
+            success, result_val = res
+            if success:
+                save_json_file(file_path, current_data)
+            return success, result_val
+        else:
+            save_json_file(file_path, current_data)
+            return res
+
 def save_json_file(file_path: str, data: Any) -> None:
     """Ghi dữ liệu ra tệp JSON với định dạng utf-8 thụt đầu dòng đẹp"""
     with open(file_path, "w", encoding="utf-8") as f:

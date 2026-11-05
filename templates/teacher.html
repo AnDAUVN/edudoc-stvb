@@ -1079,7 +1079,7 @@
         title: 'XÁC THỰC GIẢNG VIÊN',
         text: 'Vui lòng nhập Mã PIN Giảng viên để mở khóa Bàn làm việc:',
         input: 'password',
-        inputPlaceholder: 'Nhập mã PIN Giảng viên (mặc định: gv2026)...',
+        inputPlaceholder: 'Nhập mã PIN bảo mật Giảng viên...',
         confirmButtonText: '<i class="fa-solid fa-lock-open me-2"></i>Mở khóa Bàn làm việc',
         confirmButtonColor: '#1e3a8a',
         allowOutsideClick: false,
@@ -1471,7 +1471,7 @@
               <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattempt(${jsArg(s.class_code || 'Chung')}, ${jsArg(s.mssv)}, ${jsArg(s.doc_type)}, ${jsArg(s.name)})" title="Cấp quyền làm lại bài (CN17)">
                 <i class="fa-solid fa-rotate-left"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission(${jsArg(s.mssv)}, ${jsArg(s.doc_type)})" title="Xóa bài nộp">
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission(${jsArg(s.class_code || 'Chung')}, ${jsArg(s.mssv)}, ${jsArg(s.doc_type)}, ${jsArg(s.name || '')})" title="Xóa bài nộp">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </td>
@@ -1493,14 +1493,16 @@
       window.location.href = `/api/teacher/export-csv?class_code=${filter}`;
     }
 
-    async function deleteSubmission(mssv, docType) {
+    async function deleteSubmission(classCode, mssv, docType, name) {
       const res = await Swal.fire({
         title: 'Xóa bài nộp?',
-        text: `Bạn có chắc muốn xóa bài nộp của MSSV ${mssv}? Sinh viên sẽ được phép làm lại từ đầu.`,
+        html: `Bạn có chắc muốn xóa bài nộp của sinh viên <strong>${escapeHtml(name || mssv)}</strong> (MSSV: <strong>${escapeHtml(mssv)}</strong>) thuộc lớp <strong>${escapeHtml(classCode)}</strong>?<br><span class="text-danger small">Lưu ý: Thao tác này chỉ xóa bài của lớp ${escapeHtml(classCode)}. Sinh viên sẽ được phép làm lại bài.</span>`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        confirmButtonText: 'Đồng ý xóa'
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="fa-solid fa-trash me-1"></i> Xóa bài',
+        cancelButtonText: 'Hủy'
       });
       if (!res.isConfirmed) return;
 
@@ -1508,15 +1510,17 @@
         const resp = await fetch('/api/teacher/submissions/delete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mssv: mssv, doc_type: docType })
+          body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType })
         });
         const d = await resp.json();
-        if (d.success) {
+        if (resp.ok && d.success) {
           Swal.fire('Đã xóa', d.message, 'success');
           loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Không thể xóa bài nộp!', 'error');
         }
       } catch (e) {
-        Swal.fire('Lỗi', 'Không thể xóa bài nộp.', 'error');
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ để xóa bài!', 'error');
       }
     }
 
@@ -2473,18 +2477,18 @@
         } else {
           tbody.innerHTML = topErrors.map(err => `
             <tr>
-              <td class="text-center fw-bold text-secondary">${err.rank}</td>
+              <td class="text-center fw-bold text-secondary">${escapeHtml(err.rank)}</td>
               <td>
-                <span class="fw-bold text-dark">${err.target}</span>
+                <span class="fw-bold text-dark">${escapeHtml(err.target)}</span>
               </td>
               <td class="text-center">
-                <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${err.count} lượt</span>
+                <span class="badge bg-secondary-subtle text-secondary px-2 py-1">${escapeHtml(err.count)} lượt</span>
               </td>
               <td class="text-center">
-                <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${err.rate}</span>
+                <span class="badge bg-warning-subtle text-warning fw-bold px-2 py-1">${escapeHtml(err.rate)}</span>
               </td>
               <td class="small text-muted">
-                <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${err.solution}
+                <i class="fa-regular fa-lightbulb text-warning me-1"></i> ${escapeHtml(err.solution)}
               </td>
             </tr>
           `).join('');
