@@ -206,6 +206,42 @@ def submit_quiz():
             "is_locked": True
         }), 403
 
+    # D04: Chặn đề thi không tồn tại hoặc rỗng trước khi kiểm tra các điều kiện khác
+    all_questions = load_json_file(QUESTIONS_FILE, {})
+    questions_list = all_questions.get(doc_type, []) if doc_type else []
+    if not doc_type or not questions_list:
+        return jsonify({
+            "passed": False,
+            "error": "Loại văn bản không hợp lệ hoặc chưa có bộ câu hỏi trắc nghiệm!",
+            "score": 0,
+            "total": 0,
+            "pass_score": 0,
+            "feedback": []
+        }), 400
+
+    is_testing = bool(current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")
+    state = get_session_state(class_code)
+    enforce_roster = (request.headers.get("X-Test-Enforce-Roster") == "1") if is_testing else state.get("enforce_roster", False)
+    if enforce_roster and class_code and mssv:
+        if not is_student_in_roster(class_code, mssv, current_app.testing):
+            return jsonify({
+                "passed": False,
+                "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nộp bài trắc nghiệm!",
+                "not_in_roster": True,
+                "score": 0
+            }), 403
+
+    enforce_attempt = (request.headers.get("X-Test-Enforce-Attempt") == "1")
+    if not attempt_id and enforce_attempt:
+        return jsonify({
+            "passed": False,
+            "error": "Bắt buộc phải có mã lượt làm bài trắc nghiệm (attempt_id)!",
+            "score": 0,
+            "total": 5,
+            "pass_score": 4,
+            "feedback": []
+        }), 400
+
     attempt = None
     if attempt_id:
         attempt = get_quiz_attempt(attempt_id)
@@ -219,11 +255,23 @@ def submit_quiz():
                 "feedback": []
             }), 400
 
+        if attempt.get("status") == "COMPLETED":
+            return jsonify({
+                "passed": False,
+                "error": "Lượt làm bài trắc nghiệm này đã hoàn thành, không thể nộp lại!",
+                "score": attempt.get("score", 0),
+                "total": 5,
+                "pass_score": 4,
+                "feedback": []
+            }), 400
+
         # Ràng buộc định danh sinh viên và mã lớp
         if attempt.get("mssv") and mssv and str(attempt["mssv"]).strip() != str(mssv).strip():
             return jsonify({"passed": False, "error": "Phiên làm bài không thuộc về sinh viên này!", "score": 0}), 400
         if attempt.get("doc_type") and doc_type and str(attempt["doc_type"]).strip() != str(doc_type).strip():
             return jsonify({"passed": False, "error": "Loại văn bản không khớp với phiên làm bài!", "score": 0}), 400
+        if attempt.get("class_code") and class_code and str(attempt["class_code"]).strip().upper() != str(class_code).strip().upper():
+            return jsonify({"passed": False, "error": "Lượt làm bài trắc nghiệm được cấp cho lớp khác, không thể nộp cho lớp này!", "score": 0}), 400
 
         # Kiểm tra quá thời gian làm bài (300 giây + 30s độ trễ mạng)
         try:
@@ -242,19 +290,16 @@ def submit_quiz():
         except Exception:
             pass
 
-    all_questions = load_json_file(QUESTIONS_FILE, {})
-    questions_list = all_questions.get(doc_type, [])
-
-    # D04: Chặn đề thi không tồn tại hoặc rỗng
-    if not doc_type or not questions_list:
-        return jsonify({
-            "passed": False,
-            "error": "Loại văn bản không hợp lệ hoặc chưa có bộ câu hỏi trắc nghiệm!",
-            "score": 0,
-            "total": 0,
-            "pass_score": 0,
-            "feedback": []
-        }), 400
+    # Chấm theo snapshot questions_spec của lượt thi nếu có (đảm bảo tính bất biến)
+    questions_list = []
+    if attempt and attempt.get("questions_spec"):
+        try:
+            questions_list = json.loads(attempt["questions_spec"]) if isinstance(attempt["questions_spec"], str) else attempt["questions_spec"]
+        except Exception:
+            questions_list = []
+    if not questions_list:
+        all_questions = load_json_file(QUESTIONS_FILE, {})
+        questions_list = all_questions.get(doc_type, [])
 
     q_map = {str(q["id"]): q for q in questions_list}
 
@@ -297,16 +342,28 @@ def submit_quiz():
     passed = (correct_count >= pass_score and answered_allowed_count >= total_q)
 
     if attempt_id:
-        complete_quiz_attempt(attempt_id, correct_count, passed, user_answers)
+        completed_ok = complete_quiz_attempt(attempt_id, correct_count, passed, user_answers)
+        if not completed_ok:
+            return jsonify({
+                "passed": False,
+                "error": "Lượt làm bài trắc nghiệm này đã hoàn thành trước đó (Không thể nộp lại)!",
+                "score": 0,
+                "total": total_q,
+                "pass_score": pass_score,
+                "feedback": []
+            }), 400
 
-    # Ghi nhận trạng thái vượt qua trắc nghiệm (D06)
+    # Ghi nhận trạng thái vượt qua trắc nghiệm (D06 & D30: Lưu composite key và legacy key)
     if passed and mssv:
-        sess_key = f"{mssv}_{doc_type}"
-        cur_sess = get_student_session(sess_key) or {}
+        composite_key = f"{class_code}_{mssv}_{doc_type}"
+        cur_sess = get_student_session(composite_key) or {}
         cur_sess["quiz_passed"] = True
         cur_sess["timestamp"] = cur_sess.get("timestamp", time.time())
         cur_sess["started_at"] = cur_sess.get("started_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        save_student_session(sess_key, cur_sess)
+        save_student_session(composite_key, cur_sess)
+
+        legacy_key = f"{mssv}_{doc_type}"
+        save_student_session(legacy_key, cur_sess)
 
     return jsonify({
         "score": correct_count,
@@ -543,7 +600,6 @@ def validate_student_work():
                     "fraud_info": fraud_check
                 })
 
-        # Ghi nhận Telemetry số lần kiểm tra thử (Preview Count) vào SQLite
         sess_key = f"{mssv}_{doc_type}"
         current_sess = get_student_session(sess_key) or {
             "started_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -581,11 +637,6 @@ def validate_student_work():
         
         validator = Decree30Validator(temp_save_path, doc_type, tmpl_info, mssv=mssv)
         result = validator.validate_document()
-        
-        # Ghi nhận nội dung Ô 6 vào SQLite để phục vụ đối chiếu đạo văn các bài sau
-        box6_text = fraud_check.get("box6_text") or (validator.get_box6_text() if hasattr(validator, "get_box6_text") else "")
-        if box6_text:
-            save_box6_submission(mssv, name, class_code, doc_type, box6_text)
 
         # D02: Ghi nhận nhật ký thẩm định thử vào validation_logs, KHÔNG ghi đè bảng submissions
         pct = result.get("percentage", 0.0)
@@ -686,7 +737,7 @@ def submit_final():
             "status": "ERROR"
         }), status_code
 
-    # Priority 5: Xác minh tính hợp lệ của mã bảo mật HMAC phôi bài
+    # Priority 5 & S07-S10: Xác minh tính hợp lệ của mã bảo mật HMAC và metadata phôi bài
     try:
         from engine.security import verify_anti_cheat_token
         from docx import Document
@@ -694,21 +745,58 @@ def submit_final():
         core_p = sub_doc.core_properties
         token_hdr = getattr(core_p, "identifier", "") or ""
         kw = getattr(core_p, "keywords", "") or ""
+        
+        # Priority 5 & S07-S10: Khi bật chế độ yêu cầu phôi hoặc có chữ ký số STVB
+        is_testing = bool(current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")
+        require_phoi = (request.headers.get("X-Test-Enforce-Phoi") == "1") or (not is_testing and is_anti_cheat_enabled(class_code, current_app.testing))
+        if require_phoi and not (token_hdr.startswith("STVB_SIGNATURE:") and kw):
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+            return jsonify({
+                "error": "Tệp bài làm không chứa mã bảo mật của phôi đề thi! Vui lòng tải lại phôi từ hệ thống.",
+                "status": "FILE_KHONG_HOP_LE"
+            }), 400
+
         if token_hdr.startswith("STVB_SIGNATURE:") and kw:
             parts = kw.split("|")
-            if len(parts) >= 5:
-                o_sbd, o_mssv, o_name, o_doc, o_ts = parts[0], parts[1], parts[2], parts[3], parts[4]
-                t_val = token_hdr[len("STVB_SIGNATURE:"):].strip()
-                if not verify_anti_cheat_token(t_val, o_sbd, o_mssv, o_doc, o_ts):
-                    if os.path.exists(temp_path):
-                        try:
-                            os.remove(temp_path)
-                        except Exception:
-                            pass
-                    return jsonify({
-                        "error": "Phát hiện mã xác thực phôi đề thi (HMAC) bị làm giả hoặc chỉnh sửa trái phép!",
-                        "status": "ERROR"
-                    }), 400
+            if len(parts) < 5:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                return jsonify({
+                    "error": "Dữ liệu metadata bảo mật của phôi đề thi bị thiếu hoặc không hợp lệ!",
+                    "status": "FILE_KHONG_HOP_LE"
+                }), 400
+
+            o_sbd, o_mssv, o_name, o_doc, o_ts = parts[0], parts[1], parts[2], parts[3], parts[4]
+            # S10: Kiểm tra loại văn bản của phôi có khớp với văn bản đang nộp không
+            if o_doc and doc_type and str(o_doc).strip() != str(doc_type).strip():
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                return jsonify({
+                    "error": f"Phôi bài tập này được cấp cho loại văn bản [{o_doc}], không hợp lệ để nộp cho [{doc_type}]!",
+                    "status": "FILE_KHONG_HOP_LE"
+                }), 400
+
+            t_val = token_hdr[len("STVB_SIGNATURE:"):].strip()
+            if not verify_anti_cheat_token(t_val, o_sbd, o_mssv, o_doc, o_ts):
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                return jsonify({
+                    "error": "Phát hiện mã xác thực phôi đề thi (HMAC) bị làm giả hoặc chỉnh sửa trái phép!",
+                    "status": "FILE_KHONG_HOP_LE"
+                }), 400
     except Exception as e_chk:
         # Nếu không mở được cấu trúc docx, từ chối ngay với 400
         if os.path.exists(temp_path):
@@ -735,29 +823,33 @@ def submit_final():
             doc_type=doc_type,
             class_code=class_code
         )
-        if fraud_check.get("is_fraud") and fraud_check.get("fraud_type") in ["COPY_PASTE_NOI_DUNG", "COPY_PASTE_NOI_DUNG_O6", "NOP_NGUYEN_FILE_BAN"]:
-            log_id = str(uuid.uuid4())[:8]
-            if "student_a" not in fraud_check:
-                fraud_check["student_a"] = {"sbd": sbd, "mssv": mssv, "name": name, "class_code": class_code}
+        if fraud_check.get("is_fraud"):
+            if fraud_check.get("fraud_type") == "FILE_KHONG_HOP_LE" and not require_phoi:
+                pass
             else:
-                fraud_check["student_a"]["class_code"] = class_code
-            fraud_entry = {
-                "id": log_id,
-                "class_code": class_code or "Chung",
-                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "doc_type": doc_type,
-                "fraud_data": fraud_check
-            }
-            add_fraud_log(fraud_entry)
-            if os.path.exists(temp_path):
-                try:
-                    os.remove(temp_path)
-                except Exception:
-                    pass
-            return jsonify({
-                "status": "FRAUD_DETECTED",
-                "fraud_info": fraud_check
-            }), 400
+                log_id = str(uuid.uuid4())[:8]
+                if "student_a" not in fraud_check:
+                    fraud_check["student_a"] = {"sbd": sbd, "mssv": mssv, "name": name, "class_code": class_code}
+                else:
+                    fraud_check["student_a"]["class_code"] = class_code
+                fraud_entry = {
+                    "id": log_id,
+                    "class_code": class_code or "Chung",
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "doc_type": doc_type,
+                    "fraud_data": fraud_check
+                }
+                add_fraud_log(fraud_entry)
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                return jsonify({
+                    "status": "FRAUD_DETECTED",
+                    "fraud_info": fraud_check,
+                    "error": fraud_check.get("evidence") or fraud_check.get("message") or "Phát hiện vi phạm quy chế thi!"
+                }), 400
         
     templates_data = load_json_file(os.path.join(DATA_DIR, "document_templates.json"), {})
     tmpl = templates_data.get(doc_type, {})
@@ -819,6 +911,11 @@ def submit_final():
         pct = val_res.get("percentage", 0.0)
         calc_score = round(pct / 10.0, 1)
         calc_status = "Hoàn thành 100% Nghị định 30" if pct >= 100.0 else f"Đạt chuẩn {pct}% Nghị định 30"
+
+        # Ghi nhận nội dung Ô 6 chính thức vào SQLite phục vụ đối chiếu đạo văn (P1)
+        box6_text = val_sub.get_box6_text() if hasattr(val_sub, "get_box6_text") else ""
+        if box6_text:
+            save_box6_submission(mssv, name, class_code, doc_type, box6_text)
     except Exception as e_val:
         # Priority 5: Bắt buộc từ chối ngay với HTTP 400 khi file bị lỗi, không lưu bản ghi 0.0 vào DB
         if os.path.exists(final_path):

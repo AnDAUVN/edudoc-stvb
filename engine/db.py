@@ -1105,19 +1105,19 @@ def get_quiz_attempt(attempt_id: str, db_path: Optional[str] = None) -> Optional
     finally:
         conn.close()
 
-def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Dict[str, Any], db_path: Optional[str] = None) -> None:
-    """Cập nhật kết quả chấm bài của phiên trắc nghiệm (Priority 1)"""
+def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Dict[str, Any], db_path: Optional[str] = None) -> bool:
+    """Cập nhật kết quả chấm bài của phiên trắc nghiệm nguyên tử (Idempotency - WHERE status != 'COMPLETED')"""
     conn = get_db_connection(db_path)
     try:
         with conn:
-            conn.execute("""
+            cur = conn.execute("""
                 UPDATE quiz_attempts
                 SET status = 'COMPLETED',
                     score = ?,
                     passed = ?,
                     answers = ?,
                     completed_at = ?
-                WHERE attempt_id = ?;
+                WHERE attempt_id = ? AND status != 'COMPLETED';
             """, (
                 min(int(score), 5),
                 1 if passed else 0,
@@ -1125,6 +1125,7 @@ def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Di
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 attempt_id
             ))
+            return cur.rowcount > 0
     finally:
         conn.close()
 

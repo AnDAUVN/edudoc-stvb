@@ -180,7 +180,7 @@ def compute_box6_similarity(text1: str, text2: str) -> float:
     return round(final_score * 100, 1)
 
 def extract_box6_from_docx(doc_or_path) -> str:
-    """Trích xuất toàn bộ văn bản phần thân bài (Ô 6) ngoài bảng"""
+    """Trích xuất toàn bộ văn bản phần thân bài (Ô 6) từ cả đoạn văn và các ô bảng biểu (S04)"""
     if isinstance(doc_or_path, str):
         if not os.path.exists(doc_or_path):
             return ""
@@ -191,58 +191,79 @@ def extract_box6_from_docx(doc_or_path) -> str:
     paras = []
     in_kinh_gui = False
 
-    for p in doc.paragraphs:
-        t = p.text.strip()
+    def clean_box6_paragraph(p_text: str):
+        nonlocal in_kinh_gui
+        t = p_text.strip()
         if not t:
             in_kinh_gui = False
-            continue
+            return None
 
         t_clean = re.sub(r'[\u200b\u200c\u200d\ufeff]', '', t).strip()
         if not t_clean:
-            continue
+            return None
 
         # Bỏ qua các dòng nhãn hướng dẫn trong phôi đề
         if t_clean.startswith('[') and t_clean.endswith(']'):
-            continue
+            return None
         if any(t_clean.lower().startswith(kw) for kw in [
             'cơ quan chủ quản', 'cơ quan ban hành', 'quốc hiệu', 'tiêu ngữ',
             'số ký hiệu', 'địa danh ngày tháng', 'trích yếu', 'tên loại'
         ]):
-            continue
+            return None
 
         if 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA' in t_clean or 'Độc lập - Tự do - Hạnh phúc' in t_clean:
-            continue
+            return None
         if re.match(r'^Số\s*:', t_clean, re.IGNORECASE) or t_clean.startswith('SỐ:'):
-            continue
+            return None
         if 'ngày' in t_clean.lower() and 'tháng' in t_clean.lower() and 'năm' in t_clean.lower() and len(t_clean) < 60:
-            continue
+            return None
         if t_clean.startswith(('V/v', 'v/v', 'Về việc', 'về việc')) and len(t_clean) < 80:
-            continue
+            return None
 
         # Bỏ qua Kính gửi
         if t_clean.lower().startswith('kính gửi'):
             in_kinh_gui = True
-            continue
+            return None
 
         if in_kinh_gui:
             if t_clean.startswith(('-', '–', '—', '+')) or t_clean.endswith(';') or t_clean.endswith('.'):
                 if any(t_clean.startswith(kw) for kw in ['Hiện nay', 'Căn cứ', 'Thực hiện', 'Nhằm', 'Để ']):
                     in_kinh_gui = False
                 else:
-                    continue
+                    return None
             else:
                 in_kinh_gui = False
 
         if t_clean.startswith('Nơi nhận') or t_clean.startswith('Lưu:') or t_clean == '- Như kính gửi;' or t_clean == '- Lưu: VT.':
-            continue
+            return None
         if any(kw in t_clean.upper() for kw in ['HIỆU TRƯỞNG', 'GIÁM ĐỐC', 'TRƯỞNG PHÒNG', 'TRƯỞNG KHOA', 'BÍ THƯ']):
-            continue
+            return None
         # Bỏ qua dòng họ tên người ký nếu là chuỗi ngắn 2-4 từ không dấu câu
         if len(t_clean.split()) in [2, 3, 4] and not any(punc in t_clean for punc in ['.', ',', ';', '!', '?', ':']):
             if t_clean in ['Trần Ái Cầm', 'Nguyễn Văn An', 'Lê Văn Bình', 'Nguyễn Hoàng Long', 'Nguyễn Văn A']:
-                continue
+                return None
 
-        paras.append(t_clean)
+        return t_clean
+
+    # 1. Duyệt các đoạn văn bản chính ngoài bảng
+    for p in doc.paragraphs:
+        cleaned = clean_box6_paragraph(p.text)
+        if cleaned:
+            paras.append(cleaned)
+
+    # 2. S04: Duyệt nội dung các ô trong bảng (tránh bỏ sót khi SV đưa thân bài vào ô bảng)
+    seen_cells = set()
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                cell_id = id(cell._tc)
+                if cell_id in seen_cells:
+                    continue
+                seen_cells.add(cell_id)
+                for p in cell.paragraphs:
+                    cleaned = clean_box6_paragraph(p.text)
+                    if cleaned and cleaned not in paras:
+                        paras.append(cleaned)
 
     return '\n'.join(paras)
 
@@ -340,6 +361,16 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                 # Bỏ qua chính file hiện tại của sinh viên này
                 if str(current_mssv) in fn:
                     continue
+                fn_class = "Chung"
+                fn_parts = fn.split("_")
+                if len(fn_parts) >= 4 and not fn.startswith("temp_"):
+                    fn_class = fn_parts[0]
+
+                # S11: Chỉ đối chiếu trong cùng phạm vi lớp học, không lẫn lộn giữa các lớp
+                if class_code and class_code.upper() != "CHUNG" and fn_class != "Chung":
+                    if fn_class.upper() != class_code.upper():
+                        continue
+
                 fpath = os.path.join(sdir, fn)
                 try:
                     other_doc = Document(fpath)
@@ -365,7 +396,7 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                     if clean_other_disk and len(clean_other_disk.split()) >= 15:
                         sim = compute_box6_similarity(clean_curr_box6, clean_other_disk)
                         if sim >= 75.0:
-                            save_box6_submission(other_mssv, other_name, class_code or "Chung", doc_type or "", clean_other_disk)
+                            save_box6_submission(other_mssv, other_name, fn_class, doc_type or "", clean_other_disk)
                             return {
                                 "is_fraud": True,
                                 "fraud_type": "COPY_PASTE_NOI_DUNG_O6",
@@ -379,7 +410,7 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
                                 "student_b": {
                                     "mssv": other_mssv,
                                     "name": other_name,
-                                    "class_code": class_code or "Chung"
+                                    "class_code": fn_class
                                 },
                                 "similarity": sim,
                                 "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã sao chép {sim}% nội dung Thân bài (Ô 6) từ file '{fn}' của Sinh viên B ({other_name} - MSSV: {other_mssv})."
@@ -390,21 +421,20 @@ def check_box6_plagiarism(docx_path, current_sbd, current_mssv, current_name, do
         return {"is_fraud": False, "box6_text": clean_curr_box6}
     except Exception as e:
         return {"is_fraud": False, "box6_text": ""}
-    except Exception as e:
-        return {"is_fraud": False, "box6_text": ""}
 
 def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, students_db=None, doc_type=None, class_code=None):
     """
-    Kiểm tra gian lận:
+    Kiểm tra gian lận (S01 - S12, Priority 5):
     - Chiêu 1: SV A nộp nguyên file của SV B (Đổi tên file)
     - Chiêu 2: SV A mở file mình nhưng Copy-Paste nội dung từ file của SV B
     - Chiêu 3: SV copy toàn bộ nội dung từ tài liệu bên ngoài dán đè vào file mẫu
+    - Chiêu 4: Giả mạo/xóa metadata hoặc dùng phôi sai loại văn bản (S09, S10)
     """
     try:
         doc = Document(docx_path)
         core_props = doc.core_properties
         
-        # KIỂM TRA 1: METADATA & TOKEN
+        # KIỂM TRA 1: METADATA & TOKEN (S08, S09, S10)
         token_header = getattr(core_props, "identifier", "") or ""
         keywords = getattr(core_props, "keywords", "") or ""
         
@@ -417,37 +447,53 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
             }
             
         parts = keywords.split("|")
-        if len(parts) >= 5:
-            orig_sbd, orig_mssv, orig_name, orig_doc_type, timestamp = parts[0], parts[1], parts[2], parts[3], parts[4]
+        if len(parts) < 5:
+            return {
+                "is_fraud": True,
+                "fraud_type": "FILE_KHONG_HOP_LE",
+                "reason": "Metadata phôi thiếu trường thông tin bảo mật",
+                "message": "Phôi bài làm không đầy đủ các thông tin bảo mật hợp lệ theo quy chế thi!"
+            }
 
-            # D14: Xác minh mã bảo mật HMAC phôi bài bằng hmac.compare_digest
-            token_val = token_header[len("STVB_SIGNATURE:"):].strip()
-            if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp):
-                return {
-                    "is_fraud": True,
-                    "fraud_type": "FILE_KHONG_HOP_LE",
-                    "reason": "Mã xác thực phôi đề (HMAC) không khớp hoặc đã bị chỉnh sửa giả mạo",
-                    "message": "Phát hiện mã xác thực phôi đề thi bị sửa đổi! Bạn phải làm bài trên đúng phôi chính thức được cấp phát."
-                }
+        orig_sbd, orig_mssv, orig_name, orig_doc_type, timestamp = parts[0], parts[1], parts[2], parts[3], parts[4]
 
-            # Nếu MSSV trong file không khớp với MSSV người đang đăng nhập nộp bài
-            if str(orig_mssv).strip() != str(current_mssv).strip():
-                return {
-                    "is_fraud": True,
-                    "fraud_type": "NOP_NGUYEN_FILE_BAN",
-                    "reason": "Nộp nguyên file của bạn học",
-                    "student_a": {
-                        "sbd": current_sbd,
-                        "mssv": current_mssv,
-                        "name": current_name
-                    },
-                    "student_b": {
-                        "sbd": orig_sbd,
-                        "mssv": orig_mssv,
-                        "name": orig_name
-                    },
-                    "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã lấy nguyên file gốc được cấp phát cho Sinh viên B ({orig_name} - MSSV: {orig_mssv}) để nộp."
-                }
+        # S10: Đối chiếu loại văn bản được cấp phôi với loại văn bản đang nộp/thẩm định
+        if doc_type and orig_doc_type and orig_doc_type.strip() != str(doc_type).strip():
+            return {
+                "is_fraud": True,
+                "fraud_type": "FILE_KHONG_HOP_LE",
+                "reason": "Phôi đề không đúng loại văn bản",
+                "message": f"Phôi đề này được cấp phát cho loại văn bản [{orig_doc_type}], không khớp với bài nộp [{doc_type}]! Vui lòng nộp đúng loại văn bản."
+            }
+
+        # D14 & S08: Xác minh mã bảo mật HMAC phôi bài bằng hmac.compare_digest
+        token_val = token_header[len("STVB_SIGNATURE:"):].strip()
+        if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp):
+            return {
+                "is_fraud": True,
+                "fraud_type": "FILE_KHONG_HOP_LE",
+                "reason": "Mã xác thực phôi đề (HMAC) không khớp hoặc đã bị chỉnh sửa giả mạo",
+                "message": "Phát hiện mã xác thực phôi đề thi bị sửa đổi! Bạn phải làm bài trên đúng phôi chính thức được cấp phát."
+            }
+
+        # Nếu MSSV trong file không khớp với MSSV người đang đăng nhập nộp bài
+        if str(orig_mssv).strip() != str(current_mssv).strip():
+            return {
+                "is_fraud": True,
+                "fraud_type": "NOP_NGUYEN_FILE_BAN",
+                "reason": "Nộp nguyên file của bạn học",
+                "student_a": {
+                    "sbd": current_sbd,
+                    "mssv": current_mssv,
+                    "name": current_name
+                },
+                "student_b": {
+                    "sbd": orig_sbd,
+                    "mssv": orig_mssv,
+                    "name": orig_name
+                },
+                "evidence": f"Sinh viên A ({current_name} - MSSV: {current_mssv}) đã lấy nguyên file gốc được cấp phát cho Sinh viên B ({orig_name} - MSSV: {orig_mssv}) để nộp."
+            }
                 
         # KIỂM TRA 2: THỦY ẤN VÔ HÌNH TRONG VĂN BẢN (COPY - PASTE NỘI DUNG)
         full_text = "\n".join([p.text for p in doc.paragraphs])
@@ -487,11 +533,10 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
         # 2b. Phát hiện copy nội dung bên ngoài dán đè vào file mẫu:
         # File có mã bảo mật phôi STVB nhưng toàn bộ thủy ấn MSSV của chính sinh viên đã bị xóa sạch
         # VÀ tài liệu không chứa bất kỳ từ khóa cơ quan/đơn vị ban hành nào của phôi mẫu (NTTU).
-        # (Nghĩa là sinh viên dán đè một văn bản hoàn toàn từ bên ngoài như Công ty Ánh Dương, Sở Công Thương...).
-        # Nếu sinh viên tự gõ bài làm bình thường cho Trường ĐH Nguyễn Tất Thành thì hoàn toàn hợp lệ.
         effective_doc_type = doc_type or (parts[3] if 'parts' in locals() and len(parts) >= 4 else None)
         
         nttu_keywords = ["NGUYỄN TẤT THÀNH", "NGUYEN TAT THANH", "DNTT", "ĐẠI HỌC NGUYỄN TẤT THÀNH"]
+        curr_tmpl = {}
         try:
             from engine.common import DATA_DIR, load_json_file
             templates_path = os.path.join(DATA_DIR, "document_templates.json")

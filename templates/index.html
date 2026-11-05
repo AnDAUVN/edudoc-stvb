@@ -1508,23 +1508,20 @@
           lnkDl.href = data.download_url;
           lnkDl.setAttribute('download', data.filename);
         }
+
+        // Phương án 3: Số văn bản chuẩn thực tế NĐ 30, bảo vệ toàn diện bằng Thủy ấn số vô hình
+        const elMssv = document.getElementById('lbl-personalized-mssv');
+        if (elMssv) elMssv.innerText = 'NĐ 30';
+        const elEx = document.getElementById('lbl-personalized-example');
+        if (elEx) elEx.innerText = `Số: .../...`;
+
+        document.getElementById('section-template').classList.remove('d-none');
+        document.getElementById('section-validate').classList.remove('d-none');
+        updateStepIndicator(3);
+        document.getElementById('section-template').scrollIntoView({ behavior: 'smooth' });
       } catch (err) {
         Swal.fire('Lỗi kết nối', 'Không thể kết nối máy chủ để tải file mẫu: ' + err, 'error');
       }
-    }
-      lnkDl.href = data.download_url;
-      lnkDl.setAttribute('download', data.filename);
-
-      // Phương án 3: Số văn bản chuẩn thực tế NĐ 30, bảo vệ toàn diện bằng Thủy ấn số vô hình
-      const elMssv = document.getElementById('lbl-personalized-mssv');
-      if (elMssv) elMssv.innerText = 'NĐ 30';
-      const elEx = document.getElementById('lbl-personalized-example');
-      if (elEx) elEx.innerText = `Số: .../...`;
-
-      document.getElementById('section-template').classList.remove('d-none');
-      document.getElementById('section-validate').classList.remove('d-none');
-      updateStepIndicator(3);
-      document.getElementById('section-template').scrollIntoView({ behavior: 'smooth' });
     }
 
     function onStudentFileSelected(input) {

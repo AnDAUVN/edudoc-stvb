@@ -208,6 +208,11 @@
             <i class="fa-solid fa-user-shield me-1"></i> Danh sách lớp: <span id="lbl-roster-status" class="text-success fw-bold">BẮT BUỘC</span>
           </button>
 
+          <!-- NÚT BẬT/TẮT CHỐNG SAO CHÉP / GIAN LẬN -->
+          <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3 py-2 shadow-sm text-nowrap" id="btn-toggle-anticheat" onclick="toggleTeacherAntiCheatMode()">
+            <i class="fa-solid fa-shield-halved me-1"></i> Chống sao chép: <span id="lbl-anticheat-status" class="text-secondary fw-bold">ĐANG TẮT</span>
+          </button>
+
           <!-- NÚT MỞ / KHÓA CA THI -->
           <button class="btn btn-success px-4 py-2 fw-bold shadow-sm text-nowrap" id="btn-toggle-session" onclick="toggleSessionState()">
             <i class="fa-solid fa-door-open me-2"></i> BẬT: CHO PHÉP LÀM BÀI
@@ -1029,6 +1034,14 @@
       loadTeachers();
       loadTeacherData();
       loadTeacherQuizQuestions();
+      if (!window._teacherPollInterval) {
+        window._teacherPollInterval = setInterval(() => {
+          const subTab = document.getElementById('content-submissions');
+          if (subTab && subTab.classList.contains('show') && subTab.classList.contains('active')) {
+            loadTeacherData();
+          }
+        }, 5000);
+      }
     }
 
     async function loadTeacherData() {
@@ -1091,6 +1104,12 @@
       if (state.enforce_roster !== undefined) {
         rosterBadge.innerText = state.enforce_roster ? 'BẮT BUỘC' : 'TỰ DO';
         rosterBadge.className = state.enforce_roster ? 'text-success fw-bold' : 'text-secondary fw-bold';
+      }
+
+      const antiCheatBadge = document.getElementById('lbl-anticheat-status');
+      if (antiCheatBadge && state.enable_anti_cheat !== undefined) {
+        antiCheatBadge.innerText = state.enable_anti_cheat ? 'ĐANG BẬT' : 'ĐANG TẮT';
+        antiCheatBadge.className = state.enable_anti_cheat ? 'text-danger fw-bold' : 'text-success fw-bold';
       }
 
       if (state.is_open) {
@@ -1193,6 +1212,29 @@
         }
       } catch (err) {
         Swal.fire('Lỗi', 'Không thể đổi chế độ kiểm tra danh sách.', 'error');
+      }
+    }
+
+    async function toggleTeacherAntiCheatMode() {
+      try {
+        const res = await fetch('/api/teacher/anti-cheat-toggle', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            icon: data.enable_anti_cheat ? 'warning' : 'success',
+            title: 'Chế độ Chống sao chép',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false
+          });
+          loadTeacherData();
+        }
+      } catch (err) {
+        Swal.fire('Lỗi', 'Không thể đổi chế độ chống sao chép.', 'error');
       }
     }
 
@@ -2286,7 +2328,6 @@
         }
       }
     }
-    }
 
   </script>
 
@@ -2373,13 +2414,23 @@
           const data = await res.json();
           const pubInput = document.getElementById('share-link-public');
           const locInput = document.getElementById('share-link-local');
-          if (data.student_public_url) {
+          const btnPub = pubInput ? pubInput.parentElement.querySelector('button') : null;
+          const btnLoc = locInput ? locInput.parentElement.querySelector('button') : null;
+
+          if (data.student_public_url && data.student_public_url.startsWith('https://')) {
             pubInput.value = data.student_public_url;
+            if (btnPub) btnPub.disabled = false;
           } else {
-            pubInput.value = "Chưa kết nối Internet Tunnel. Sử dụng link mạng nội bộ bên dưới.";
+            pubInput.value = "Chưa kết nối Internet Tunnel. Vui lòng kiểm tra Cloudflare Tunnel.";
+            if (btnPub) btnPub.disabled = true;
           }
-          if (data.student_local_url) {
+
+          if (data.student_local_url && !data.student_local_url.includes('127.0.0.1')) {
             locInput.value = data.student_local_url;
+            if (btnLoc) btnLoc.disabled = false;
+          } else {
+            locInput.value = "Không tìm thấy IP mạng Wi-Fi/LAN hợp lệ.";
+            if (btnLoc) btnLoc.disabled = true;
           }
         }
       } catch (e) {
@@ -2390,19 +2441,62 @@
     function copyShareLink(inputId) {
       const input = document.getElementById(inputId);
       if (!input || !input.value) return;
-      navigator.clipboard.writeText(input.value).then(() => {
+      const val = input.value.trim();
+      if (!val.startsWith('http://') && !val.startsWith('https://')) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'CHƯA CÓ LINK HỢP LỆ',
+          text: 'Chưa có đường dẫn mạng hợp lệ để sao chép!'
+        });
+        return;
+      }
+      if (val.includes('127.0.0.1') || val.includes('localhost')) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ĐỊA CHỈ NỘI BỘ',
+          text: 'Địa chỉ 127.0.0.1/localhost là máy của Giảng viên, sinh viên trên thiết bị khác không truy cập được!'
+        });
+        return;
+      }
+
+      function showCopySuccess() {
         Swal.fire({
           icon: 'success',
           title: 'ĐÃ SAO CHÉP LINK!',
-          html: `Đã copy: <strong class="text-primary">${input.value}</strong><br><br>Thầy/Cô hãy gửi link này vào Zalo lớp hoặc Teams cho Sinh viên nhé!`,
+          html: `Đã copy: <strong class="text-primary">${val}</strong><br><br>Thầy/Cô hãy gửi link này cho Sinh viên vào làm bài nhé!`,
           timer: 3500,
           showConfirmButton: false
         });
-      }).catch(() => {
+      }
+
+      function fallbackManualCopy() {
+        input.focus();
         input.select();
-        document.execCommand('copy');
-        alert('Đã sao chép link!');
-      });
+        let successful = false;
+        try {
+          successful = document.execCommand('copy');
+        } catch (err) {
+          successful = false;
+        }
+        if (successful) {
+          showCopySuccess();
+        } else {
+          const isMac = (typeof navigator !== 'undefined' && navigator.platform && navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+          const shortcutKey = isMac ? '⌘ + C' : 'Ctrl + C';
+          Swal.fire({
+            icon: 'info',
+            title: 'HÃY SAO CHÉP THỦ CÔNG',
+            html: `Hệ thống đã bôi đen đường link.<br>Vui lòng nhấn <kbd>${shortcutKey}</kbd> để sao chép!`,
+            confirmButtonText: 'Đã hiểu'
+          });
+        }
+      }
+
+      if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(val).then(showCopySuccess).catch(fallbackManualCopy);
+      } else {
+        fallbackManualCopy();
+      }
     }
   </script>
 
