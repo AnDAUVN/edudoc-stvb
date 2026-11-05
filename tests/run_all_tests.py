@@ -89,6 +89,16 @@ def main():
                 print(res.stderr if res.stderr else res.stdout)
                 failed += 1
     finally:
+        try:
+            import sqlite3
+            db_file = os.path.join(ROOT_DIR, "data", "edudoc.db")
+            if os.path.exists(db_file):
+                c = sqlite3.connect(db_file)
+                c.execute("UPDATE session_state SET enable_anti_cheat = 0;")
+                c.commit()
+                c.close()
+        except Exception:
+            pass
         if server_process:
             print(" [i] Đang tắt máy chủ thử nghiệm...")
             server_process.terminate()

@@ -1591,7 +1591,8 @@
         document.getElementById('lbl-generated-filename').innerText = data.filename;
         const lnkDl = document.getElementById('lnk-download-template');
         if (lnkDl) {
-          lnkDl.href = data.download_url;
+          const sep = data.download_url.includes('?') ? '&' : '?';
+          lnkDl.href = `${data.download_url}${sep}class_code=${encodeURIComponent(classCode)}&device_id=${encodeURIComponent(getOrCreateDeviceId())}`;
           lnkDl.setAttribute('download', data.filename);
         }
 
@@ -1663,6 +1664,7 @@
       formData.append('mssv', mssv);
       formData.append('name', name);
       formData.append('doc_type', docType);
+      formData.append('device_id', getOrCreateDeviceId());
 
       const btnValidate = document.getElementById('btn-run-validation');
       if (btnValidate) btnValidate.disabled = true;
@@ -1675,12 +1677,22 @@
       });
 
       try {
-        const res = await fetch('/api/validate', { method: 'POST', body: formData });
+        const res = await fetch('/api/validate', {
+          method: 'POST',
+          headers: {
+            'X-Device-Id': getOrCreateDeviceId()
+          },
+          body: formData
+        });
         const data = await res.json();
         Swal.close();
 
         if (!res.ok) {
           if (res.status === 403) {
+            if (data.device_locked) {
+              handleDeviceLock(data, classCode, mssv, name);
+              return;
+            }
             Swal.fire({
               icon: data.not_in_roster ? 'error' : 'warning',
               title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',

@@ -64,6 +64,22 @@ class TestAuditPhase2(unittest.TestCase):
             "preview_count": 0,
             "quiz_passed": True
         })
+        for c in [self.test_class_a, self.test_class_b]:
+            save_student_session(f"{c}_{self.test_mssv}_{self.test_doc}", {
+                "started_at": "2026-11-05 08:00:00",
+                "timestamp": time.time(),
+                "preview_count": 0,
+                "quiz_passed": True
+            })
+        try:
+            import sqlite3
+            from engine.db import DB_PATH
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.execute("DELETE FROM validation_logs WHERE LOWER(mssv) = ?", (self.test_mssv.lower(),))
+                conn.execute("DELETE FROM quiz_attempts WHERE LOWER(mssv) = ?", (self.test_mssv.lower(),))
+                conn.commit()
+        except Exception:
+            pass
 
         # Đặt lại anti-cheat về mặc định (tắt) cho các lớp test
         self.client.post("/api/teacher/anti-cheat-toggle", json={
@@ -173,12 +189,14 @@ class TestAuditPhase2(unittest.TestCase):
     def test_d15_preview_limit_and_no_reset(self):
         """[D15 - P1] Chặn spam preview khi vượt quota và không reset preview_count khi tải lại mẫu"""
         sess_key = f"{self.test_mssv}_{self.test_doc}"
-        save_student_session(sess_key, {
+        sess_val = {
             "started_at": "2026-11-05 08:00:00",
             "timestamp": time.time(),
             "preview_count": 2,
             "quiz_passed": True
-        })
+        }
+        save_student_session(sess_key, sess_val)
+        save_student_session(f"{self.test_class_a}_{self.test_mssv}_{self.test_doc}", sess_val)
 
         # 1. Tải lại mẫu bài tập: preview_count vẫn phải là 2, không được reset về 0
         res_gen = self.client.post("/api/template/generate", json={

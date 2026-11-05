@@ -30,8 +30,19 @@ def get_local_ip():
     return ip
 
 def cleanup_stale_processes(port=5000):
-    """Dọn dẹp các tiến trình cũ bị treo trên cổng 5000 và cloudflared cũ"""
-    # 1. Dọn cloudflared mồ côi
+    """Dọn dẹp các tiến trình cũ bị treo trên cổng 5000 và cloudflared cũ (Tương thích Windows / macOS / Linux)"""
+    if sys.platform != "win32":
+        try:
+            subprocess.run(["pkill", "-f", "cloudflared"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            out = subprocess.check_output(f"lsof -ti:{port}", shell=True, text=True, errors="ignore")
+            for pid_str in out.strip().split():
+                if pid_str and int(pid_str) != os.getpid():
+                    subprocess.run(["kill", "-9", pid_str], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+        return
+
+    # 1. Dọn cloudflared mồ côi trên Windows
     try:
         subprocess.run(
             ["taskkill", "/F", "/IM", "cloudflared.exe"],
@@ -62,11 +73,21 @@ def cleanup_stale_processes(port=5000):
         pass
 
 def run_cloudflared_tunnel(base_dir, local_ip):
-    """Khởi động Cloudflare Tunnel với tệp nhật ký trực tiếp (tránh deadlock pipe)"""
+    """Khởi động Cloudflare Tunnel với tệp nhật ký trực tiếp (tránh deadlock pipe, tương thích Windows/macOS)"""
     global tunnel_proc
-    cloudflared_bin = os.path.join(base_dir, "tools", "cloudflared.exe")
-    if not os.path.exists(cloudflared_bin):
-        return
+    import shutil
+    if sys.platform == "win32":
+        cloudflared_bin = os.path.join(base_dir, "tools", "cloudflared.exe")
+        if not os.path.exists(cloudflared_bin):
+            return
+    else:
+        cloudflared_bin = shutil.which("cloudflared")
+        if not cloudflared_bin:
+            local_bin = os.path.join(base_dir, "tools", "cloudflared")
+            if os.path.exists(local_bin):
+                cloudflared_bin = local_bin
+            else:
+                return
 
     tunnel_info_path = os.path.join(base_dir, "data", "tunnel_info.json")
     tunnel_log_path = os.path.join(base_dir, "data", "cloudflared.log")

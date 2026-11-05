@@ -12,6 +12,7 @@ import datetime
 import time
 import uuid
 import logging
+import threading
 from typing import List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("edudoc.db")
@@ -354,10 +355,37 @@ def init_db(db_path: Optional[str] = None) -> None:
             permitted_at TEXT NOT NULL,
             reason TEXT,
             used INTEGER DEFAULT 0,
-            used_at TEXT
+            used_at TEXT,
+            reserved_attempt_id TEXT,
+            status TEXT DEFAULT 'ACTIVE'
         );
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_reattempt_student ON reattempt_permissions(class_code, mssv, doc_type);")
+        try:
+            conn.execute("ALTER TABLE reattempt_permissions ADD COLUMN reserved_attempt_id TEXT;")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE reattempt_permissions ADD COLUMN status TEXT DEFAULT 'ACTIVE';")
+        except Exception:
+            pass
+        try:
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_device_bindings_active_mssv ON device_bindings(LOWER(mssv)) WHERE status = 'ACTIVE';")
+        except Exception:
+            pass
+        try:
+            conn.execute("""
+                UPDATE quiz_attempts SET status = 'EXPIRED'
+                WHERE status = 'IN_PROGRESS' AND mssv != '' AND attempt_id NOT IN (
+                    SELECT attempt_id FROM (
+                        SELECT attempt_id, ROW_NUMBER() OVER(PARTITION BY UPPER(class_code), LOWER(mssv), doc_type ORDER BY started_at DESC) as rn
+                        FROM quiz_attempts WHERE status = 'IN_PROGRESS' AND mssv != ''
+                    ) WHERE rn = 1
+                );
+            """)
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_quiz_attempts_in_progress ON quiz_attempts(UPPER(class_code), LOWER(mssv), doc_type) WHERE status = 'IN_PROGRESS' AND mssv != '';")
+        except Exception:
+            pass
 
         # 11. BẢNG LỊCH SỬ BÀI NỘP TRƯỚC ĐÓ (CN17 - SUBMISSIONS HISTORY)
         conn.execute("""
@@ -390,29 +418,26 @@ def init_db(db_path: Optional[str] = None) -> None:
     # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
     migrate_json_to_sqlite(db_path)
 
-def _sync_to_json_cache():
-    """Đồng bộ trạng thái SQLite ra tệp JSON để đảm bảo tương thích ngược 100% với các test cũ"""
-    try:
-        # Sync submissions
-        subs = get_all_submissions()
-        with open(SUBMISSIONS_JSON, "w", encoding="utf-8") as f:
-            json.dump(subs, f, ensure_ascii=False, indent=2)
-            
-        # Sync fraud_logs
-        frauds = get_all_fraud_logs()
-        with open(FRAUD_LOGS_JSON, "w", encoding="utf-8") as f:
-            json.dump(frauds, f, ensure_ascii=False, indent=2)
-            
-        # Sync student_sessions
-        sess = get_all_student_sessions()
-        with open(STUDENT_SESSIONS_JSON, "w", encoding="utf-8") as f:
-            json.dump(sess, f, ensure_ascii=False, indent=2)
-        # Sync session_state
-        state = get_session_state_db()
-        with open(SESSION_STATE_JSON, "w", encoding="utf-8") as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        pass
+_last_sync_time = 0.0
+_sync_lock = threading.Lock()
+
+def _sync_to_json_cache(force: bool = False):
+    """Đồng bộ trạng thái SQLite ra tệp JSON dự phòng không chặn luồng chính (D29)"""
+    global _last_sync_time
+    now = time.time()
+    if not force and (now - _last_sync_time < 3.0):
+        return
+    _last_sync_time = now
+
+    def _worker():
+        with _sync_lock:
+            try:
+                state = get_session_state_db()
+                with open(SESSION_STATE_JSON, "w", encoding="utf-8") as f:
+                    json.dump(state, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+    threading.Thread(target=_worker, daemon=True).start()
 
 def migrate_json_to_sqlite(db_path: Optional[str] = None) -> None:
     """Tự động chuyển đổi dữ liệu từ các file JSON cũ sang SQLite nếu bảng còn rỗng"""
@@ -781,8 +806,8 @@ def save_student_session(session_key: str, data: Dict[str, Any], db_path: Option
                 int(data.get("preview_count", 0)),
                 quiz_passed
             ))
-            # Nếu cập nhật legacy key (chứa mssv_doctype không có mã lớp), đồng bộ trạng thái sang các composite key liên quan
-            if "quiz_passed" in data and "_" in session_key:
+            # D30 / R6: Phân lập session_key theo lớp; chỉ đồng bộ khi cập nhật base legacy key (bắt đầu bằng MSSV)
+            if "quiz_passed" in data and session_key.startswith(f"{mssv}_"):
                 conn.execute("""
                     UPDATE student_sessions SET quiz_passed = ?
                     WHERE session_key LIKE ?;
@@ -1165,6 +1190,72 @@ def save_quiz_attempt(attempt_data: Dict[str, Any], db_path: Optional[str] = Non
     finally:
         conn.close()
 
+def get_or_create_quiz_attempt(attempt_data: Dict[str, Any], db_path: Optional[str] = None) -> Tuple[Dict[str, Any], bool]:
+    """
+    Tạo hoặc trả về phiên làm bài trắc nghiệm một cách nguyên tử (R6 06 - Atomic Concurrency Guard).
+    Đảm bảo 2 yêu cầu đồng thời từ cùng sinh viên không bao giờ tạo 2 attempt_id khác nhau.
+    Trả về: (attempt_dict, is_newly_created)
+    """
+    conn = get_db_connection(db_path)
+    try:
+        c_code = str(attempt_data.get("class_code", "Chung")).strip().upper()
+        m_clean = str(attempt_data.get("mssv", "")).strip().lower()
+        d_type = str(attempt_data.get("doc_type", "")).strip()
+        with conn:
+            # Tra cứu xem đã có lượt IN_PROGRESS chưa hết giờ chưa (chỉ khi có định danh MSSV)
+            if m_clean:
+                row = conn.execute("""
+                    SELECT * FROM quiz_attempts
+                    WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ? AND status = 'IN_PROGRESS'
+                    ORDER BY created_at DESC, started_at DESC LIMIT 1;
+                """, (c_code, m_clean, d_type)).fetchone()
+                if row:
+                    att = dict(row)
+                    s_dt = datetime.datetime.strptime(att["started_at"], "%Y-%m-%d %H:%M:%S")
+                    elapsed = (datetime.datetime.now() - s_dt).total_seconds()
+                    rem_sec = max(0, int(att.get("time_limit_seconds", 300) - elapsed))
+                    if rem_sec > 0:
+                        return att, False
+
+            # Tạo lượt mới (chống xung đột đồng thời)
+            try:
+                conn.execute("""
+                    INSERT INTO quiz_attempts (
+                        attempt_id, class_code, mssv, doc_type, started_at,
+                        time_limit_seconds, question_ids, questions_spec, status,
+                        score, total, pass_score, passed, answers, completed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    attempt_data["attempt_id"],
+                    c_code,
+                    m_clean,
+                    d_type,
+                    attempt_data.get("started_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                    attempt_data.get("time_limit_seconds", 300),
+                    attempt_data.get("question_ids", "[]"),
+                    attempt_data.get("questions_spec", "[]"),
+                    attempt_data.get("status", "IN_PROGRESS"),
+                    attempt_data.get("score", 0),
+                    attempt_data.get("total", 5),
+                    attempt_data.get("pass_score", 4),
+                    1 if attempt_data.get("passed") else 0,
+                    attempt_data.get("answers", "{}"),
+                    attempt_data.get("completed_at", None)
+                ))
+                return attempt_data, True
+            except sqlite3.IntegrityError:
+                # Tranh chấp đồng thời: một yêu cầu khác vừa tạo attempt, lấy lại attempt đó
+                row = conn.execute("""
+                    SELECT * FROM quiz_attempts
+                    WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ? AND status = 'IN_PROGRESS'
+                    ORDER BY created_at DESC, started_at DESC LIMIT 1;
+                """, (c_code, m_clean, d_type)).fetchone()
+                if row:
+                    return dict(row), False
+                return attempt_data, True
+    finally:
+        conn.close()
+
 def get_quiz_attempt(attempt_id: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Truy vấn thông tin phiên làm bài trắc nghiệm theo attempt_id (Priority 1)"""
     if not attempt_id:
@@ -1188,8 +1279,8 @@ def get_quiz_attempt(attempt_id: str, db_path: Optional[str] = None) -> Optional
     finally:
         conn.close()
 
-def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Dict[str, Any], db_path: Optional[str] = None) -> bool:
-    """Cập nhật kết quả chấm bài của phiên trắc nghiệm nguyên tử (Idempotency - WHERE status != 'COMPLETED')"""
+def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Optional[Any] = None, db_path: Optional[str] = None) -> bool:
+    """Cập nhật kết quả chấm bài của phiên trắc nghiệm nguyên tử (Idempotency - WHERE status != 'COMPLETED', R6 04)"""
     conn = get_db_connection(db_path)
     try:
         with conn:
@@ -1204,7 +1295,7 @@ def complete_quiz_attempt(attempt_id: str, score: int, passed: bool, answers: Di
             """, (
                 min(int(score), 5),
                 1 if passed else 0,
-                json.dumps(answers, ensure_ascii=False) if isinstance(answers, dict) else "{}",
+                json.dumps(answers or {}, ensure_ascii=False) if isinstance(answers, (dict, list)) else "{}",
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 attempt_id
             ))
@@ -1256,26 +1347,31 @@ def get_device_binding(class_code: str, mssv: str, db_path: Optional[str] = None
         conn.close()
 
 def bind_device(class_code: str, mssv: str, device_id: str, device_name: str = "", user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> bool:
-    """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08) - Nguyên tử & Chống ghi đè đồng thời (V5 04)"""
+    """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08) - Nguyên tử & Chống ghi đè đồng thời (V5 04, R6 07)"""
     conn = get_db_connection(db_path)
     try:
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c_clean = str(class_code or "").strip().upper()
         m_clean = str(mssv or "").strip().lower()
+        if not m_clean or not device_id:
+            return False
         with conn:
-            # V5 04: Kiểm tra nguyên tử trước khi đăng ký, không cho phép ghi đè thiết bị đang hoạt động
+            # R6 07: Kiểm tra nguyên tử trước khi đăng ký, không cho phép ghi đè thiết bị đang hoạt động
             existing = conn.execute("""
                 SELECT id, device_id FROM device_bindings
                 WHERE LOWER(mssv) = ? AND status = 'ACTIVE' LIMIT 1;
             """, (m_clean,)).fetchone()
             if existing:
-                return False
+                return existing["device_id"] == device_id
 
-            conn.execute("""
-                INSERT OR IGNORE INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
-                VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?);
-            """, (c_clean, m_clean, device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str))
-            return True
+            try:
+                cur = conn.execute("""
+                    INSERT INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?);
+                """, (c_clean, m_clean, device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str))
+                return cur.rowcount > 0
+            except sqlite3.IntegrityError:
+                return False
     finally:
         conn.close()
 
@@ -1284,33 +1380,51 @@ def verify_or_bind_device(class_code: str, mssv: str, device_id: str, user_agent
     Xác minh thiết bị làm bài:
     - Nếu chưa có thiết bị: Tự động liên kết thiết bị đầu tiên (NT08)
     - Nếu đã có thiết bị và khớp device_id: Cho phép làm bài
-    - Nếu khác device_id: Từ chối và yêu cầu đổi thiết bị (NT08, NT09)
+    - Nếu khác device_id: Từ chối và yêu cầu đổi thiết bị (NT08, NT09, R6 03, R6 07)
     """
-    if not device_id or not mssv or not class_code:
-        return True, "Không đủ tham số thiết bị", None
+    if not mssv:
+        return False, "Thiếu MSSV", None
 
-    binding = get_device_binding(class_code, mssv, db_path)
+    binding = get_device_binding("", mssv, db_path)
     if not binding:
+        if not device_id:
+            return True, "Không có mã thiết bị", None
         # Lần đầu đăng nhập / làm bài: Tự động đăng ký thiết bị ban đầu (NT08)
         bind_device(class_code, mssv, device_id, user_agent=user_agent, ip_address=ip_address, db_path=db_path)
-        new_b = get_device_binding(class_code, mssv, db_path)
-        return True, "Đã liên kết thiết bị thành công", new_b
+        new_b = get_device_binding("", mssv, db_path)
+        if new_b and new_b.get("device_id") == device_id:
+            return True, "Đã liên kết thiết bị thành công", new_b
+        return False, "Tài khoản MSSV này đã liên kết với thiết bị khác", new_b
+
+    # Đã có binding từ trước
+    if not device_id:
+        return False, "Yêu cầu mã thiết bị xác thực", binding
 
     if binding["device_id"] == device_id:
-        # Cập nhật thời gian hoạt động gần nhất
-        conn = get_db_connection(db_path)
-        try:
-            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with conn:
-                conn.execute("""
-                    UPDATE device_bindings SET last_active_at = ?, user_agent = ?, ip_address = ?
-                    WHERE id = ?;
-                """, (now_str, user_agent, ip_address, binding["id"]))
-        finally:
-            conn.close()
+        # D29: Giảm ghi last_active, chỉ cập nhật khi cách hơn 60 giây
+        last_act = binding.get("last_active_at") or ""
+        should_update = True
+        if last_act:
+            try:
+                la_dt = datetime.datetime.strptime(last_act, "%Y-%m-%d %H:%M:%S")
+                if (datetime.datetime.now() - la_dt).total_seconds() < 60:
+                    should_update = False
+            except Exception:
+                pass
+        if should_update:
+            conn = get_db_connection(db_path)
+            try:
+                now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                with conn:
+                    conn.execute("""
+                        UPDATE device_bindings SET last_active_at = ?, user_agent = ?, ip_address = ?
+                        WHERE id = ?;
+                    """, (now_str, user_agent, ip_address, binding["id"]))
+            finally:
+                conn.close()
         return True, "Thiết bị hợp lệ", binding
 
-    # Thiết bị khác với thiết bị đã đăng ký -> Từ chối (NT08)
+    # Thiết bị khác với thiết bị đã đăng ký -> Từ chối (NT08, R6 03)
     return False, "Tài khoản MSSV này đã liên kết với thiết bị khác", binding
 
 def create_device_change_request(class_code: str, mssv: str, student_name: str, old_device_id: str, new_device_id: str, new_user_agent: str = "", new_ip: str = "", reason: str = "", db_path: Optional[str] = None) -> str:
@@ -1390,6 +1504,15 @@ def reject_device_change_request(request_id: str, rejected_by: str = "Giảng vi
     finally:
         conn.close()
 
+def get_device_change_request_by_id(request_id: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Lấy chi tiết yêu cầu đổi thiết bị theo request_id (R6 09)"""
+    conn = get_db_connection(db_path)
+    try:
+        row = conn.execute("SELECT * FROM device_change_requests WHERE request_id = ? LIMIT 1;", (request_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
 
 # =========================================================================
 # CN17: MỘT LƯỢT CHO MỖI BÀI VÀ QUẢN LÝ QUYỀN LÀM LẠI (SINGLE ATTEMPT / RE-ATTEMPT)
@@ -1448,7 +1571,7 @@ def grant_reattempt_permission(class_code: str, mssv: str, doc_type: str, permit
         conn.close()
 
 def get_active_reattempt_permission(class_code: str, mssv: str, doc_type: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Kiểm tra sinh viên có quyền làm lại chưa sử dụng không (NT06)"""
+    """Kiểm tra sinh viên có quyền làm lại chưa sử dụng không (NT06, R6 05)"""
     conn = get_db_connection(db_path)
     try:
         c_clean = str(class_code or "").strip().upper()
@@ -1456,22 +1579,36 @@ def get_active_reattempt_permission(class_code: str, mssv: str, doc_type: str, d
         d_type = str(doc_type or "").strip()
         row = conn.execute("""
             SELECT * FROM reattempt_permissions
-            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ? AND used = 0
+            WHERE (UPPER(class_code) = ? OR class_code = 'Chung' OR ? = '') AND LOWER(mssv) = ? AND doc_type = ? AND used = 0
             ORDER BY permitted_at DESC LIMIT 1;
-        """, (c_clean, m_clean, d_type)).fetchone()
+        """, (c_clean, c_clean, m_clean, d_type)).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
+def reserve_reattempt_permission(permit_id: int, attempt_id: str, db_path: Optional[str] = None) -> bool:
+    """Gắn quyền làm lại vào lượt thi cụ thể (R6 05 - RESERVED)"""
+    conn = get_db_connection(db_path)
+    try:
+        with conn:
+            cur = conn.execute("""
+                UPDATE reattempt_permissions
+                SET reserved_attempt_id = ?, status = 'RESERVED'
+                WHERE id = ? AND used = 0;
+            """, (attempt_id, permit_id))
+            return cur.rowcount > 0
+    finally:
+        conn.close()
+
 def consume_reattempt_permission(permit_id: int, db_path: Optional[str] = None) -> bool:
-    """Đánh dấu quyền làm lại đã được sử dụng (NT07)"""
+    """Đánh dấu quyền làm lại đã được sử dụng (NT07, R6 05, R6 08)"""
     conn = get_db_connection(db_path)
     try:
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with conn:
             cur = conn.execute("""
                 UPDATE reattempt_permissions
-                SET used = 1, used_at = ?
+                SET used = 1, used_at = ?, status = 'CONSUMED'
                 WHERE id = ? AND used = 0;
             """, (now_str, permit_id))
             return cur.rowcount > 0
@@ -1504,6 +1641,74 @@ def archive_submission_record(sub_record: Dict[str, Any], archive_reason: str = 
                 now_str,
                 archive_reason or "Lưu trữ trước khi nộp lại"
             ))
+    finally:
+        conn.close()
+
+def save_submission_atomic(new_sub: Dict[str, Any], existing_sub: Optional[Dict[str, Any]] = None, permit_id: Optional[int] = None, archive_reason: str = "", db_path: Optional[str] = None) -> bool:
+    """
+    Lưu bài nộp chính thức, lưu lịch sử bài cũ và tiêu quyền làm lại trong MỘT GIAO DỊCH NGUYÊN TỬ DUY NHẤT (R6 08 - Atomic Commit & Rollback).
+    Nếu bất kỳ bước nào gặp sự cố, toàn bộ giao dịch được hoàn tác; không tiêu quyền và không tạo lịch sử rác.
+    """
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with conn:
+            # 1. Nếu có bài cũ, lưu vào submissions_history
+            if existing_sub:
+                c_code = existing_sub.get("class_code") or ""
+                m_clean = existing_sub.get("mssv") or ""
+                d_type = existing_sub.get("doc_type") or ""
+                sbd_val = existing_sub.get("sbd") or ""
+                name_val = existing_sub.get("name") or ""
+                doc_name_val = existing_sub.get("doc_name") or d_type
+                fn_val = existing_sub.get("filename") or ""
+                sub_at = existing_sub.get("submitted_at") or now_str
+                el_time = existing_sub.get("elapsed_time") or "0 phút 0 giây"
+                score_val = existing_sub.get("score", 0)
+                chk_val = existing_sub.get("checksum") or ""
+                conn.execute("""
+                    INSERT INTO submissions_history (
+                        class_code, sbd, mssv, name, doc_type, doc_name, filename,
+                        submitted_at, elapsed_time, score, checksum, archived_at, archive_reason
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, (c_code, sbd_val, m_clean, name_val, d_type, doc_name_val, fn_val, sub_at, el_time, score_val, chk_val, now_str, archive_reason or "Làm lại bài"))
+
+            # 2. Lưu bài nộp mới vào bảng submissions
+            flags_json = json.dumps(new_sub.get("flags", {}), ensure_ascii=False)
+            conn.execute("""
+                INSERT OR REPLACE INTO submissions (
+                    sbd, mssv, name, doc_type, doc_name, filename, submitted_at,
+                    elapsed_time, is_suspicious_speed, preview_count, flags, status,
+                    score, checksum, class_code
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, (
+                new_sub.get("sbd", ""),
+                new_sub.get("mssv", ""),
+                new_sub.get("name", ""),
+                new_sub.get("doc_type", ""),
+                new_sub.get("doc_name", ""),
+                new_sub.get("filename", ""),
+                new_sub.get("submitted_at", now_str),
+                new_sub.get("elapsed_time", "0 phút 0 giây"),
+                1 if new_sub.get("is_suspicious_speed") else 0,
+                new_sub.get("preview_count", 0),
+                flags_json,
+                new_sub.get("status", "SUCCESS"),
+                new_sub.get("score", 0),
+                new_sub.get("checksum", ""),
+                new_sub.get("class_code", "Chung")
+            ))
+
+            # 3. Tiêu thụ permit (nếu có)
+            if permit_id:
+                conn.execute("""
+                    UPDATE reattempt_permissions
+                    SET used = 1, used_at = ?, status = 'CONSUMED'
+                    WHERE id = ? AND used = 0;
+                """, (now_str, permit_id))
+
+        _sync_to_json_cache()
+        return True
     finally:
         conn.close()
 

@@ -22,17 +22,36 @@ from app import (
 
 class TestRosterManagement(unittest.TestCase):
     def setUp(self):
+        app.testing = True
         self.client = app.test_client()
         # Sao lưu trạng thái, roster và danh sách lớp
         self.original_roster = load_json_file(STUDENTS_ROSTER_FILE, {})
         self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": True, "enforce_roster": True})
         self.original_classes = load_json_file(CLASSES_FILE, {"classes": []})
+        try:
+            import sqlite3
+            from engine.db import DB_PATH
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.execute("DELETE FROM quiz_attempts WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.execute("DELETE FROM device_bindings WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.commit()
+        except Exception:
+            pass
 
     def tearDown(self):
         # Khôi phục dữ liệu gốc
         save_json_file(STUDENTS_ROSTER_FILE, self.original_roster)
         save_json_file(SESSION_STATE_FILE, self.original_state)
         save_json_file(CLASSES_FILE, self.original_classes)
+        try:
+            import sqlite3
+            from engine.db import DB_PATH
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.execute("DELETE FROM quiz_attempts WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.execute("DELETE FROM device_bindings WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.commit()
+        except Exception:
+            pass
 
     def test_parse_students_text(self):
         """Kiểm tra thuật toán bóc tách danh sách từ Excel/Word/Sheets"""
@@ -195,12 +214,11 @@ class TestRosterManagement(unittest.TestCase):
 
     def test_roster_blocking_unauthorized_students(self):
         """Khi enforce_roster=True, sinh viên ngoài danh sách bị chặn 403 ở các endpoint khảo thí"""
-        roster = {
-            "BLOCK_CLS": [
-                {"sbd": "01", "mssv": "2100001234", "name": "Sinh Viên Hợp Lệ"}
-            ]
-        }
-        save_json_file(STUDENTS_ROSTER_FILE, roster)
+        cur_roster = load_json_file(STUDENTS_ROSTER_FILE, {})
+        cur_roster["BLOCK_CLS"] = [
+            {"sbd": "01", "mssv": "2100001234", "name": "Sinh Viên Hợp Lệ"}
+        ]
+        save_json_file(STUDENTS_ROSTER_FILE, cur_roster)
         save_json_file(SESSION_STATE_FILE, {"is_open": True, "enforce_roster": True})
 
         # Bật kiểm tra roster thực tế (bằng cách tạm vô hiệu cờ testing)

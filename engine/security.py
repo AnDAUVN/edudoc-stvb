@@ -498,6 +498,15 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
                 "message": f"Phôi đề này được cấp phát cho loại văn bản [{orig_doc_type}], không khớp với bài nộp [{doc_type}]! Vui lòng nộp đúng loại văn bản."
             }
 
+        # R6: Đối chiếu mã lớp của phôi đề với lớp đang làm bài nếu phôi có gắn mã lớp
+        if class_code and len(parts) >= 6 and parts[5] and str(parts[5]).strip().upper() != str(class_code).strip().upper():
+            return {
+                "is_fraud": True,
+                "fraud_type": "FILE_KHONG_HOP_LE",
+                "reason": "Phôi đề cấp cho lớp khác",
+                "message": f"Phôi đề này được cấp phát cho lớp [{parts[5]}], không khớp với lớp [{class_code}] đang làm bài! Vui lòng làm bài trên đúng phôi đề của lớp."
+            }
+
         # D14 & S08: Xác minh mã bảo mật HMAC phôi bài bằng hmac.compare_digest
         token_val = token_header[len("STVB_SIGNATURE:"):].strip()
         if not verify_anti_cheat_token(token_val, orig_sbd, orig_mssv, orig_doc_type, timestamp, orig_class):
@@ -587,7 +596,8 @@ def check_anti_cheat(docx_path, current_sbd, current_mssv, current_name, student
         has_template_agency = any(kw in full_text_upper for kw in nttu_keywords)
 
         is_blank = bool(curr_tmpl.get("is_body_blank", False)) or (effective_doc_type == "bai_thu_hoach")
-        if not is_blank and str(current_mssv).strip() not in all_found_mssvs and not has_template_agency:
+        has_no_tables = (len(doc.tables) == 0)
+        if not is_blank and str(current_mssv).strip() not in all_found_mssvs and not has_template_agency and has_no_tables:
             return {
                 "is_fraud": True,
                 "fraud_type": "COPY_NOI_DUNG_BEN_NGOAI",

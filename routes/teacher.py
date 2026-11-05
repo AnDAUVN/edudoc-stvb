@@ -1097,11 +1097,30 @@ def api_get_analytics():
 # CN18 & CN17: QUẢN TRỊ THIẾT BỊ VÀ CẤP QUYỀN LÀM LẠI BÀI CHO GIẢNG VIÊN
 # =========================================================================
 
+def check_teacher_class_access(class_code: Optional[str]) -> Tuple[bool, str]:
+    """
+    Kiểm tra quyền phụ trách lớp của giảng viên (R6 09 - RBAC Per Class).
+    Trả về (allowed: bool, teacher_actor_name: str).
+    """
+    actor = session.get("active_teacher") or request.headers.get("X-Teacher-Name") or "Giảng viên"
+    allowed_classes = session.get("assigned_classes") or request.headers.get("X-Teacher-Assigned-Classes")
+    if allowed_classes and class_code and str(class_code).strip().upper() != "ALL":
+        if isinstance(allowed_classes, str):
+            allowed_list = [c.strip().upper() for c in allowed_classes.split(",") if c.strip()]
+        else:
+            allowed_list = [str(c).strip().upper() for c in allowed_classes]
+        if str(class_code).strip().upper() not in allowed_list and "ALL" not in allowed_list:
+            return False, actor
+    return True, actor
+
 @teacher_bp.route("/api/teacher/device/requests", methods=["GET"])
 @require_teacher_auth
 def get_teacher_device_requests():
-    """Lấy danh sách yêu cầu đổi thiết bị của sinh viên (CN18 - NT09, V5 02)"""
+    """Lấy danh sách yêu cầu đổi thiết bị của sinh viên (CN18 - NT09, V5 02, R6 09)"""
     class_code = request.args.get("class_code")
+    allowed, actor = check_teacher_class_access(class_code)
+    if not allowed:
+        return jsonify({"error": f"Giảng viên không phụ trách lớp [{class_code}]!"}), 403
     status = request.args.get("status", "PENDING")
     from engine.db import get_device_change_requests
     reqs = get_device_change_requests(class_code=class_code, status=status)
@@ -1110,14 +1129,18 @@ def get_teacher_device_requests():
 @teacher_bp.route("/api/teacher/device/approve", methods=["POST"])
 @require_teacher_auth
 def approve_teacher_device():
-    """Phê duyệt yêu cầu đổi thiết bị (CN18 - NT10, V5 02)"""
+    """Phê duyệt yêu cầu đổi thiết bị (CN18 - NT10, V5 02, R6 09)"""
     data = request.json or {}
     req_id = data.get("request_id")
     if not req_id:
         return jsonify({"error": "Thiếu request_id"}), 400
-    state = get_session_state()
-    teacher_name = session.get("active_teacher") or (state.get("active_teacher") if state else None) or "Giảng viên"
-    from engine.db import approve_device_change_request
+    from engine.db import get_device_change_request_by_id, approve_device_change_request
+    req = get_device_change_request_by_id(req_id)
+    if not req:
+        return jsonify({"error": "Không tìm thấy yêu cầu hoặc yêu cầu đã được xử lý!"}), 404
+    allowed, teacher_name = check_teacher_class_access(req.get("class_code"))
+    if not allowed:
+        return jsonify({"error": f"Giảng viên không phụ trách lớp [{req.get('class_code')}]!"}), 403
     ok = approve_device_change_request(req_id, approved_by=teacher_name)
     if ok:
         return jsonify({"success": True, "message": "Đã phê duyệt đổi thiết bị cho sinh viên!"})
@@ -1126,14 +1149,18 @@ def approve_teacher_device():
 @teacher_bp.route("/api/teacher/device/reject", methods=["POST"])
 @require_teacher_auth
 def reject_teacher_device():
-    """Từ chối yêu cầu đổi thiết bị (CN18 - NT11, V5 02)"""
+    """Từ chối yêu cầu đổi thiết bị (CN18 - NT11, V5 02, R6 09)"""
     data = request.json or {}
     req_id = data.get("request_id")
     if not req_id:
         return jsonify({"error": "Thiếu request_id"}), 400
-    state = get_session_state()
-    teacher_name = session.get("active_teacher") or (state.get("active_teacher") if state else None) or "Giảng viên"
-    from engine.db import reject_device_change_request
+    from engine.db import get_device_change_request_by_id, reject_device_change_request
+    req = get_device_change_request_by_id(req_id)
+    if not req:
+        return jsonify({"error": "Không tìm thấy yêu cầu hoặc yêu cầu đã được xử lý!"}), 404
+    allowed, teacher_name = check_teacher_class_access(req.get("class_code"))
+    if not allowed:
+        return jsonify({"error": f"Giảng viên không phụ trách lớp [{req.get('class_code')}]!"}), 403
     ok = reject_device_change_request(req_id, rejected_by=teacher_name)
     if ok:
         return jsonify({"success": True, "message": "Đã từ chối yêu cầu đổi thiết bị!"})
@@ -1142,7 +1169,7 @@ def reject_teacher_device():
 @teacher_bp.route("/api/teacher/reattempt/grant", methods=["POST"])
 @require_teacher_auth
 def grant_reattempt():
-    """Giảng viên cấp quyền làm lại bài cho sinh viên (CN17 - NT06, V5 02)"""
+    """Giảng viên cấp quyền làm lại bài cho sinh viên (CN17 - NT06, V5 02, R6 09)"""
     data = request.json or {}
     class_code = str(data.get("class_code", "")).strip().upper()
     mssv = str(data.get("mssv", "")).strip()
@@ -1150,8 +1177,9 @@ def grant_reattempt():
     reason = str(data.get("reason", "Giảng viên cho phép làm lại")).strip()
     if not (class_code and mssv and doc_type):
         return jsonify({"error": "Thiếu thông tin (class_code, mssv, doc_type)!"}), 400
-    state = get_session_state(class_code)
-    teacher_name = session.get("active_teacher") or (state.get("active_teacher") if state else None) or "Giảng viên"
+    allowed, teacher_name = check_teacher_class_access(class_code)
+    if not allowed:
+        return jsonify({"error": f"Giảng viên không có thẩm quyền đối với lớp [{class_code}]!"}), 403
     from engine.db import grant_reattempt_permission
     pid = grant_reattempt_permission(class_code, mssv, doc_type, permitted_by=teacher_name, reason=reason)
     return jsonify({"success": True, "permission_id": pid, "message": f"Đã cấp quyền làm lại bài cho sinh viên {mssv}!"})
@@ -1159,8 +1187,11 @@ def grant_reattempt():
 @teacher_bp.route("/api/teacher/submissions/history", methods=["GET"])
 @require_teacher_auth
 def get_teacher_submissions_history():
-    """Truy vấn lịch sử các bài nộp đã lưu trữ (CN17 - NT08, V5 02)"""
+    """Truy vấn lịch sử các bài nộp đã lưu trữ (CN17 - NT08, V5 02, R6 09)"""
     class_code = request.args.get("class_code")
+    allowed, actor = check_teacher_class_access(class_code)
+    if not allowed:
+        return jsonify({"error": f"Giảng viên không phụ trách lớp [{class_code}]!"}), 403
     mssv = request.args.get("mssv")
     from engine.db import get_submissions_history
     hist = get_submissions_history(class_code=class_code, mssv=mssv)
