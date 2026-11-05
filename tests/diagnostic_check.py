@@ -35,31 +35,34 @@ print(f'3. Teacher Data retrieved ({sub_count} submissions): OK')
 # 4. Teacher DB Backup
 res = client.post('/api/teacher/database/backup', headers={'X-Teacher-PIN': 'gv2026', 'X-Test-Auth-Required': '1'})
 assert res.status_code == 200, f'backup failed: {res.status_code}'
-assert res.get_json().get('success') is True
-print(f'4. Hot WAL Backup created ({res.get_json().get("backup_file")}): OK')
+b_data = res.get_json()
+assert b_data.get('success') is True
+bk_name = b_data.get('backup_file') or b_data.get('filename')
+assert bk_name is not None
+print(f'4. Hot WAL Backup created ({bk_name}): OK')
 
 # 5. Teacher Export CSV
 res = client.get('/api/teacher/export-csv', headers={'X-Teacher-PIN': 'gv2026', 'X-Test-Auth-Required': '1'})
-assert res.status_code == 200, f'export-csv failed: {res.status_code}'
-assert res.data.startswith(b'\xef\xbb\xbf'), 'BOM UTF-8 missing'
+assert res.status_code == 200, f'export csv failed: {res.status_code}'
+assert res.data.startswith(b'\xef\xbb\xbf')
 print('5. Export CSV with UTF-8 BOM: OK')
 
-# 6. Check Classes
+# 6. Classes
 res = client.get('/api/classes')
-assert res.status_code == 200
-class_count = len(res.get_json().get('classes', []))
-print(f'6. Classes List ({class_count} classes): OK')
+assert res.status_code == 200, f'classes failed: {res.status_code}'
+cls_data = res.get_json()
+cls_count = len(cls_data['classes'])
+print(f'6. Classes List ({cls_count} classes): OK')
 
-# 7. Check Documents
+# 7. Documents
 res = client.get('/api/documents')
-assert res.status_code == 200
+assert res.status_code == 200, f'documents failed: {res.status_code}'
 docs = res.get_json()
-doc_count = len(docs)
-print(f'7. Documents List ({doc_count} doc types): OK')
+print(f'7. Documents List ({len(docs)} doc types): OK')
 
-# 8. Check Quiz Bank
-res = client.get('/api/teacher/quiz/cong_van_de_nghi', headers={'X-Teacher-PIN': 'gv2026', 'X-Test-Auth-Required': '1'})
-assert res.status_code == 200
+# 8. Quiz Bank
+res = client.get('/api/teacher/quiz/questions', headers={'X-Teacher-PIN': 'gv2026', 'X-Test-Auth-Required': '1'})
+assert res.status_code == 200, f'quiz bank failed: {res.status_code}'
 q_data = res.get_json()
 assert 'questions' in q_data
 q_count = len(q_data['questions'])
@@ -72,7 +75,14 @@ v_data = res.get_json()
 assert v_data.get('valid') is True
 print(f'9. Student Roster Verify ({v_data.get("name")}): OK')
 
-# 10. Student Quiz Attempt Generation
+# 10. Student Quiz Attempt Generation (Cấp quyền làm lại CN17 để tạo lượt làm mới)
+client.post('/api/teacher/reattempt/grant', json={
+    'class_code': '24DTH01',
+    'mssv': '2400003155',
+    'doc_type': 'cong_van_de_nghi',
+    'reason': 'Diagnostic test permit'
+}, headers={'X-Teacher-PIN': 'gv2026', 'X-Test-Auth-Required': '1'})
+
 res = client.post('/api/quiz/get', json={
     'class_code': '24DTH01',
     'mssv': '2400003155',
