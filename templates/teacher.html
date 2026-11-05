@@ -1123,11 +1123,33 @@
       }
     }
 
-    function getTeacherHeaders() {
+    function getTeacherHeaders(customHeaders = {}) {
       const pin = sessionStorage.getItem('edudoc_teacher_pin') || '';
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = { 'Content-Type': 'application/json', ...customHeaders };
       if (pin) headers['X-Teacher-PIN'] = pin;
       return headers;
+    }
+
+    // Tu dong gan X-Teacher-PIN vao cac request giang vien de dam bao ket noi lien tuc
+    if (typeof window !== 'undefined' && window.fetch) {
+      const _origFetch = window.fetch;
+      window.fetch = function(url, options = {}) {
+        try {
+          const pin = sessionStorage.getItem('edudoc_teacher_pin') || '';
+          if (pin && typeof url === 'string' && (url.startsWith('/api/teacher') || url.startsWith('/api/classes'))) {
+            options = options || {};
+            options.headers = options.headers || {};
+            if (options.headers instanceof Headers) {
+              if (!options.headers.has('X-Teacher-PIN')) options.headers.set('X-Teacher-PIN', pin);
+            } else if (Array.isArray(options.headers)) {
+              options.headers.push(['X-Teacher-PIN', pin]);
+            } else {
+              if (!options.headers['X-Teacher-PIN']) options.headers['X-Teacher-PIN'] = pin;
+            }
+          }
+        } catch (_) {}
+        return _origFetch.call(this, url, options);
+      };
     }
 
     async function triggerDbBackup() {
@@ -1155,6 +1177,7 @@
     }
 
     async function teacherLogout() {
+      sessionStorage.removeItem('edudoc_teacher_pin');
       await fetch('/api/teacher/logout', { method: 'POST' });
       Swal.fire({
         icon: 'info',

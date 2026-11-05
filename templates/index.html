@@ -1309,10 +1309,6 @@
             handleDeviceLock(data, classCode, mssv, name);
             return;
           }
-          if (data.device_locked) {
-            handleDeviceLock(data, classCode, mssv, name);
-            return;
-          }
           if (data.not_in_roster) {
             Swal.fire({
               icon: 'error',
@@ -2127,10 +2123,22 @@
 
         if (!res.ok) {
           if (res.status === 403) {
+            if (data.device_locked) {
+              handleDeviceLock(data, classCode, mssv, name);
+              if (btnSubmit) btnSubmit.disabled = false;
+              return;
+            }
             Swal.fire({
               icon: data.not_in_roster ? 'error' : 'warning',
               title: data.not_in_roster ? 'KHÔNG CÓ TRONG DANH SÁCH LỚP' : 'HỆ THỐNG ĐANG TẠM KHÓA',
               text: data.error || 'Phòng làm bài hiện đang tạm khóa hoặc tệp không thuộc phiên làm bài của bạn.',
+              confirmButtonText: 'Đã hiểu'
+            });
+          } else if (res.status === 409 && data.already_submitted) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'ĐÃ NỘP BÀI CHÍNH THỨC',
+              text: data.error || 'Bạn đã nộp bài chính thức trước đó. Mỗi sinh viên chỉ được nộp 1 lượt duy nhất trừ khi Giảng viên cấp quyền nộp lại.',
               confirmButtonText: 'Đã hiểu'
             });
           } else if (res.status === 413 || data.file_too_large) {

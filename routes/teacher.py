@@ -130,7 +130,10 @@ def api_set_session_state():
     enforce_roster = bool(data.get("enforce_roster", current.get("enforce_roster", True)))
     active_doc_type = str(data.get("active_doc_type", current.get("active_doc_type", "cong_van_de_nghi"))).strip()
     enforce_quiz = bool(data.get("enforce_quiz", current.get("enforce_quiz", True)))
-    max_previews = int(data.get("max_previews", current.get("max_previews", 3)))
+    try:
+        max_previews = int(data.get("max_previews", current.get("max_previews", 3)))
+    except (ValueError, TypeError):
+        max_previews = current.get("max_previews", 3)
     enforce_preview_limit = bool(data.get("enforce_preview_limit", current.get("enforce_preview_limit", False)))
     enable_anti_cheat = bool(data.get("enable_anti_cheat", current.get("enable_anti_cheat", False)))
     
