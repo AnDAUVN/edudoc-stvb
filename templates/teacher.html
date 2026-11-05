@@ -953,6 +953,16 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     async function loadDeviceRequests() {
       try {
         const res = await fetch('/api/teacher/device/requests?status=PENDING');
@@ -971,15 +981,15 @@
         }
         tbody.innerHTML = reqs.map(r => `
           <tr>
-            <td><span class="badge bg-primary-subtle text-primary">${r.class_code}</span></td>
-            <td class="badge-mono fw-bold">${r.mssv}</td>
-            <td class="fw-semibold">${r.student_name || ''}</td>
-            <td><small class="badge-mono text-muted">${(r.new_device_id || '').slice(0, 16)}...</small></td>
-            <td><small class="text-secondary">${r.reason || 'Đổi máy tính'}</small></td>
-            <td><small class="text-muted">${r.requested_at}</small></td>
+            <td><span class="badge bg-primary-subtle text-primary">${escapeHtml(r.class_code)}</span></td>
+            <td class="badge-mono fw-bold">${escapeHtml(r.mssv)}</td>
+            <td class="fw-semibold">${escapeHtml(r.student_name || '')}</td>
+            <td><small class="badge-mono text-muted">${escapeHtml((r.new_device_id || '').slice(0, 16))}...</small></td>
+            <td><small class="text-secondary">${escapeHtml(r.reason || 'Đổi máy tính')}</small></td>
+            <td><small class="text-muted">${escapeHtml(r.requested_at)}</small></td>
             <td class="text-center">
-              <button class="btn btn-sm btn-success me-1" onclick="approveDeviceRequest('${r.request_id}')" title="Phê duyệt đổi máy"><i class="fa-solid fa-check"></i> Duyệt</button>
-              <button class="btn btn-sm btn-outline-danger" onclick="rejectDeviceRequest('${r.request_id}')" title="Từ chối"><i class="fa-solid fa-xmark"></i> Từ chối</button>
+              <button class="btn btn-sm btn-success me-1" onclick="approveDeviceRequest('${escapeHtml(r.request_id)}')" title="Phê duyệt đổi máy"><i class="fa-solid fa-check"></i> Duyệt</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="rejectDeviceRequest('${escapeHtml(r.request_id)}')" title="Từ chối"><i class="fa-solid fa-xmark"></i> Từ chối</button>
             </td>
           </tr>
         `).join('');

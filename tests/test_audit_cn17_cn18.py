@@ -157,13 +157,21 @@ class TestAuditCN17CN18(unittest.TestCase):
         self.assertEqual(res_sub2.status_code, 409)
         self.assertTrue(res_sub2.get_json().get("already_submitted"))
 
-        # NT06: Giảng viên cấp quyền làm lại bài
+        # NT06 & V5 02: Giảng viên cấp quyền làm lại bài (Bắt buộc xác thực Giảng viên)
+        res_grant_unauth = self.client.post("/api/teacher/reattempt/grant", json={
+            "class_code": self.test_class,
+            "mssv": self.mssv,
+            "doc_type": self.doc_type,
+            "reason": "Máy tính gặp sự cố, cho phép làm lại"
+        }, headers={"X-Test-Auth-Required": "1"})
+        self.assertEqual(res_grant_unauth.status_code, 401, "API chưa đăng nhập phải bị từ chối 401 (V5 02)")
+
         res_grant = self.client.post("/api/teacher/reattempt/grant", json={
             "class_code": self.test_class,
             "mssv": self.mssv,
             "doc_type": self.doc_type,
             "reason": "Máy tính gặp sự cố, cho phép làm lại"
-        })
+        }, headers={"X-Teacher-PIN": "gv2026"})
         self.assertEqual(res_grant.status_code, 200)
         self.assertTrue(res_grant.get_json()["success"])
 
@@ -224,12 +232,18 @@ class TestAuditCN17CN18(unittest.TestCase):
         req_id = res_req.get_json()["request_id"]
         self.assertTrue(req_id.startswith("DCR_"))
 
-        # NT12: Giảng viên xem danh sách yêu cầu và phê duyệt
-        res_list = self.client.get(f"/api/teacher/device/requests?class_code={self.test_class}")
+        # NT12 & V5 02: Giảng viên xem danh sách yêu cầu và phê duyệt (Bắt buộc xác thực)
+        res_list_unauth = self.client.get(f"/api/teacher/device/requests?class_code={self.test_class}", headers={"X-Test-Auth-Required": "1"})
+        self.assertEqual(res_list_unauth.status_code, 401, "API chưa đăng nhập phải bị từ chối 401 (V5 02)")
+
+        res_list = self.client.get(f"/api/teacher/device/requests?class_code={self.test_class}", headers={"X-Teacher-PIN": "gv2026"})
         self.assertEqual(res_list.status_code, 200)
         self.assertGreaterEqual(res_list.get_json()["total"], 1)
 
-        res_approve = self.client.post("/api/teacher/device/approve", json={"request_id": req_id})
+        res_appr_unauth = self.client.post("/api/teacher/device/approve", json={"request_id": req_id}, headers={"X-Test-Auth-Required": "1"})
+        self.assertEqual(res_appr_unauth.status_code, 401, "Phê duyệt không có PIN phải bị từ chối 401 (V5 02)")
+
+        res_approve = self.client.post("/api/teacher/device/approve", json={"request_id": req_id}, headers={"X-Teacher-PIN": "gv2026"})
         self.assertEqual(res_approve.status_code, 200)
 
         # Kiểm tra sau khi phê duyệt: Thiết bị B được phép làm bài
@@ -248,6 +262,87 @@ class TestAuditCN17CN18(unittest.TestCase):
         }, headers={"X-Device-Id": dev_a, "X-Test-Enforce-Device": "1"})
         self.assertEqual(res_a_now_locked.status_code, 403)
         self.assertTrue(res_a_now_locked.get_json().get("device_locked"))
+
+    def test_nt14_v5_audit_findings_verification(self):
+        """NT14: Đối chiếu toàn bộ 9 phát hiện kiểm toán V5 (V5 01 - V5 09)"""
+        # 1. V5 02: 5 Endpoint Giảng viên bắt buộc @require_teacher_auth
+        unauth_hdr = {"X-Test-Auth-Required": "1"}
+        self.assertEqual(self.client.get("/api/teacher/device/requests", headers=unauth_hdr).status_code, 401)
+        self.assertEqual(self.client.post("/api/teacher/device/approve", json={"request_id": "fake"}, headers=unauth_hdr).status_code, 401)
+        self.assertEqual(self.client.post("/api/teacher/device/reject", json={"request_id": "fake"}, headers=unauth_hdr).status_code, 401)
+        self.assertEqual(self.client.post("/api/teacher/reattempt/grant", json={}, headers=unauth_hdr).status_code, 401)
+        self.assertEqual(self.client.get("/api/teacher/submissions/history", headers=unauth_hdr).status_code, 401)
+
+        # 2. V5 04: /api/student/device/status KHÔNG để lộ device_id
+        res_dev_st = self.client.get(f"/api/student/device/status?class_code={self.test_class}&mssv={self.mssv}&device_id=test_dev")
+        self.assertEqual(res_dev_st.status_code, 200)
+        dev_json = res_dev_st.get_json()
+        self.assertNotIn("device_id", dev_json)
+        self.assertNotIn("binding", dev_json)
+        self.assertIn("bound", dev_json)
+        self.assertIn("matched", dev_json)
+
+        # 3. V5 06: submit_quiz khi có attempt_id nhưng thiếu mssv hoặc mssv sai chủ sở hữu phải bị từ chối
+        # Tạo 1 attempt thực tế
+        res_quiz = self.client.post("/api/quiz/get", json={
+            "class_code": self.test_class,
+            "mssv": self.mssv,
+            "doc_type": self.doc_type
+        }, headers={"X-Device-Id": "dev_v5_quiz", "X-Test-Enforce-Device": "1"})
+        att_id = res_quiz.get_json()["attempt_id"]
+
+        # 3a. Nộp thiếu MSSV khi có attempt_id -> 400
+        res_no_mssv = self.client.post("/api/quiz/submit", json={
+            "class_code": self.test_class,
+            "doc_type": self.doc_type,
+            "attempt_id": att_id,
+            "answers": {}
+        })
+        self.assertEqual(res_no_mssv.status_code, 400, "Nộp thiếu MSSV khi có attempt_id phải bị từ chối 400 (V5 06)")
+
+        # 3b. Nộp sai MSSV (máy B nộp thay máy A) -> 403
+        res_wrong_mssv = self.client.post("/api/quiz/submit", json={
+            "class_code": self.test_class,
+            "mssv": "9999999999",
+            "doc_type": self.doc_type,
+            "attempt_id": att_id,
+            "answers": {}
+        })
+        self.assertEqual(res_wrong_mssv.status_code, 403, "Máy B nộp thay attempt của máy A phải bị từ chối 403 (V5 06)")
+
+        # 4. V5 03: Phôi được tạo kèm class_code nộp với /api/submit phải qua kiểm tra HMAC hợp lệ
+        from engine.db import save_student_session
+        save_student_session(f"{self.test_class}_{self.mssv}_{self.doc_type}", {"quiz_passed": True})
+        save_student_session(f"{self.mssv}_{self.doc_type}", {"quiz_passed": True})
+
+        res_tmpl = self.client.post("/api/template/generate", json={
+            "class_code": self.test_class,
+            "sbd": self.sbd,
+            "mssv": self.mssv,
+            "name": self.name,
+            "doc_type": self.doc_type
+        }, headers={"X-Device-Id": "dev_v5_quiz", "X-Test-Enforce-Device": "1"})
+        self.assertEqual(res_tmpl.status_code, 200)
+        tmpl_fn = res_tmpl.get_json()["filename"]
+
+        # Giả lập nộp bài bằng chính phôi hệ thống cấp
+        temp_fn = f"temp_{self.mssv}_{tmpl_fn}"
+        src_path = os.path.join(STORAGE_TEMPLATES, tmpl_fn)
+        dst_path = os.path.join(STORAGE_UPLOADS, temp_fn)
+        import shutil
+        shutil.copy2(src_path, dst_path)
+
+        res_sub = self.client.post("/api/submit", json={
+            "class_code": self.test_class,
+            "sbd": self.sbd,
+            "mssv": self.mssv,
+            "name": self.name,
+            "doc_type": self.doc_type,
+            "temp_file": temp_fn,
+            "elapsed_time": "05:00",
+            "score": 10.0
+        }, headers={"X-Device-Id": "dev_v5_quiz", "X-Test-Enforce-Device": "1", "X-Test-Enforce-Phoi": "1"})
+        self.assertEqual(res_sub.status_code, 200, f"Phôi hợp lệ của hệ thống phải được nộp thành công, không bị lỗi HMAC: {res_sub.get_data(as_text=True)}")
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,7 +12,7 @@ import datetime
 import time
 import uuid
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("edudoc.db")
 if not logger.handlers:
@@ -1238,38 +1238,44 @@ def get_atomic_preview_count(class_code: str, mssv: str, doc_type: str, db_path:
 # CN18: API LIÊN KẾT VÀ XÁC MINH THIẾT BỊ LÀM BÀI (SINGLE DEVICE BINDING)
 # =========================================================================
 def get_device_binding(class_code: str, mssv: str, db_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Lấy thông tin thiết bị đang liên kết của sinh viên"""
+    """Lấy thông tin thiết bị đang liên kết của sinh viên (Ràng buộc theo MSSV toàn hệ thống - V5 05)"""
     conn = get_db_connection(db_path)
     try:
-        c_clean = str(class_code or "").strip().upper()
         m_clean = str(mssv or "").strip().lower()
+        if not m_clean:
+            return None
+        c_clean = str(class_code or "").strip().upper()
+        # V5 05: Ràng buộc duy nhất theo MSSV trên toàn hệ thống
         row = conn.execute("""
             SELECT * FROM device_bindings
-            WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND status = 'ACTIVE';
-        """, (c_clean, m_clean)).fetchone()
+            WHERE LOWER(mssv) = ? AND status = 'ACTIVE'
+            ORDER BY id DESC LIMIT 1;
+        """, (m_clean,)).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
-def bind_device(class_code: str, mssv: str, device_id: str, device_name: str = "", user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> None:
-    """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08)"""
+def bind_device(class_code: str, mssv: str, device_id: str, device_name: str = "", user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> bool:
+    """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08) - Nguyên tử & Chống ghi đè đồng thời (V5 04)"""
     conn = get_db_connection(db_path)
     try:
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c_clean = str(class_code or "").strip().upper()
         m_clean = str(mssv or "").strip().lower()
         with conn:
+            # V5 04: Kiểm tra nguyên tử trước khi đăng ký, không cho phép ghi đè thiết bị đang hoạt động
+            existing = conn.execute("""
+                SELECT id, device_id FROM device_bindings
+                WHERE LOWER(mssv) = ? AND status = 'ACTIVE' LIMIT 1;
+            """, (m_clean,)).fetchone()
+            if existing:
+                return False
+
             conn.execute("""
-                INSERT INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
-                VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
-                ON CONFLICT(class_code, mssv) DO UPDATE SET
-                    device_id = excluded.device_id,
-                    device_name = excluded.device_name,
-                    user_agent = excluded.user_agent,
-                    ip_address = excluded.ip_address,
-                    status = 'ACTIVE',
-                    last_active_at = excluded.last_active_at;
+                INSERT OR IGNORE INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?);
             """, (c_clean, m_clean, device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str))
+            return True
     finally:
         conn.close()
 
@@ -1355,17 +1361,15 @@ def approve_device_change_request(request_id: str, approved_by: str = "Giảng v
                 SET status = 'APPROVED', resolved_at = ?, resolved_by = ?
                 WHERE request_id = ?;
             """, (now_str, approved_by, request_id))
-            # Cập nhật bảng device_bindings sang thiết bị mới
+            # Cập nhật bảng device_bindings sang thiết bị mới cho sinh viên trên toàn hệ thống
             conn.execute("""
-                INSERT INTO device_bindings (class_code, mssv, device_id, user_agent, ip_address, status, bound_at, last_active_at)
-                VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)
-                ON CONFLICT(class_code, mssv) DO UPDATE SET
-                    device_id = excluded.device_id,
-                    user_agent = excluded.user_agent,
-                    ip_address = excluded.ip_address,
-                    status = 'ACTIVE',
-                    bound_at = excluded.bound_at,
-                    last_active_at = excluded.last_active_at;
+                UPDATE device_bindings
+                SET device_id = ?, user_agent = ?, ip_address = ?, bound_at = ?, last_active_at = ?
+                WHERE LOWER(mssv) = ? AND status = 'ACTIVE';
+            """, (row["new_device_id"], row["new_user_agent"], row["new_ip_address"], now_str, now_str, row["mssv"].strip().lower()))
+            conn.execute("""
+                INSERT OR IGNORE INTO device_bindings (class_code, mssv, device_id, user_agent, ip_address, status, bound_at, last_active_at)
+                VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?);
             """, (row["class_code"], row["mssv"], row["new_device_id"], row["new_user_agent"], row["new_ip_address"], now_str, now_str))
             return True
     finally:

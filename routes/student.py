@@ -40,7 +40,14 @@ student_bp = Blueprint("student", __name__)
 
 def check_client_device(class_code: str, mssv: str):
     """Xác minh hoặc liên kết thiết bị duy nhất của sinh viên (CN18)"""
-    device_id = request.headers.get("X-Device-Id") or (request.json and request.json.get("device_id")) or (request.form and request.form.get("device_id"))
+    device_id = request.headers.get("X-Device-Id")
+    if not device_id and request.is_json:
+        device_id = (request.get_json(silent=True) or {}).get("device_id")
+    if not device_id and request.form:
+        device_id = request.form.get("device_id")
+    if not device_id:
+        device_id = request.args.get("device_id")
+
     is_testing = bool(current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")
     if not device_id:
         if is_testing and request.headers.get("X-Test-Enforce-Device") != "1":
@@ -53,7 +60,8 @@ def check_client_device(class_code: str, mssv: str):
     ua = request.headers.get("User-Agent", "")
     ip = request.remote_addr or ""
     ok, msg, b = verify_or_bind_device(class_code, mssv, device_id, user_agent=ua, ip_address=ip)
-    return {"valid": ok, "message": msg, "binding": b}
+    # V5 04: Không để lộ device_id hoặc chi tiết binding nhạy cảm ra ngoài client
+    return {"valid": ok, "message": msg, "bound": bool(b), "matched": ok}
 
 @student_bp.route("/api/student/device/request-change", methods=["POST"])
 def request_device_change():
@@ -87,7 +95,7 @@ def request_device_change():
 
 @student_bp.route("/api/student/device/status", methods=["GET"])
 def get_student_device_status():
-    """Kiểm tra trạng thái liên kết thiết bị của sinh viên (CN18)"""
+    """Kiểm tra trạng thái liên kết thiết bị của sinh viên (CN18, V5 04)"""
     class_code = request.args.get("class_code", "").upper()
     mssv = request.args.get("mssv", "")
     device_id = request.headers.get("X-Device-Id") or request.args.get("device_id", "")
@@ -96,11 +104,10 @@ def get_student_device_status():
     binding = get_device_binding(class_code, mssv)
     is_bound = bool(binding)
     is_match = bool(binding and binding.get("device_id") == device_id)
+    # V5 04: Bảo mật tuyệt đối ID thiết bị, chỉ trả về cờ bound & matched
     return jsonify({
         "bound": is_bound,
-        "device_id": device_id,
-        "matched": is_match,
-        "binding": binding
+        "matched": is_match
     })
 
 @student_bp.route("/thi")
@@ -217,11 +224,10 @@ def get_quiz():
         if not dev_chk.get("valid"):
             return jsonify({
                 "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
-                "device_locked": True,
-                "device_info": dev_chk
+                "device_locked": True
             }), 403
 
-    # CN17: Kiểm tra lượt làm bài trắc nghiệm (NT01, NT03, NT04, NT06)
+    # CN17: Kiểm tra lượt làm bài trắc nghiệm (NT01, NT03, NT04, NT06, V5 07, V5 08)
     if class_code and mssv and doc_type:
         latest = get_latest_quiz_attempt(class_code, mssv, doc_type)
         if latest:
@@ -244,6 +250,17 @@ def get_quiz():
                             "time_limit_seconds": rem_sec,
                             "resumed": True
                         })
+                    else:
+                        # V5 07: Lượt làm bài đã hết giờ -> Đánh dấu hoàn thành 0 điểm và chặn tạo lượt tự do
+                        complete_quiz_attempt(latest["attempt_id"], 0, False)
+                        permit = get_active_reattempt_permission(class_code, mssv, doc_type)
+                        if not permit:
+                            return jsonify({
+                                "error": "Thời gian làm bài trắc nghiệm đã hết (0 điểm). Vui lòng liên hệ Giảng viên để được cấp quyền làm lại.",
+                                "quiz_completed": True,
+                                "score": 0,
+                                "passed": False
+                            }), 403
                 except Exception:
                     pass
             elif latest.get("status") == "COMPLETED":
@@ -255,8 +272,7 @@ def get_quiz():
                         "score": latest.get("score", 0),
                         "passed": bool(latest.get("passed", 0))
                     }), 403
-                else:
-                    consume_reattempt_permission(permit["id"])
+                # V5 08: Giữ permit ACTIVE cho cả chu trình (trắc nghiệm + nộp Word), chỉ tiêu permit khi nộp Word thành công
 
     all_questions = load_json_file(QUESTIONS_FILE, {})
     raw_questions = all_questions.get(doc_type, [])
@@ -338,6 +354,7 @@ def submit_quiz():
     is_testing = bool(current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")
     state = get_session_state(class_code)
     enforce_roster = (request.headers.get("X-Test-Enforce-Roster") == "1") if is_testing else state.get("enforce_roster", False)
+
     if enforce_roster and class_code and mssv:
         if not is_student_in_roster(class_code, mssv, current_app.testing):
             return jsonify({
@@ -383,6 +400,17 @@ def submit_quiz():
                 "feedback": []
             }), 400
 
+        # V5 06: Bắt buộc mssv khi nộp lượt attempt_id, chống việc máy B nộp thay không cần MSSV
+        if not mssv:
+            return jsonify({
+                "passed": False,
+                "error": "Bắt buộc phải có mã số sinh viên (mssv) khi nộp bài trắc nghiệm!",
+                "score": 0,
+                "total": 5,
+                "pass_score": 4,
+                "feedback": []
+            }), 400
+
         if attempt.get("status") == "COMPLETED":
             return jsonify({
                 "passed": False,
@@ -393,9 +421,9 @@ def submit_quiz():
                 "feedback": []
             }), 400
 
-        # Ràng buộc định danh sinh viên và mã lớp
-        if attempt.get("mssv") and mssv and str(attempt["mssv"]).strip() != str(mssv).strip():
-            return jsonify({"passed": False, "error": "Phiên làm bài không thuộc về sinh viên này!", "score": 0}), 400
+        # V5 06: Ràng buộc định danh sinh viên và mã lớp với attempt
+        if attempt.get("mssv") and str(attempt["mssv"]).strip().lower() != str(mssv).strip().lower():
+            return jsonify({"passed": False, "error": "Phiên làm bài không thuộc về sinh viên này!", "score": 0}), 403
         if attempt.get("doc_type") and doc_type and str(attempt["doc_type"]).strip() != str(doc_type).strip():
             return jsonify({"passed": False, "error": "Loại văn bản không khớp với phiên làm bài!", "score": 0}), 400
         if attempt.get("class_code") and class_code and str(attempt["class_code"]).strip().upper() != str(class_code).strip().upper():
@@ -507,22 +535,13 @@ def submit_quiz():
 
 @student_bp.route("/api/template/generate", methods=["POST"])
 def generate_template():
-    """Tạo tệp Word thô cá nhân hóa cho sinh viên theo 3 số cuối MSSV và thủy vân ẩn (Priority 3, 4)"""
+    """Tạo tệp Word thô cá nhân hóa cho sinh viên theo 3 số cuối MSSV và thủy vân ẩn (Priority 3, 4, V5 05)"""
     data = request.json or {}
     class_code = sanitize_identifier(data.get("class_code"), "Chung").upper()
     sbd = sanitize_identifier(data.get("sbd"))
     mssv = sanitize_identifier(data.get("mssv"))
     name = str(data.get("name", "")).strip()
     doc_type = sanitize_identifier(data.get("doc_type"))
-
-    # CN18: Kiểm tra thiết bị
-    if class_code and mssv:
-        dev_chk = check_client_device(class_code, mssv)
-        if not dev_chk.get("valid"):
-            return jsonify({
-                "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
-                "device_locked": True
-            }), 403
 
     if not is_session_open(class_code=class_code, app_testing=current_app.testing):
         return jsonify({
@@ -533,11 +552,21 @@ def generate_template():
     if not (sbd and mssv and name and doc_type):
         return jsonify({"error": "Vui lòng nhập đầy đủ SBD, MSSV, Họ và tên và Chọn loại văn bản!"}), 400
 
+    # V5 05: Bắt buộc kiểm tra danh sách lớp TRƯỚC KHI liên kết thiết bị
     if not is_student_in_roster(class_code, mssv, current_app.testing):
         return jsonify({
             "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép nhận file mẫu bài tập!",
             "not_in_roster": True
         }), 403
+
+    # CN18: Kiểm tra thiết bị sau khi đã xác nhận sinh viên có trong danh sách (chỉ gọi 1 lần - V5 05)
+    if class_code and mssv:
+        dev_chk = check_client_device(class_code, mssv)
+        if not dev_chk.get("valid"):
+            return jsonify({
+                "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
+                "device_locked": True
+            }), 403
 
     # D06: Ràng buộc phải vượt qua trắc nghiệm mới được cấp phôi
     state = get_session_state(class_code)
@@ -546,15 +575,6 @@ def generate_template():
         enforce_quiz = (request.headers.get("X-Test-Enforce-Quiz") == "1")
     else:
         enforce_quiz = state.get("enforce_quiz", True)
-
-    # CN18: Kiểm tra thiết bị
-    if class_code and mssv:
-        dev_chk = check_client_device(class_code, mssv)
-        if not dev_chk.get("valid"):
-            return jsonify({
-                "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
-                "device_locked": True
-            }), 403
 
     if enforce_quiz:
         composite_key = f"{class_code}_{mssv}_{doc_type}"
@@ -624,14 +644,27 @@ def generate_template():
 
 @student_bp.route("/api/template/download/<path:filename>")
 def download_template(filename):
-    """Tải tệp phôi bài Word về máy sinh viên (D21)"""
+    """Tải tệp phôi bài Word về máy sinh viên (D21, V5 05)"""
     try:
         path = safe_storage_path(STORAGE_TEMPLATES, filename)
     except ValueError:
         return jsonify({"error": "Đường dẫn tệp không hợp lệ (Phát hiện Path Traversal)!"}), 400
-    if os.path.exists(path) and os.path.isfile(path):
-        return send_file(path, as_attachment=True, download_name=os.path.basename(path))
-    return "File không tồn tại", 404
+    if not (os.path.exists(path) and os.path.isfile(path)):
+        return "File không tồn tại", 404
+
+    # V5 05: Kiểm tra thiết bị khi tải phôi
+    parts = os.path.basename(path).split("_")
+    if len(parts) >= 2:
+        file_mssv = parts[1]
+        class_code = request.args.get("class_code", "")
+        dev_chk = check_client_device(class_code, file_mssv)
+        if not dev_chk.get("valid"):
+            return jsonify({
+                "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
+                "device_locked": True
+            }), 403
+
+    return send_file(path, as_attachment=True, download_name=os.path.basename(path))
 
 @student_bp.route("/api/validate", methods=["POST"])
 def validate_student_work():
@@ -665,6 +698,15 @@ def validate_student_work():
             "error": f"Mã sinh viên [{mssv}] không có trong danh sách chính thức của lớp [{class_code}]. Bạn không được phép thẩm định bài làm!",
             "not_in_roster": True
         }), 403
+
+    # V5 05: Kiểm tra thiết bị duy nhất khi thẩm định bài làm
+    if class_code and mssv:
+        dev_chk = check_client_device(class_code, mssv)
+        if not dev_chk.get("valid"):
+            return jsonify({
+                "error": dev_chk.get("message", "Thiết bị này không khớp với thiết bị đã đăng ký của bạn!"),
+                "device_locked": True
+            }), 403
 
     # Dọn dẹp các tiền tố temp_ lặp đi lặp lại & chống Path Traversal (D21)
     raw_fn = os.path.basename(file.filename)
@@ -867,9 +909,11 @@ def submit_final():
                 "device_locked": True
             }), 403
 
-    # CN17: Kiểm tra một lượt cho mỗi bài nộp Word (NT04, NT05, NT06, NT07, NT08)
+    # CN17: Kiểm tra một lượt cho mỗi bài nộp Word (NT04, NT05, NT06, NT07, NT08, V5 08)
     is_testing = bool(current_app.testing or os.environ.get("EDUDOC_TESTING") == "1")
     enforce_single = (request.headers.get("X-Test-Enforce-Single-Attempt") == "1") or not is_testing
+    existing_sub = None
+    permit = None
     if enforce_single and class_code and mssv and doc_type:
         existing_sub = get_submission_by_composite(class_code, mssv, doc_type)
         if existing_sub:
@@ -879,9 +923,8 @@ def submit_final():
                     "error": f"Sinh viên [{name} - MSSV: {mssv}] đã nộp bài chính thức cho loại văn bản [{doc_type}]! Mỗi sinh viên chỉ được nộp 1 lượt duy nhất. Vui lòng liên hệ Giảng viên để được cấp quyền nộp lại.",
                     "already_submitted": True
                 }), 409
-            else:
-                archive_submission_record(existing_sub, archive_reason=f"Làm lại bài: {permit.get('reason', '')}")
-                consume_reattempt_permission(permit["id"])
+            # V5 08: Không archive và không consume permit ở đây!
+            # Permit chỉ được tiêu thụ khi tệp bài làm vượt qua toàn bộ khâu thẩm định và HMAC hợp lệ.
         
     safe_temp_name = os.path.basename(temp_file)
     try:
@@ -951,6 +994,20 @@ def submit_final():
                 }), 400
 
             o_sbd, o_mssv, o_name, o_doc, o_ts = parts[0], parts[1], parts[2], parts[3], parts[4]
+            o_class = parts[5].strip().upper() if len(parts) >= 6 else (class_code or "").strip().upper()
+
+            # V5 03: Ràng buộc lớp học nếu phôi có chứa mã lớp
+            if len(parts) >= 6 and o_class and class_code and o_class != class_code.strip().upper():
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+                return jsonify({
+                    "error": f"Phôi đề này được cấp phát cho lớp [{o_class}], không khớp với lớp [{class_code}] đang nộp!",
+                    "status": "FILE_KHONG_HOP_LE"
+                }), 400
+
             # S10: Kiểm tra loại văn bản của phôi có khớp với văn bản đang nộp không
             if o_doc and doc_type and str(o_doc).strip() != str(doc_type).strip():
                 if os.path.exists(temp_path):
@@ -964,7 +1021,8 @@ def submit_final():
                 }), 400
 
             t_val = token_hdr[len("STVB_SIGNATURE:"):].strip()
-            if not verify_anti_cheat_token(t_val, o_sbd, o_mssv, o_doc, o_ts):
+            # V5 03: Truyền o_class vào verify_anti_cheat_token để chữ ký HMAC khớp chính xác
+            if not verify_anti_cheat_token(t_val, o_sbd, o_mssv, o_doc, o_ts, o_class):
                 if os.path.exists(temp_path):
                     try:
                         os.remove(temp_path)
@@ -1123,6 +1181,12 @@ def submit_final():
         "checksum": file_checksum
     }
     
+    # V5 08: Khi nộp bài làm lại thành công, lưu trữ bài cũ vào submissions_history và tiêu thụ permit
+    if existing_sub:
+        archive_submission_record(existing_sub, archive_reason=f"Làm lại bài: {permit.get('reason', '') if permit else 'Giảng viên cấp quyền'}")
+    if permit:
+        consume_reattempt_permission(permit["id"])
+
     # Lưu vào cơ sở dữ liệu SQLite
     save_submission(new_sub)
     

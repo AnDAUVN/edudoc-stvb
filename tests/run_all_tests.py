@@ -86,9 +86,7 @@ def main():
             else:
                 print(f"[{idx:02d}/{total:02d}] FAIL ✖ -> {test_file}")
                 print("  --- Chi tiết lỗi ---")
-                lines = res.stderr.strip().splitlines()[-5:] if res.stderr else res.stdout.strip().splitlines()[-5:]
-                for l in lines:
-                    print("   ", l)
+                print(res.stderr if res.stderr else res.stdout)
                 failed += 1
     finally:
         if server_process:
