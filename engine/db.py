@@ -13,6 +13,7 @@ import time
 import uuid
 import logging
 import threading
+from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("edudoc.db")
@@ -132,6 +133,8 @@ def _migrate_box6_schema(conn: sqlite3.Connection) -> None:
 
 def init_db(db_path: Optional[str] = None) -> None:
     """Khởi tạo cấu trúc các bảng SQLite nếu chưa tồn tại (D02, D08)"""
+    path = db_path or DB_PATH
+    import_legacy_json = not os.path.exists(path) or os.path.getsize(path) == 0
     conn = get_db_connection(db_path)
     with conn:
         # 1. BẢNG BÀI NỘP CHÍNH THỨC (SUBMISSIONS)
@@ -415,8 +418,10 @@ def init_db(db_path: Optional[str] = None) -> None:
             pass
     conn.close()
 
-    # Tự động đồng bộ / migrate dữ liệu cũ từ JSON vào SQLite
-    migrate_json_to_sqlite(db_path)
+    # JSON is an import source for a new database, not a live source of truth.
+    # Reimporting whenever a table is empty resurrects deliberately deleted data.
+    if import_legacy_json:
+        migrate_json_to_sqlite(db_path)
 
 _last_sync_time = 0.0
 _sync_lock = threading.Lock()
@@ -1092,48 +1097,63 @@ def get_validation_logs(class_code: Optional[str] = None, mssv: Optional[str] = 
 # =========================================================================
 # API DATABASE BACKUP & RESTORE (SAO LƯU & KHÔI PHỤC - D24)
 # =========================================================================
-def backup_database(backup_dir: Optional[str] = None) -> str:
-    """Sao lưu trực tuyến cơ sở dữ liệu SQLite sang tệp backup có timestamp (D24)"""
+def backup_database(backup_dir: Optional[str] = None, db_path: Optional[str] = None) -> str:
+    """Online backup with a unique filename; existing snapshots are never overwritten."""
     if not backup_dir:
         backup_dir = os.path.join(DATA_DIR, "backups")
     os.makedirs(backup_dir, exist_ok=True)
-
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_file = os.path.join(backup_dir, f"edudoc_backup_{timestamp}.db")
-
-    source_conn = get_db_connection()
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    backup_file = os.path.join(backup_dir, f"edudoc_backup_{timestamp}_{uuid.uuid4().hex}.db")
+    source_conn = get_db_connection(db_path)
+    dest_conn = None
     try:
         dest_conn = sqlite3.connect(backup_file)
-        with dest_conn:
-            source_conn.backup(dest_conn)
-        dest_conn.close()
+        source_conn.backup(dest_conn)
         logger.info(f"Đã tạo bản sao lưu cơ sở dữ liệu: {backup_file}")
         return backup_file
-    except Exception as e:
-        logger.error(f"Lỗi khi sao lưu cơ sở dữ liệu: {e}")
+    except Exception:
+        if dest_conn is not None:
+            dest_conn.close()
+            dest_conn = None
+        if os.path.exists(backup_file):
+            os.unlink(backup_file)
         raise
     finally:
+        if dest_conn is not None:
+            dest_conn.close()
         source_conn.close()
 
-def restore_database(backup_file: str, db_path: Optional[str] = None) -> bool:
-    """Khôi phục cơ sở dữ liệu SQLite từ bản sao lưu (D24)"""
-    if not os.path.exists(backup_file):
-        raise FileNotFoundError(f"Không tìm thấy file backup: {backup_file}")
 
-    target_path = db_path or DB_PATH
-    backup_conn = sqlite3.connect(backup_file)
+def restore_database(backup_file: str, db_path: Optional[str] = None) -> bool:
+    """Validate the source and preserve a rollback snapshot before replacing data.
+
+    Restore must be run during a maintenance window with student writes stopped.
+    """
+    source_path = Path(backup_file).resolve()
+    target_path = Path(db_path or DB_PATH).resolve()
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Không tìm thấy file backup: {backup_file}")
+    if source_path == target_path:
+        raise ValueError("Không thể khôi phục từ chính cơ sở dữ liệu đang sử dụng.")
+    backup_conn = sqlite3.connect(source_path.as_uri() + "?mode=ro", uri=True)
+    dest_conn = None
     try:
+        if backup_conn.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+            raise ValueError("Bản sao lưu SQLite bị hỏng.")
+        tables = {row[0] for row in backup_conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if not {"submissions", "student_sessions", "session_state"}.issubset(tables):
+            raise ValueError("Tệp không phải bản sao lưu cơ sở dữ liệu EDUDOC hợp lệ.")
+        if target_path.exists():
+            backup_database(str(target_path.parent / "backups"), db_path=str(target_path))
         dest_conn = sqlite3.connect(target_path)
-        with dest_conn:
-            backup_conn.backup(dest_conn)
-        dest_conn.close()
+        backup_conn.backup(dest_conn)
         logger.info(f"Đã khôi phục cơ sở dữ liệu từ: {backup_file}")
         return True
-    except Exception as e:
-        logger.error(f"Lỗi khi khôi phục cơ sở dữ liệu: {e}")
-        raise
     finally:
+        if dest_conn is not None:
+            dest_conn.close()
         backup_conn.close()
+
 
 def list_backups(backup_dir: Optional[str] = None) -> List[Dict[str, Any]]:
     """Liệt kê danh sách các bản sao lưu cơ sở dữ liệu đã có (D24)"""

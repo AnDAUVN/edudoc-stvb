@@ -4,6 +4,16 @@ Dự án phần mềm khảo thí và quản lý giáo dục chuyên ngành So�
 
 ---
 
+## Bản sửa sau kiểm tra ngày 05/11/2026
+
+Đọc `HUONG_DAN_CHAY.md` để chạy bản này và xem `BAO_CAO_KIEM_TRA.md` trong thư mục bàn giao để biết phạm vi kiểm chứng.
+PIN mặc định cũ đã được thay bằng PIN riêng: đặt biến `TEACHER_PIN`, hoặc xem `data/.teacher-pin` được tạo khi chạy lần đầu. Không chia sẻ tệp này.
+Khóa phiên được tạo riêng ở `data/.session-key` nếu chưa đặt `SECRET_KEY`; giữ nguyên tệp giữa các lần khởi động.
+Các tệp phôi mới có thêm mã lớp và định danh duy nhất để tránh ghi đè.
+`tests/run_all_tests.py` nay chạy trên bản sao tạm, không dùng máy chủ khác đang chiếm cổng 5000.
+
+---
+
 ## 🌟 TÍNH NĂNG TOÀN DIỆN & NỔI BẬT
 
 1. **Hỗ trợ đầy đủ 8 Loại văn bản hành chính theo Nghị định 30/2020/NĐ-CP:**

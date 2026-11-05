@@ -11,7 +11,8 @@ Kiến trúc Hệ thống:
 """
 import os
 import sys
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
+from engine.config import installation_secret
 
 from engine.common import (
     BASE_DIR, DATA_DIR, STORAGE_TEMPLATES, STORAGE_UPLOADS, STORAGE_SUBMITTED,
@@ -28,7 +29,18 @@ from routes.teacher import teacher_bp
 def create_app():
     """Khởi tạo ứng dụng Flask với các Blueprints độc lập"""
     application = Flask(__name__, template_folder="templates", static_folder="static")
-    application.secret_key = os.environ.get("SECRET_KEY", "edudoc_secret_key_2026_nttu_secure_wal")
+    application.secret_key = installation_secret("SECRET_KEY", ".session-key")
+    application.config["TEACHER_PIN"] = installation_secret("TEACHER_PIN", ".teacher-pin")
+    application.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+    @application.before_request
+    def validate_json_object():
+        if request.is_json and not isinstance(request.get_json(), dict):
+            return jsonify({"error": "Dữ liệu JSON phải là một đối tượng (object)."}), 400
+
+    @application.errorhandler(400)
+    def invalid_request(error):
+        return jsonify({"error": "Yêu cầu không hợp lệ. Vui lòng kiểm tra dữ liệu gửi lên."}), 400
     
     # D28: Giới hạn kích thước tệp tải lên tối đa 16MB (chống tràn bộ nhớ & từ chối dịch vụ)
     application.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024

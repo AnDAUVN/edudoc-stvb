@@ -119,11 +119,9 @@ def is_anti_cheat_enabled(class_code: str = "", app_testing: bool = False) -> bo
     try:
         from flask import request, has_request_context
         if has_request_context():
-            if "werkzeug" in request.headers.get("User-Agent", "").lower():
-                is_testing = True
-            if request.headers.get("X-Test-Disable-Anti-Cheat") == "1":
+            if is_testing and request.headers.get("X-Test-Disable-Anti-Cheat") == "1":
                 return False
-            if request.headers.get("X-Test-Enable-Anti-Cheat") == "1":
+            if is_testing and request.headers.get("X-Test-Enable-Anti-Cheat") == "1":
                 return True
     except Exception:
         pass

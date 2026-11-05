@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 KỊCH BẢN KHỞI CHẠY HỆ THỐNG EDUDOC - KHẢO THÍ & HUẤN LUYỆN NGHỊ ĐỊNH 30
-Tự động dọn dẹp tiến trình treo, mở cổng 5000, thiết lập Cloudflare Tunnel bảo mật,
+Kiểm tra cổng 5000, thiết lập Cloudflare Tunnel,
 và tự động mở Bàn làm việc Giảng viên (/gv) trên máy chủ.
 """
 import os
@@ -30,47 +30,16 @@ def get_local_ip():
     return ip
 
 def cleanup_stale_processes(port=5000):
-    """Dọn dẹp các tiến trình cũ bị treo trên cổng 5000 và cloudflared cũ (Tương thích Windows / macOS / Linux)"""
-    if sys.platform != "win32":
-        try:
-            subprocess.run(["pkill", "-f", "cloudflared"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            out = subprocess.check_output(f"lsof -ti:{port}", shell=True, text=True, errors="ignore")
-            for pid_str in out.strip().split():
-                if pid_str and int(pid_str) != os.getpid():
-                    subprocess.run(["kill", "-9", pid_str], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
-        return
-
-    # 1. Dọn cloudflared mồ côi trên Windows
+    """Check the port without terminating unrelated servers or tunnels."""
     try:
-        subprocess.run(
-            ["taskkill", "/F", "/IM", "cloudflared.exe"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-    except Exception:
-        pass
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(("0.0.0.0", port))
+    except OSError as exc:
+        raise RuntimeError(
+            f"Cổng {port} đang được sử dụng hoặc không thể mở. "
+            "Hãy đóng phiên EDUDOC cũ hoặc chọn cổng khác; không tự động tắt tiến trình khác."
+        ) from exc
 
-    # 2. Giải phóng cổng 5000 nếu có tiến trình khác đang chiếm giữ
-    try:
-        out = subprocess.check_output("netstat -ano", shell=True, text=True, errors="ignore")
-        my_pid = os.getpid()
-        for line in out.strip().splitlines():
-            parts = line.split()
-            if len(parts) >= 5 and parts[1].endswith(f":{port}") and parts[3] == "LISTENING":
-                try:
-                    pid = int(parts[4])
-                    if pid != my_pid:
-                        subprocess.run(
-                            ["taskkill", "/F", "/PID", str(pid)],
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL
-                        )
-                except Exception:
-                    pass
-    except Exception:
-        pass
 
 def run_cloudflared_tunnel(base_dir, local_ip):
     """Khởi động Cloudflare Tunnel với tệp nhật ký trực tiếp (tránh deadlock pipe, tương thích Windows/macOS)"""
@@ -176,8 +145,12 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(base_dir)
 
-    # 1. Dọn dẹp tiến trình cũ giải phóng cổng 5000
-    cleanup_stale_processes(5000)
+    # 1. Kiểm tra cổng, không tắt tiến trình ngoài quyền sở hữu của ứng dụng
+    try:
+        cleanup_stale_processes(5000)
+    except RuntimeError as exc:
+        print(f"[!] {exc}")
+        raise SystemExit(1)
 
     local_ip = get_local_ip()
 
@@ -186,9 +159,11 @@ if __name__ == "__main__":
     threading.Thread(target=open_browser, daemon=True).start()
 
     from app import app
+    pin_val = app.config.get("TEACHER_PIN")
     print("=" * 78)
     print("    HỆ THỐNG EDUDOC - KHẢO THÍ & HUẤN LUYỆN STVB NGHỊ ĐỊNH 30/2020/NĐ-CP")
-    print("    Bàn làm việc Giảng viên: http://127.0.0.1:5000/gv")
+    print("    🔑 Bàn làm việc Giảng viên: http://127.0.0.1:5000/gv")
+    print(f"    🔑 Mã PIN Giảng viên:        {pin_val}")
     print(f"    Mạng nội bộ phòng máy (LAN): http://{local_ip}:5000/thi")
     print("    Nhấn Ctrl + C để dừng máy chủ.")
     print("=" * 78)

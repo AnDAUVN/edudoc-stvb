@@ -29,6 +29,9 @@ data/backups/*.sqlite*
 
 # Environment & IDE
 .env
+data/.session-key
+data/.teacher-pin
+data/.credential-*
 venv/
 env/
 .vscode/

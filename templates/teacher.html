@@ -963,6 +963,10 @@
         .replace(/'/g, '&#039;');
     }
 
+    function jsArg(value) {
+      return escapeHtml(JSON.stringify(String(value ?? '')));
+    }
+
     async function loadDeviceRequests() {
       try {
         const res = await fetch('/api/teacher/device/requests?status=PENDING');
@@ -1075,7 +1079,7 @@
         title: 'XÁC THỰC GIẢNG VIÊN',
         text: 'Vui lòng nhập Mã PIN Giảng viên để mở khóa Bàn làm việc:',
         input: 'password',
-        inputPlaceholder: 'Nhập mã PIN (Mặc định: gv2026)...',
+        inputPlaceholder: 'Nhập mã PIN Giảng viên (mặc định: gv2026)...',
         confirmButtonText: '<i class="fa-solid fa-lock-open me-2"></i>Mở khóa Bàn làm việc',
         confirmButtonColor: '#1e3a8a',
         allowOutsideClick: false,
@@ -1384,8 +1388,8 @@
       let rosterOpts = '<option value="ALL">-- Chọn lớp quản lý --</option>';
       
       arr.forEach(c => {
-        filterOpts += `<option value="${c}">Lớp ${c}</option>`;
-        rosterOpts += `<option value="${c}">Lớp ${c}</option>`;
+        filterOpts += `<option value="${escapeHtml(c)}">Lớp ${escapeHtml(c)}</option>`;
+        rosterOpts += `<option value="${escapeHtml(c)}">Lớp ${escapeHtml(c)}</option>`;
       });
 
       const curFilter = filterSel.value;
@@ -1424,27 +1428,27 @@
 
       tbody.innerHTML = list.map((s, idx) => {
         const flagBadge = s.is_suspicious_speed 
-          ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${s.elapsed_time} 🚩 Nộp quá nhanh</span>`
-          : `<span class="badge bg-light text-dark border">${s.elapsed_time || 'N/A'}</span>`;
+          ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${escapeHtml(s.elapsed_time)} 🚩 Nộp quá nhanh</span>`
+          : `<span class="badge bg-light text-dark border">${escapeHtml(s.elapsed_time || 'N/A')}</span>`;
         return `
           <tr>
-            <td><span class="badge bg-primary-subtle text-primary fw-bold">${s.class_code || 'Chung'}</span></td>
-            <td class="badge-mono">${s.sbd || '-'}</td>
-            <td class="badge-mono fw-bold text-dark">${s.mssv}</td>
-            <td class="fw-semibold">${s.name}</td>
-            <td><small class="fw-semibold text-secondary">${s.doc_name || s.doc_type}</small></td>
-            <td><small class="badge-mono text-muted">${s.filename}</small></td>
-            <td><small class="text-secondary">${s.submitted_at}</small></td>
-            <td>${flagBadge} <span class="badge bg-light text-secondary border ms-1">Thử: ${s.preview_count || 0} lần</span></td>
-            <td><span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-check me-1"></i>100% NĐ 30</span></td>
+            <td><span class="badge bg-primary-subtle text-primary fw-bold">${escapeHtml(s.class_code || 'Chung')}</span></td>
+            <td class="badge-mono">${escapeHtml(s.sbd || '-')}</td>
+            <td class="badge-mono fw-bold text-dark">${escapeHtml(s.mssv)}</td>
+            <td class="fw-semibold">${escapeHtml(s.name)}</td>
+            <td><small class="fw-semibold text-secondary">${escapeHtml(s.doc_name || s.doc_type)}</small></td>
+            <td><small class="badge-mono text-muted">${escapeHtml(s.filename)}</small></td>
+            <td><small class="text-secondary">${escapeHtml(s.submitted_at)}</small></td>
+            <td>${flagBadge} <span class="badge bg-light text-secondary border ms-1">Thử: ${escapeHtml(s.preview_count || 0)} lần</span></td>
+            <td><span class="badge ${Number(s.score) >= 10 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-dark'} border"><i class="fa-solid fa-file-circle-check me-1"></i>${escapeHtml(s.status || ('Điểm: ' + (s.score ?? 'N/A') + ' / 10'))}</span></td>
             <td class="text-center">
-              <a href="/api/download/submitted/${s.filename}" class="btn btn-sm btn-outline-primary me-1" title="Tải bài Word">
+              <a href="/api/download/submitted/${encodeURIComponent(s.filename)}" class="btn btn-sm btn-outline-primary me-1" title="Tải bài Word">
                 <i class="fa-solid fa-download"></i>
               </a>
-              <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattempt('${s.class_code || 'Chung'}', '${s.mssv}', '${s.doc_type}', '${s.name}')" title="Cấp quyền làm lại bài (CN17)">
+              <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattempt(${jsArg(s.class_code || 'Chung')}, ${jsArg(s.mssv)}, ${jsArg(s.doc_type)}, ${jsArg(s.name)})" title="Cấp quyền làm lại bài (CN17)">
                 <i class="fa-solid fa-rotate-left"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission('${s.mssv}', '${s.doc_type}')" title="Xóa bài nộp">
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission(${jsArg(s.mssv)}, ${jsArg(s.doc_type)})" title="Xóa bài nộp">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </td>
@@ -1505,20 +1509,20 @@
       
       students = roster[selClass] || [];
       if (students.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Lớp [${selClass}] hiện chưa có sinh viên nào. Hãy bấm "Thêm sinh viên lẻ" hoặc "Dán danh sách Excel" để nạp sinh viên.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">Lớp [${escapeHtml(selClass)}] hiện chưa có sinh viên nào. Hãy bấm "Thêm sinh viên lẻ" hoặc "Dán danh sách Excel" để nạp sinh viên.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = students.map((s, idx) => `
         <tr>
           <td>${idx + 1}</td>
-          <td class="badge-mono">${s.sbd || '-'}</td>
-          <td class="badge-mono fw-bold text-primary">${s.mssv}</td>
-          <td class="fw-semibold">${s.name}</td>
-          <td><span class="badge bg-secondary-subtle text-secondary border font-monospace">${s.student_class || '-'}</span></td>
-          <td><span class="badge bg-light text-dark border">${selClass}</span></td>
+          <td class="badge-mono">${escapeHtml(s.sbd || '-')}</td>
+          <td class="badge-mono fw-bold text-primary">${escapeHtml(s.mssv)}</td>
+          <td class="fw-semibold">${escapeHtml(s.name)}</td>
+          <td><span class="badge bg-secondary-subtle text-secondary border font-monospace">${escapeHtml(s.student_class || '-')}</span></td>
+          <td><span class="badge bg-light text-dark border">${escapeHtml(selClass)}</span></td>
           <td class="text-center">
-            <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster('${selClass}', '${s.mssv}')" title="Xóa sinh viên">
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster(${jsArg(selClass)}, ${jsArg(s.mssv)})" title="Xóa sinh viên">
               <i class="fa-solid fa-user-xmark"></i>
             </button>
           </td>
@@ -1810,20 +1814,20 @@
         return `
           <div class="card p-3 border-danger shadow-xs">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="badge bg-danger fs-6"><i class="fa-solid fa-shield-virus me-1"></i> ${f.reason || f.fraud_type || 'Phát hiện vi phạm gian lận'}</span>
+              <span class="badge bg-danger fs-6"><i class="fa-solid fa-shield-virus me-1"></i> ${escapeHtml(f.reason || f.fraud_type || 'Phát hiện vi phạm gian lận')}</span>
               <div class="d-flex align-items-center gap-2">
-                <small class="text-muted">${l.timestamp || ''}</small>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteFraudLog('${l.id}')"><i class="fa-solid fa-trash"></i></button>
+                <small class="text-muted">${escapeHtml(l.timestamp || '')}</small>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteFraudLog(${jsArg(l.id)})"><i class="fa-solid fa-trash"></i></button>
               </div>
             </div>
             <div class="row g-2 small">
               <div class="col-md-6 border-end">
                 <strong class="text-danger">Sinh viên nộp bài:</strong><br>
-                Họ tên: <b>${svA.name || 'N/A'}</b> - MSSV: <code>${svA.mssv || 'N/A'}</code> (Lớp: ${svA.class_code || l.class_code || 'Chung'})
+                Họ tên: <b>${escapeHtml(svA.name || 'N/A')}</b> - MSSV: <code>${escapeHtml(svA.mssv || 'N/A')}</code> (Lớp: ${escapeHtml(svA.class_code || l.class_code || 'Chung')})
               </div>
               <div class="col-md-6">
                 <strong class="text-primary">${svB.name ? 'Nguồn gốc bài tập (Người cho chép):' : 'Bằng chứng / Chi tiết vi phạm:'}</strong><br>
-                ${svB.name ? `Họ tên: <b>${svB.name}</b> - MSSV: <code>${svB.mssv || 'N/A'}</code> (Lớp: ${svB.class_code || 'Chung'})` : `<span class="text-danger fw-semibold">${f.evidence || f.message || 'Sao chép văn bản bên ngoài dán vào file mẫu'}</span>`}
+                ${svB.name ? `Họ tên: <b>${escapeHtml(svB.name)}</b> - MSSV: <code>${escapeHtml(svB.mssv || 'N/A')}</code> (Lớp: ${escapeHtml(svB.class_code || 'Chung')})` : `<span class="text-danger fw-semibold">${escapeHtml(f.evidence || f.message || 'Sao chép văn bản bên ngoài dán vào file mẫu')}</span>`}
               </div>
             </div>
           </div>
@@ -1952,8 +1956,8 @@
       const sel = document.getElementById('sel-active-teacher');
       if (!sel) return;
       sel.innerHTML = allTeachersList.map(t => `
-        <option value="${t.id}" ${t.id === currentActiveTeacherId ? 'selected' : ''}>
-          ${t.name} (${t.title || 'GV'})
+        <option value="${escapeHtml(t.id)}" ${t.id === currentActiveTeacherId ? 'selected' : ''}>
+          ${escapeHtml(t.name)} (${escapeHtml(t.title || 'GV')})
         </option>
       `).join('');
     }
@@ -2008,20 +2012,20 @@
         const isActive = (t.id === currentActiveTeacherId);
         return `
           <tr class="${isActive ? 'table-primary bg-opacity-10 fw-semibold' : ''}">
-            <td class="text-center"><span class="badge bg-secondary">${t.id}</span></td>
-            <td><strong class="text-dark">${t.name}</strong></td>
-            <td>${t.title || '-'}</td>
-            <td>${t.department || '-'}</td>
-            <td class="small text-muted">${t.email || ''}${t.phone ? ' (' + t.phone + ')' : ''}</td>
+            <td class="text-center"><span class="badge bg-secondary">${escapeHtml(t.id)}</span></td>
+            <td><strong class="text-dark">${escapeHtml(t.name)}</strong></td>
+            <td>${escapeHtml(t.title || '-')}</td>
+            <td>${escapeHtml(t.department || '-')}</td>
+            <td class="small text-muted">${escapeHtml(t.email || '')}${t.phone ? ' (' + escapeHtml(t.phone) + ')' : ''}</td>
             <td class="text-center">
               ${isActive 
                 ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Đang chọn</span>' 
-                : `<button class="btn btn-sm btn-outline-success py-0 px-2 fw-bold" onclick="selectTeacherFromTable('${t.id}')"><i class="fa-solid fa-check me-1"></i> Chọn</button>`
+                : `<button class="btn btn-sm btn-outline-success py-0 px-2 fw-bold" onclick="selectTeacherFromTable(${jsArg(t.id)})"><i class="fa-solid fa-check me-1"></i> Chọn</button>`
               }
             </td>
             <td class="text-center">
-              <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openEditTeacherForm('${t.id}')" title="Sửa thông tin"><i class="fa-solid fa-pen-to-square"></i></button>
-              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteTeacher('${t.id}')" title="Xóa giảng viên"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1" onclick="openEditTeacherForm(${jsArg(t.id)})" title="Sửa thông tin"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteTeacher(${jsArg(t.id)})" title="Xóa giảng viên"><i class="fa-solid fa-trash"></i></button>
             </td>
           </tr>
         `;
@@ -2048,7 +2052,7 @@
     function openEditTeacherForm(teacherId) {
       const t = allTeachersList.find(x => x.id === teacherId);
       if (!t) return;
-      document.getElementById('form-teacher-title').innerHTML = `<i class="fa-solid fa-user-pen me-1"></i> Chỉnh Sửa Thông Tin: ${t.name}`;
+      document.getElementById('form-teacher-title').innerHTML = `<i class="fa-solid fa-user-pen me-1"></i> Chỉnh Sửa Thông Tin: ${escapeHtml(t.name)}`;
       document.getElementById('inp-teacher-id').value = t.id;
       document.getElementById('inp-teacher-name').value = t.name || '';
       document.getElementById('inp-teacher-title').value = t.title || '';
@@ -2167,13 +2171,13 @@
           <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
             <h6 class="fw-bold text-dark mb-0">
               <span class="badge bg-primary-subtle text-primary border me-1">Câu ${idx + 1}</span>
-              ${q.question}
+              ${escapeHtml(q.question)}
             </h6>
             <div class="d-flex align-items-center gap-1 text-nowrap">
               <button class="btn btn-sm btn-outline-primary fw-bold px-2 py-1" onclick="openEditQuestionModal(${idx})" title="Chỉnh sửa câu hỏi này">
                 <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
               </button>
-              <button class="btn btn-sm btn-outline-danger fw-bold px-2 py-1" onclick="deleteTeacherQuestion(${q.id})" title="Xóa câu hỏi">
+              <button class="btn btn-sm btn-outline-danger fw-bold px-2 py-1" onclick="deleteTeacherQuestion(${jsArg(q.id)})" title="Xóa câu hỏi">
                 <i class="fa-solid fa-trash me-1"></i> Xóa
               </button>
             </div>
@@ -2182,12 +2186,12 @@
             ${(q.options || []).map((opt, oIdx) => `
               <div class="py-1 ${oIdx === q.correct ? 'fw-bold text-success' : ''}">
                 <span class="badge ${oIdx === q.correct ? 'bg-success text-white' : 'bg-light text-secondary border'} me-1">${String.fromCharCode(65 + oIdx)}</span>
-                ${opt} ${oIdx === q.correct ? '✔ <span class="badge bg-success-subtle text-success ms-1">Đáp án đúng</span>' : ''}
+                ${escapeHtml(opt)} ${oIdx === q.correct ? '✔ <span class="badge bg-success-subtle text-success ms-1">Đáp án đúng</span>' : ''}
               </div>
             `).join('')}
           </div>
           <div class="mt-2 p-2 rounded bg-light small text-muted">
-            <i class="fa-solid fa-circle-info text-primary me-1"></i><strong>Giải thích NĐ 30:</strong> ${q.explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP'}
+            <i class="fa-solid fa-circle-info text-primary me-1"></i><strong>Giải thích NĐ 30:</strong> ${escapeHtml(q.explanation || 'Theo quy định Nghị định 30/2020/NĐ-CP')}
           </div>
         </div>
       `).join('');
@@ -2214,7 +2218,7 @@
       const q = currentTeacherQuizList[idx];
       if (!q) return;
 
-      document.getElementById('modal-quiz-title').innerHTML = `<i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi ${idx + 1} (ID: ${q.id})`;
+      document.getElementById('modal-quiz-title').innerHTML = `<i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa câu hỏi ${idx + 1} (ID: ${escapeHtml(q.id)})`;
       document.getElementById('quiz-edit-id').value = q.id;
       document.getElementById('quiz-edit-question').value = q.question || '';
       document.getElementById('quiz-edit-opt-0').value = (q.options && q.options[0]) || '';

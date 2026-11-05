@@ -6,9 +6,9 @@
   "enable_anti_cheat": false,
   "max_previews": 3,
   "enforce_preview_limit": false,
-  "active_doc_type": "cong_van_de_nghi",
+  "active_doc_type": "bai_thu_hoach",
   "message": "",
-  "active_teacher": "ThS. Nguyễn Văn A",
+  "active_teacher": "ThS. Cao Thành Trung",
   "active_teacher_id": "GV01",
-  "updated_at": "2026-11-05 12:12:02"
+  "updated_at": "2026-11-05 13:17:29"
 }

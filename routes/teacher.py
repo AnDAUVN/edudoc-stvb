@@ -11,6 +11,7 @@ import csv
 import json
 import datetime
 import functools
+import hmac
 from flask import Blueprint, request, jsonify, render_template, send_file, Response, current_app, session
 
 from engine.common import (
@@ -28,26 +29,34 @@ from engine.db import (
 
 teacher_bp = Blueprint("teacher", __name__)
 
+def _matches_teacher_pin(pin_val: Optional[str]) -> bool:
+    """Đối chiếu mã PIN với PIN cấu hình bảo mật (D20)"""
+    if not pin_val:
+        return False
+    pin_str = str(pin_val).strip()
+    expected_pin = current_app.config.get("TEACHER_PIN")
+    if not expected_pin:
+        return False
+    return hmac.compare_digest(pin_str.encode("utf-8"), str(expected_pin).strip().encode("utf-8"))
+
 def is_teacher_authenticated() -> bool:
     """Kiem tra xem yeu cau hien tai co quyen Giang vien hay khong (D20)"""
     # Cho phep bypass khi kiem thu tu dong, tru khi test chi dinh kiem tra phan quyen qua header
     if (current_app.testing or os.environ.get("EDUDOC_TESTING") == "1") and request.headers.get("X-Test-Auth-Required") != "1":
         return True
 
-    expected_pin = os.environ.get("TEACHER_PIN", "gv2026")
-
     # Kiem tra Flask session
     if session.get("is_teacher_auth"):
         return True
 
     # Kiem tra Header X-Teacher-PIN
-    if request.headers.get("X-Teacher-PIN") == expected_pin:
+    if _matches_teacher_pin(request.headers.get("X-Teacher-PIN")):
         return True
 
     # Kiem tra query param hoac JSON body
-    if request.args.get("teacher_pin") == expected_pin:
+    if _matches_teacher_pin(request.args.get("teacher_pin")):
         return True
-    if request.is_json and isinstance(request.json, dict) and request.json.get("teacher_pin") == expected_pin:
+    if request.is_json and isinstance(request.json, dict) and _matches_teacher_pin(request.json.get("teacher_pin")):
         return True
 
     return False
@@ -69,8 +78,7 @@ def teacher_auth():
     """Xác thực mã PIN Giảng viên và cấp phiên đăng nhập (D20)"""
     data = request.json or {}
     pin = str(data.get("pin", "")).strip()
-    expected_pin = os.environ.get("TEACHER_PIN", "gv2026")
-    if pin == expected_pin:
+    if _matches_teacher_pin(pin):
         session["is_teacher_auth"] = True
         return jsonify({
             "success": True,
@@ -469,23 +477,30 @@ def export_csv():
         
     output = io.StringIO()
     output.write('\ufeff')
-    writer = csv.writer(output)
+    csv_writer = csv.writer(output)
+
+    def write_row(values):
+        # Quoting CSV fields does not stop spreadsheet formula execution.
+        csv_writer.writerow([
+            "'" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@"))
+            else value for value in values
+        ])
     
     active_teacher = get_active_teacher()
     teacher_name = active_teacher.get("name", "Giảng viên bộ môn")
     dept = active_teacher.get("department", "Quản trị văn phòng")
     
-    writer.writerow(["BẢNG ĐIỂM BÀI TẬP SOẠN THẢO VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP)"])
-    writer.writerow([f"Giảng viên phụ trách: {teacher_name} ({dept})", f"Lớp: {class_filter}", f"Thời gian xuất: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
-    writer.writerow([])
-    writer.writerow([
+    write_row(["BẢNG ĐIỂM BÀI TẬP SOẠN THẢO VĂN BẢN (NGHỊ ĐỊNH 30/2020/NĐ-CP)"])
+    write_row([f"Giảng viên phụ trách: {teacher_name} ({dept})", f"Lớp: {class_filter}", f"Thời gian xuất: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    write_row([])
+    write_row([
         "STT", "Mã lớp KN", "Số báo danh (SBD)", "Mã số sinh viên (MSSV)", "Họ và tên",
         "Loại văn bản bài tập", "Tên file nộp", "Thời gian nộp", "Thời gian làm bài", "Số lần kiểm tra thử", "Cảnh báo gian lận / đối phó", "Kết quả thẩm định", "Điểm số quy đổi"
     ])
     
     for idx, s in enumerate(submissions):
         flag_text = ", ".join(s.get("flags", [])) if s.get("flags") else ("🚩 Nộp quá nhanh (< 2p)" if s.get("is_suspicious_speed") else "Bình thường")
-        writer.writerow([
+        write_row([
             idx + 1,
             s.get("class_code", "Chung"),
             s.get("sbd", ""),

@@ -4,6 +4,8 @@ import sys
 import subprocess
 import time
 import socket
+import shutil
+import tempfile
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT_DIR)
@@ -33,7 +35,8 @@ TEST_SUITES = [
     "test_audit_phase4.py",
     "test_audit_priorities.py",
     "test_audit_cn17_cn18.py",
-    "comprehensive_audit_suite.py"
+    "comprehensive_audit_suite.py",
+    "test_audit_repairs.py"
 ]
 
 def is_server_running(host="127.0.0.1", port=5000):
@@ -51,18 +54,30 @@ def main():
     print("=" * 70)
 
     server_process = None
+    server_log = None
+    if is_server_running():
+        print("[!] Cổng 5000 đang được sử dụng. Dừng kiểm thử để tránh tác động máy chủ đang chạy.")
+        return 1
     if not is_server_running():
         print(" [i] Máy chủ 127.0.0.1:5000 chưa chạy. Đang tự động khởi động máy chủ thử nghiệm...")
         server_env = os.environ.copy()
         server_env["EDUDOC_TESTING"] = "1"
-        server_process = subprocess.Popen([sys.executable, "app.py"], cwd=ROOT_DIR, env=server_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        server_log = open(os.path.join(ROOT_DIR, "server-test.log"), "w+", encoding="utf-8")
+        server_process = subprocess.Popen([sys.executable, "app.py"], cwd=ROOT_DIR, env=server_env,
+                                          stdout=server_log, stderr=subprocess.STDOUT)
         for _ in range(20):
             time.sleep(0.5)
             if is_server_running():
                 print(" [+] Máy chủ thử nghiệm đã sẵn sàng tại http://127.0.0.1:5000!")
                 break
         else:
-            print(" [!] Cảnh báo: Không thể kết nối tới máy chủ sau 10s.")
+            print(" [!] Không thể khởi động máy chủ thử nghiệm sau 10s; dừng kiểm thử.")
+            server_process.terminate()
+            server_process.wait(timeout=5)
+            server_log.seek(0)
+            print(server_log.read())
+            server_log.close()
+            return 1
 
     total = len(TEST_SUITES)
     passed = 0
@@ -106,6 +121,9 @@ def main():
                 server_process.wait(timeout=3)
             except:
                 server_process.kill()
+                server_process.wait(timeout=5)
+        if server_log:
+            server_log.close()
 
     duration = time.time() - start_time
     print("=" * 70)
@@ -116,5 +134,19 @@ def main():
 
     return 0 if failed == 0 else 1
 
+def run_isolated():
+    """Legacy suites mutate data and clear tables; always run on a disposable copy."""
+    with tempfile.TemporaryDirectory(prefix="edudoc-audit-", dir=os.path.dirname(ROOT_DIR)) as temp:
+        isolated = os.path.join(temp, "project")
+        shutil.copytree(ROOT_DIR, isolated, ignore=shutil.ignore_patterns(
+            ".git", "__pycache__", "*.zip", "venv", ".venv", "env",
+            ".session-key", ".teacher-pin", "*.db-wal", "*.db-shm"
+        ))
+        env = os.environ.copy()
+        env.update({"EDUDOC_TEST_WORKER": "1", "EDUDOC_TESTING": "1", "TEACHER_PIN": "gv2026"})
+        return subprocess.run([sys.executable, "-u", os.path.join(isolated, "tests", "run_all_tests.py")],
+                              cwd=isolated, env=env).returncode
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main() if os.environ.get("EDUDOC_TEST_WORKER") == "1" else run_isolated())

@@ -51,7 +51,7 @@ def check_client_device(class_code: str, mssv: str):
     if not device_id:
         device_id = request.args.get("device_id")
 
-    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1" or "werkzeug" in request.headers.get("User-Agent", "").lower())
+    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
     if not device_id:
         if is_testing and request.headers.get("X-Test-Enforce-Device") != "1":
             return {"valid": True, "status": "BYPASS_TEST"}
@@ -395,7 +395,7 @@ def submit_quiz():
             "feedback": []
         }), 400
 
-    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1" or "werkzeug" in request.headers.get("User-Agent", "").lower())
+    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
     # P0/P1 Audit: Bắt buộc attempt_id theo server policy
     enforce_attempt = (request.headers.get("X-Test-Enforce-Attempt") == "1") or not is_testing
     if not attempt_id and enforce_attempt:
@@ -616,7 +616,7 @@ def generate_template():
 
     # D06: Ràng buộc phải vượt qua trắc nghiệm mới được cấp phôi
     state = get_session_state(class_code)
-    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1" or "werkzeug" in request.headers.get("User-Agent", "").lower())
+    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
     if is_testing:
         enforce_quiz = (request.headers.get("X-Test-Enforce-Quiz") == "1")
     else:
@@ -650,7 +650,8 @@ def generate_template():
     if doc_type == "bai_thu_hoach":
         file_suffix = "Bài thu hoạch"
     file_suffix = re.sub(r'[\\/*?:"<>|]', '', file_suffix)
-    filename = f"{sbd}_{mssv}_{clean_name}_{file_suffix}.docx"
+    # Keep the identity prefix, but never overwrite a template from another class/request.
+    filename = f"{sbd}_{mssv}_{class_code}_{uuid.uuid4().hex}_{clean_name}_{file_suffix}.docx"
     try:
         output_path = safe_storage_path(STORAGE_TEMPLATES, filename)
     except ValueError:
@@ -990,7 +991,7 @@ def submit_final():
             }), 403
 
     # CN17: Kiểm tra một lượt cho mỗi bài nộp Word (NT04, NT05, NT06, NT07, NT08, V5 08)
-    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1" or "werkzeug" in request.headers.get("User-Agent", "").lower())
+    is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
     enforce_single = (request.headers.get("X-Test-Enforce-Single-Attempt") == "1") or not is_testing
     existing_sub = None
     permit = None
@@ -1047,7 +1048,7 @@ def submit_final():
         kw = getattr(core_p, "keywords", "") or ""
         
         # Priority 5 & S07-S10: Khi bật chế độ yêu cầu phôi hoặc có chữ ký số STVB
-        is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1" or "werkzeug" in request.headers.get("User-Agent", "").lower())
+        is_testing = bool(current_app.testing or current_app.config.get("TESTING") or os.environ.get("EDUDOC_TESTING") == "1")
         require_phoi = (request.headers.get("X-Test-Enforce-Phoi") == "1") or (not is_testing and is_anti_cheat_enabled(class_code, current_app.testing))
         if require_phoi and not (token_hdr.startswith("STVB_SIGNATURE:") and kw):
             if os.path.exists(temp_path):
