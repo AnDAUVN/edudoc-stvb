@@ -1319,14 +1319,41 @@
               </div>`,
               confirmButtonText: 'Đã hiểu'
             });
-          } else {
-            Swal.fire({
-              icon: 'warning',
-              title: 'HỆ THỐNG ĐANG TẠM KHÓA',
-              text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
-              confirmButtonText: 'Đã hiểu'
-            });
+            return;
           }
+          if (data.quiz_completed) {
+            if (data.passed) {
+              Swal.fire({
+                icon: 'success',
+                title: 'BẠN ĐÃ ĐẠT BÀI TRẮC NGHIỆM',
+                html: `<div class="text-start">
+                  <p>Bạn đã hoàn thành và đạt bài trắc nghiệm với điểm số <strong>${escapeHtml(data.score != null ? data.score : 5)}/5</strong> câu!</p>
+                  <p class="text-secondary small mb-0">Bạn đã đủ điều kiện nhận đề bài. Vui lòng bấm nút bên dưới để tải phôi bài tập và bắt đầu làm bài Word.</p>
+                </div>`,
+                confirmButtonText: '<i class="fa-solid fa-download me-1"></i> Tải phôi bài tập ngay',
+                confirmButtonColor: '#10b981'
+              }).then((r) => {
+                if (r.isConfirmed) {
+                  triggerTemplateGeneration();
+                }
+              });
+            } else {
+              Swal.fire({
+                icon: 'warning',
+                title: 'THÔNG BÁO LƯỢT LÀM BÀI',
+                text: data.error || 'Lượt làm bài trắc nghiệm này đã hoàn thành. Vui lòng liên hệ Giảng viên để được cấp quyền làm lại!',
+                confirmButtonText: 'Đã hiểu',
+                confirmButtonColor: '#f59e0b'
+              });
+            }
+            return;
+          }
+          Swal.fire({
+            icon: 'warning',
+            title: 'HỆ THỐNG ĐANG TẠM KHÓA',
+            text: data.error || 'Phòng làm bài hiện đang tạm khóa để sinh viên nghe giảng lý thuyết.',
+            confirmButtonText: 'Đã hiểu'
+          });
           return;
         }
 
@@ -1424,6 +1451,13 @@
     function renderQuiz(questions) {
       const container = document.getElementById('quiz-container');
       container.innerHTML = '';
+      const btnSubmit = document.getElementById('btn-submit-quiz');
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.className = 'btn btn-success px-4 py-2 fw-bold shadow-sm';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Nộp bài trắc nghiệm';
+        btnSubmit.onclick = () => checkQuizAnswers();
+      }
       questions.forEach((q, idx) => {
         let optsHtml = '';
         q.options.forEach((opt, optIdx) => {
@@ -1540,7 +1574,31 @@
           Swal.fire('Chúc mừng!', `Bạn đạt ${data.score}/${data.total} câu trắc nghiệm! Đủ điều kiện nhận File mẫu thực hành.`, 'success');
           triggerTemplateGeneration();
         } else {
-          Swal.fire('Chưa đạt yêu cầu', `Bạn đạt ${data.score}/${data.total} câu. Vui lòng xem lại giải thích và làm lại để đạt tối thiểu ${data.pass_score}/${data.total} câu.`, 'warning');
+          if (window.quizTimerInterval) clearInterval(window.quizTimerInterval);
+          window.currentQuizAttemptId = null;
+          const btnSubmit = document.getElementById('btn-submit-quiz');
+          if (btnSubmit) {
+            btnSubmit.innerHTML = '<i class="fa-solid fa-rotate-right me-1"></i> Làm lại bài trắc nghiệm';
+            btnSubmit.className = 'btn btn-warning px-4 py-2 fw-bold shadow-sm';
+            btnSubmit.onclick = () => { startQuiz(true); };
+          }
+          Swal.fire({
+            icon: 'warning',
+            title: 'CHƯA ĐẠT ĐIỀU KIỆN NHẬN ĐỀ',
+            html: `<div class="text-start">
+              <p>Bạn đạt <strong>${escapeHtml(data.score)}/${escapeHtml(data.total)}</strong> câu (yêu cầu tối thiểu ${escapeHtml(data.pass_score)}/${escapeHtml(data.total)} câu để nhận phôi bài).</p>
+              <p class="text-secondary small mb-0">Vui lòng xem lại giải thích ở các câu sai màu đỏ bên dưới, sau đó bấm <strong>"Làm lại ngay"</strong> để thử lại lượt mới.</p>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-rotate-right me-1"></i> Làm lại ngay',
+            cancelButtonText: 'Xem giải thích',
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#6b7280'
+          }).then((r) => {
+            if (r.isConfirmed) {
+              startQuiz(true);
+            }
+          });
         }
       } catch (err) {
         Swal.fire('Lỗi kết nối', 'Không thể kết nối máy chủ: ' + err, 'error');

@@ -1306,8 +1306,21 @@ def grant_reattempt():
     allowed, teacher_name = check_teacher_class_access(class_code)
     if not allowed:
         return jsonify({"error": f"Giảng viên không có thẩm quyền đối với lớp [{class_code}]!"}), 403
-    from engine.db import grant_reattempt_permission
+    if not doc_type:
+        from engine.common import get_session_state
+        doc_type = get_session_state(class_code).get("active_doc_type", "bai_thu_hoach")
+    from engine.db import grant_reattempt_permission, get_db_connection
     pid = grant_reattempt_permission(class_code, mssv, doc_type, permitted_by=teacher_name, reason=reason)
+    # Tự động mở lại lượt làm trắc nghiệm cho sinh viên nếu đã hoàn thành/hết giờ trước đó
+    conn = get_db_connection()
+    try:
+        with conn:
+            conn.execute(
+                "UPDATE quiz_attempts SET status = 'RESET' WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ?;",
+                (class_code.upper(), mssv.lower(), doc_type)
+            )
+    finally:
+        conn.close()
     return jsonify({"success": True, "permission_id": pid, "message": f"Đã cấp quyền làm lại bài cho sinh viên {mssv}!"})
 
 @teacher_bp.route("/api/teacher/submissions/history", methods=["GET"])

@@ -392,6 +392,9 @@
               <button type="button" class="btn btn-sm btn-outline-success fw-bold text-nowrap" onclick="openImportRosterModal()">
                 <i class="fa-solid fa-file-import me-1"></i> Dán danh sách Excel
               </button>
+              <button type="button" class="btn btn-sm btn-outline-primary fw-bold text-nowrap" onclick="promptGrantReattemptManual()" title="Cấp quyền làm lại bài thi hoặc mở lại trắc nghiệm theo MSSV">
+                <i class="fa-solid fa-key me-1"></i> Cấp quyền làm lại (MSSV)
+              </button>
               <button type="button" class="btn btn-sm btn-outline-warning fw-bold text-dark text-nowrap" onclick="clearClassRoster()" title="Xóa toàn bộ sinh viên trong lớp này nhưng giữ lại mã lớp">
                 <i class="fa-solid fa-eraser me-1"></i> Làm trống lớp
               </button>
@@ -931,25 +934,111 @@
         inputLabel: 'Lý do cấp quyền làm lại:',
         inputValue: 'Giảng viên cho phép làm lại',
         showCancelButton: true,
-        confirmButtonText: 'Đồng ý cấp quyền',
-        cancelButtonText: 'Hủy'
+        confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Đồng ý cấp quyền',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#f59e0b'
       });
       if (reason) {
         try {
           const res = await fetch('/api/teacher/reattempt/grant', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType, reason: reason })
+            headers: getTeacherHeaders(),
+            body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType, reason: reason.trim() })
           });
           const data = await res.json();
-          if (res.ok) {
+          if (res.ok && data.success) {
             Swal.fire('Thành công', data.message || 'Đã cấp quyền làm lại bài cho sinh viên!', 'success');
+            loadTeacherData();
           } else {
             Swal.fire('Lỗi', data.error || 'Không thể cấp quyền làm lại', 'error');
           }
         } catch (e) {
           Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
         }
+      }
+    }
+
+    async function grantReattemptFromRoster(classCode, mssv, studentName) {
+      const { value: reason } = await Swal.fire({
+        title: 'Cấp quyền làm lại bài',
+        html: `<p>Xác nhận cấp quyền làm lại bài (trắc nghiệm & nộp bài) cho sinh viên:<br><strong>${escapeHtml(studentName || mssv)}</strong> (MSSV: <strong>${escapeHtml(mssv)}</strong>) - Lớp: <strong>${escapeHtml(classCode)}</strong>?</p>`,
+        input: 'text',
+        inputLabel: 'Lý do cấp quyền làm lại:',
+        inputValue: 'Giảng viên cho phép làm lại',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Đồng ý cấp quyền',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#f59e0b',
+        inputValidator: (val) => (!val || !val.trim()) ? 'Vui lòng nhập lý do!' : null
+      });
+      if (!reason) return;
+      try {
+        const docType = allTeacherData.active_doc_type || 'bai_thu_hoach';
+        const res = await fetch('/api/teacher/reattempt/grant', {
+          method: 'POST',
+          headers: getTeacherHeaders(),
+          body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType, reason: reason.trim() })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          Swal.fire('Thành công', data.message || `Đã cấp quyền làm lại bài cho sinh viên ${escapeHtml(mssv)}!`, 'success');
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể cấp quyền làm lại', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi kết nối', 'Không thể gửi yêu cầu cấp quyền: ' + err, 'error');
+      }
+    }
+
+    async function promptGrantReattemptManual() {
+      const classes = (allTeacherData && allTeacherData.classes) ? allTeacherData.classes.filter(c => c !== 'ALL') : [];
+      let classOptions = classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      const { value: formValues } = await Swal.fire({
+        title: 'Cấp quyền làm lại bài',
+        html: `
+          <div class="text-start mb-2">
+            <label class="form-label small fw-bold">Chọn lớp học:</label>
+            <select id="swal-inp-class" class="form-select form-select-sm mb-2">${classOptions}</select>
+            <label class="form-label small fw-bold">Mã số sinh viên (MSSV):</label>
+            <input id="swal-inp-mssv" class="form-control form-control-sm mb-2" placeholder="Ví dụ: 2400005766">
+            <label class="form-label small fw-bold">Lý do:</label>
+            <input id="swal-inp-reason" class="form-control form-control-sm" value="Giảng viên cho phép làm lại bài">
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Cấp quyền',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#f59e0b',
+        preConfirm: () => {
+          const c = document.getElementById('swal-inp-class').value;
+          const m = document.getElementById('swal-inp-mssv').value.trim();
+          const r = document.getElementById('swal-inp-reason').value.trim();
+          if (!m) {
+            Swal.showValidationMessage('Vui lòng nhập MSSV!');
+            return false;
+          }
+          return { class_code: c, mssv: m, reason: r };
+        }
+      });
+      if (!formValues) return;
+      try {
+        const docType = allTeacherData.active_doc_type || 'bai_thu_hoach';
+        const res = await fetch('/api/teacher/reattempt/grant', {
+          method: 'POST',
+          headers: getTeacherHeaders(),
+          body: JSON.stringify({ ...formValues, doc_type: docType })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          Swal.fire('Thành công', data.message || `Đã cấp quyền làm lại bài cho sinh viên ${escapeHtml(formValues.mssv)}!`, 'success');
+          loadTeacherData();
+        } else {
+          Swal.fire('Lỗi', data.error || 'Không thể cấp quyền làm lại', 'error');
+        }
+      } catch (err) {
+        Swal.fire('Lỗi kết nối', 'Không thể gửi yêu cầu cấp quyền: ' + err, 'error');
       }
     }
 
@@ -1549,6 +1638,9 @@
           <td><span class="badge bg-secondary-subtle text-secondary border font-monospace">${escapeHtml(s.student_class || '-')}</span></td>
           <td><span class="badge bg-light text-dark border">${escapeHtml(selClass)}</span></td>
           <td class="text-center">
+            <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattemptFromRoster(${jsArg(selClass)}, ${jsArg(s.mssv)}, ${jsArg(s.name)})" title="Cấp quyền làm lại bài / Mở khóa cho sinh viên">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster(${jsArg(selClass)}, ${jsArg(s.mssv)})" title="Xóa sinh viên">
               <i class="fa-solid fa-user-xmark"></i>
             </button>

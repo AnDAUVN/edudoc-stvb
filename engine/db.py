@@ -1368,7 +1368,7 @@ def is_quiz_passed_for_student(class_code: str, mssv: str, doc_type: str, db_pat
         row = conn.execute("""
             SELECT COUNT(*) FROM quiz_attempts
             WHERE UPPER(class_code) = ? AND LOWER(mssv) = ? AND doc_type = ?
-              AND status = 'COMPLETED' AND score >= 8.0;
+              AND status = 'COMPLETED' AND (passed = 1 OR score >= 4);
         """, (c_clean, m_clean, d_clean)).fetchone()
         if row and row[0] > 0:
             return True
