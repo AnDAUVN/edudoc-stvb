@@ -3,12 +3,12 @@
   "is_open": false,
   "enforce_roster": true,
   "enforce_quiz": false,
-  "enable_anti_cheat": true,
+  "enable_anti_cheat": false,
   "max_previews": 3,
   "enforce_preview_limit": false,
   "active_doc_type": "bai_thu_hoach",
   "message": "",
   "active_teacher": "ThS. Cao Thành Trung",
   "active_teacher_id": "GV01",
-  "updated_at": "2026-11-06 09:31:58"
+  "updated_at": "2026-11-06 15:53:02"
 }
