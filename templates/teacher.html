@@ -695,6 +695,9 @@
               <small class="text-secondary">Phê duyệt hoặc từ chối sinh viên đổi máy tính khi gặp sự cố kỹ thuật hoặc đổi chỗ thi.</small>
             </div>
             <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="promptResetDeviceManual()">
+                <i class="fa-solid fa-unlock me-1"></i> Mở khóa nhanh theo MSSV
+              </button>
               <button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="loadDeviceRequests()">
                 <i class="fa-solid fa-rotate-right me-1"></i> Làm mới danh sách
               </button>
@@ -1176,6 +1179,67 @@
         } else {
           Swal.fire('Lỗi', d.error || 'Lỗi khi từ chối', 'error');
         }
+      }
+    }
+
+    async function resetDeviceFromRoster(classCode, mssv, studentName) {
+      const ok = await Swal.fire({
+        title: 'Mở khóa thiết bị (Đổi máy)?',
+        html: `<p>Mở khóa thiết bị cho sinh viên:<br><strong>${escapeHtml(studentName || mssv)}</strong> (MSSV: <strong>${escapeHtml(mssv)}</strong>)?<br><small class="text-muted">Sinh viên sẽ được liên kết với máy tính mới ngay khi làm bài.</small></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-unlock me-1"></i> Mở khóa ngay',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#3b82f6'
+      });
+      if (ok.isConfirmed) {
+        try {
+          const res = await fetch('/api/teacher/device/reset', {
+            method: 'POST',
+            headers: getTeacherHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ class_code: classCode, mssv: mssv })
+          });
+          const d = await res.json();
+          if (res.ok) {
+            Swal.fire('Thành công', d.message || 'Đã mở khóa thiết bị thành công!', 'success');
+            loadDeviceRequests();
+          } else {
+            Swal.fire('Lỗi', d.error || 'Lỗi khi mở khóa thiết bị', 'error');
+          }
+        } catch (e) {
+          Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
+        }
+      }
+    }
+
+    async function promptResetDeviceManual() {
+      const { value: mssv } = await Swal.fire({
+        title: 'Mở khóa thiết bị theo MSSV',
+        input: 'text',
+        inputLabel: 'Nhập Mã số sinh viên (MSSV) cần mở khóa máy:',
+        placeholder: 'Ví dụ: 2400002769',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fa-solid fa-unlock me-1"></i> Mở khóa máy',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#10b981',
+        inputValidator: (val) => (!val || !val.trim()) ? 'Vui lòng nhập MSSV!' : null
+      });
+      if (!mssv) return;
+      try {
+        const res = await fetch('/api/teacher/device/reset', {
+          method: 'POST',
+          headers: getTeacherHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ mssv: mssv.trim() })
+        });
+        const d = await res.json();
+        if (res.ok) {
+          Swal.fire('Thành công', d.message || 'Đã mở khóa thiết bị thành công!', 'success');
+          loadDeviceRequests();
+        } else {
+          Swal.fire('Lỗi', d.error || 'Lỗi khi mở khóa thiết bị', 'error');
+        }
+      } catch (e) {
+        Swal.fire('Lỗi', 'Không thể kết nối máy chủ: ' + e, 'error');
       }
     }
 
@@ -1705,8 +1769,11 @@
           <td><span class="badge bg-secondary-subtle text-secondary border font-monospace">${escapeHtml(s.student_class || '-')}</span></td>
           <td><span class="badge bg-light text-dark border">${escapeHtml(selClass)}</span></td>
           <td class="text-center">
-            <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattemptFromRoster(${jsArg(selClass)}, ${jsArg(s.mssv)}, ${jsArg(s.name)})" title="Cấp quyền làm lại bài / Mở khóa cho sinh viên">
+            <button class="btn btn-sm btn-outline-warning me-1" onclick="grantReattemptFromRoster(${jsArg(selClass)}, ${jsArg(s.mssv)}, ${jsArg(s.name)})" title="Cấp quyền làm lại bài / Mở khóa trắc nghiệm">
               <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="resetDeviceFromRoster(${jsArg(selClass)}, ${jsArg(s.mssv)}, ${jsArg(s.name)})" title="Mở khóa máy (Đổi thiết bị) cho sinh viên">
+              <i class="fa-solid fa-laptop"></i>
             </button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteStudentRoster(${jsArg(selClass)}, ${jsArg(s.mssv)})" title="Xóa sinh viên">
               <i class="fa-solid fa-user-xmark"></i>

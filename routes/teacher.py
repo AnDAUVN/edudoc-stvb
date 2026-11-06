@@ -2618,6 +2618,29 @@ def reject_teacher_device():
 
 
 
+
+@teacher_bp.route("/api/teacher/device/reset", methods=["POST"])
+@require_teacher_auth
+def reset_teacher_device():
+    """Mở khóa / Reset thiết bị trực tiếp cho sinh viên theo MSSV (CN18)"""
+    data = request.json or {}
+    mssv = str(data.get("mssv", "")).strip().lower()
+    class_code = str(data.get("class_code", "")).strip().upper()
+    if not mssv:
+        return jsonify({"error": "Thiếu MSSV"}), 400
+
+    if class_code and class_code != "ALL":
+        allowed, teacher_name = check_teacher_class_access(class_code)
+        if not allowed:
+            return jsonify({"error": f"Giảng viên không phụ trách lớp [{class_code}]!"}), 403
+    else:
+        teacher_name = session.get("active_teacher") or get_active_teacher().get("name", "Giảng viên")
+
+    from engine.db import reset_student_device_binding
+    ok = reset_student_device_binding(class_code, mssv, reset_by=teacher_name)
+    if ok:
+        return jsonify({"success": True, "message": f"Đã mở khóa thiết bị thành công cho sinh viên [{mssv.upper()}]!"})
+    return jsonify({"error": f"Không thể mở khóa cho sinh viên [{mssv.upper()}]!"}), 400
 @teacher_bp.route("/api/teacher/reattempt/grant", methods=["POST"])
 
 @require_teacher_auth

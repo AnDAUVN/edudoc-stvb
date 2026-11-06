@@ -35,8 +35,12 @@ def create_app():
 
     @application.before_request
     def validate_json_object():
-        if request.is_json and not isinstance(request.get_json(), dict):
-            return jsonify({"error": "Dữ liệu JSON phải là một đối tượng (object)."}), 400
+        if request.method in ["GET", "HEAD", "OPTIONS"]:
+            return None
+        if request.is_json and request.data:
+            data = request.get_json(silent=True)
+            if data is not None and not isinstance(data, dict):
+                return jsonify({"error": "Dữ liệu JSON phải là một đối tượng (object)."}), 400
 
     @application.errorhandler(400)
     def invalid_request(error):

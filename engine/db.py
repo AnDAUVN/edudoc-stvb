@@ -1666,6 +1666,30 @@ def get_device_change_request_by_id(request_id: str, db_path: Optional[str] = No
         conn.close()
 
 
+
+def reset_student_device_binding(class_code: str, mssv: str, reset_by: str = "Giảng viên", db_path: Optional[str] = None) -> bool:
+    """Mở khóa / Reset liên kết thiết bị cho sinh viên theo MSSV và tự động duyệt mọi yêu cầu đổi thiết bị PENDING (CN18)"""
+    conn = get_db_connection(db_path)
+    try:
+        now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        m_clean = str(mssv or "").strip().lower()
+        if not m_clean:
+            return False
+        with conn:
+            conn.execute("""
+                UPDATE device_bindings
+                SET status = 'INACTIVE', last_active_at = ?
+                WHERE LOWER(mssv) = ? AND status = 'ACTIVE';
+            """, (now_str, m_clean))
+            conn.execute("""
+                UPDATE device_change_requests
+                SET status = 'APPROVED', resolved_at = ?, resolved_by = ?
+                WHERE LOWER(mssv) = ? AND status = 'PENDING';
+            """, (now_str, reset_by, m_clean))
+            return True
+    finally:
+        conn.close()
+
 # =========================================================================
 # CN17: MỘT LƯỢT CHO MỖI BÀI VÀ QUẢN LÝ QUYỀN LÀM LẠI (SINGLE ATTEMPT / RE-ATTEMPT)
 # =========================================================================
