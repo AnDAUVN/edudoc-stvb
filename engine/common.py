@@ -331,11 +331,11 @@ def cleanup_old_uploads(max_age_seconds: int = 7200) -> int:
 DEFAULT_TEACHERS = [
     {
         "id": "GV01",
-        "name": "ThS. Nguyễn Văn A",
-        "title": "Giảng viên chính",
-        "department": "Bộ môn Quản trị văn phòng",
-        "email": "nguyenvana@truong.edu.vn",
-        "phone": "0901234567"
+        "name": "ThS. Cao Thành Trung",
+        "title": "",
+        "department": "Hành chính văn phòng",
+        "email": "cttrung@ntt.edu.vn",
+        "phone": ""
     },
     {
         "id": "GV02",

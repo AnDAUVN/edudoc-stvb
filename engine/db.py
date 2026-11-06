@@ -240,7 +240,7 @@ def init_db(db_path: Optional[str] = None) -> None:
         
         # Đảm bảo cột active_teacher và active_teacher_id tồn tại trong session_state
         try:
-            conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher TEXT DEFAULT 'ThS. Nguyễn Văn A';")
+            conn.execute("ALTER TABLE session_state ADD COLUMN active_teacher TEXT DEFAULT 'ThS. Cao Thành Trung';")
         except Exception:
             pass
         try:
@@ -871,7 +871,7 @@ def get_session_state_db(class_code: str = "", db_path: Optional[str] = None) ->
 
         if row:
             keys = row.keys()
-            act_teacher = row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A"
+            act_teacher = row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Cao Thành Trung"
             act_teacher_id = row["active_teacher_id"] if "active_teacher_id" in keys and row["active_teacher_id"] else "GV01"
             return {
                 "key": row["key"],
@@ -897,7 +897,7 @@ def get_session_state_db(class_code: str = "", db_path: Optional[str] = None) ->
             "enforce_preview_limit": False,
             "active_doc_type": "cong_van_de_nghi",
             "message": "Phòng làm bài đang mở.",
-            "active_teacher": "ThS. Nguyễn Văn A",
+            "active_teacher": "ThS. Cao Thành Trung",
             "active_teacher_id": "GV01",
             "updated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -924,7 +924,7 @@ def save_session_state_db(state: Dict[str, Any], class_code: str = "", db_path: 
         cur_enforce_prev = bool(row["enforce_preview_limit"]) if row and "enforce_preview_limit" in keys else False
         cur_active = (row["active_doc_type"] or "cong_van_de_nghi") if row else "cong_van_de_nghi"
         cur_msg = (row["message"] or "") if row else "Phòng làm bài đang mở."
-        cur_teacher = (row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Nguyễn Văn A") if row else "ThS. Nguyễn Văn A"
+        cur_teacher = (row["active_teacher"] if "active_teacher" in keys and row["active_teacher"] else "ThS. Cao Thành Trung") if row else "ThS. Cao Thành Trung"
         cur_teacher_id = (row["active_teacher_id"] if "active_teacher_id" in keys and row["active_teacher_id"] else "GV01") if row else "GV01"
 
         is_open = state["is_open"] if "is_open" in state else cur_is_open

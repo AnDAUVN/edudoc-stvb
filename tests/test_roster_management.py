@@ -33,7 +33,7 @@ class TestRosterManagement(unittest.TestCase):
             from engine.db import DB_PATH
             with sqlite3.connect(DB_PATH) as conn:
                 conn.execute("DELETE FROM quiz_attempts WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
-                conn.execute("DELETE FROM device_bindings WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.execute("DELETE FROM device_bindings WHERE mssv = '2100001234' OR class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
                 conn.commit()
         except Exception:
             pass
@@ -48,7 +48,7 @@ class TestRosterManagement(unittest.TestCase):
             from engine.db import DB_PATH
             with sqlite3.connect(DB_PATH) as conn:
                 conn.execute("DELETE FROM quiz_attempts WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
-                conn.execute("DELETE FROM device_bindings WHERE class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
+                conn.execute("DELETE FROM device_bindings WHERE mssv = '2100001234' OR class_code IN ('BLOCK_CLS', 'TEST_XOA_LOP')")
                 conn.commit()
         except Exception:
             pass

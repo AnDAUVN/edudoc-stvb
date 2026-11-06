@@ -15,6 +15,7 @@ from app import app, SESSION_STATE_FILE, save_json_file, load_json_file
 
 class TestSessionControl(unittest.TestCase):
     def setUp(self):
+        app.testing = True
         self.client = app.test_client()
         # Lưu lại state ban đầu và chuẩn bị state sạch cho test
         self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": True, "active_doc_type": "cong_van_de_nghi"})

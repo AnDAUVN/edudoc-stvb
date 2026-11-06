@@ -178,7 +178,7 @@
                 <i class="fa-solid fa-lock me-1"></i> Đang Khóa (Giảng lý thuyết)
               </span>
               <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill" id="badge-card-teacher">
-                <i class="fa-solid fa-user-tie me-1"></i> GV phụ trách: <strong id="lbl-card-active-teacher">ThS. Nguyễn Văn A</strong>
+                <i class="fa-solid fa-user-tie me-1"></i> GV phụ trách: <strong id="lbl-card-active-teacher">{{ active_teacher.name if active_teacher else 'ThS. Cao Thành Trung' }}</strong>
               </span>
             </div>
             <div class="text-secondary small mt-1" id="text-teacher-session-desc">
@@ -1363,6 +1363,7 @@
         renderFilteredFraudLogs(allTeacherData.fraud_logs || []);
         renderRosterTable(allTeacherData.students_roster || {});
         renderClassAnalytics(allTeacherData.submissions || [], allTeacherData.fraud_logs || []);
+        loadDeviceRequests();
       } catch (err) {
         console.error('Lỗi nạp dữ liệu Giảng viên:', err);
       }
@@ -1454,7 +1455,7 @@
       try {
         const res = await fetch('/api/teacher/session-state', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ is_open: newIsOpen })
         });
         const data = await res.json();
@@ -1479,7 +1480,7 @@
       try {
         const res = await fetch('/api/teacher/set-active-doc', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ doc_type: docType })
         });
         const data = await res.json();
@@ -1500,7 +1501,16 @@
 
     async function toggleTeacherRosterMode() {
       try {
-        const res = await fetch('/api/teacher/roster-toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const selClass = document.getElementById('sel-roster-class') ? document.getElementById('sel-roster-class').value : 'ALL';
+        const res = await fetch('/api/teacher/roster-toggle', {
+          method: 'POST',
+          headers: getTeacherHeaders(),
+          body: JSON.stringify({ class_code: selClass })
+        });
+        if (res.status === 401) {
+          promptTeacherPIN();
+          return;
+        }
         const data = await res.json();
         if (data.success) {
           Swal.fire({
@@ -1519,11 +1529,15 @@
 
     async function toggleTeacherAntiCheatMode() {
       try {
-        const res = await fetch('/api/teacher/anti-cheat-toggle', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch('/api/teacher/anti-cheat-toggle', {
+          method: 'POST',
+          headers: getTeacherHeaders(),
           body: JSON.stringify({})
         });
+        if (res.status === 401) {
+          promptTeacherPIN();
+          return;
+        }
         const data = await res.json();
         if (data.success) {
           Swal.fire({
@@ -1651,7 +1665,7 @@
       try {
         const resp = await fetch('/api/teacher/submissions/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: classCode, mssv: mssv, doc_type: docType })
         });
         const d = await resp.json();
@@ -1732,7 +1746,7 @@
       try {
         const res = await fetch('/api/teacher/students/add', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: c, sbd: sbd, mssv: mssv, name: name, student_class: stClass })
         });
         const data = await res.json();
@@ -1770,7 +1784,7 @@
       try {
         const res = await fetch('/api/teacher/students/import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: c, raw_text: raw, overwrite: overwrite })
         });
         const data = await res.json();
@@ -1801,7 +1815,7 @@
       try {
         const resp = await fetch('/api/teacher/students/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: classCode, mssv: mssv })
         });
         const d = await resp.json();
@@ -1834,7 +1848,7 @@
       try {
         const resp = await fetch('/api/teacher/students/clear', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: c })
         });
         const d = await resp.json();
@@ -1888,7 +1902,7 @@
       try {
         const resp = await fetch('/api/classes/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: classCode })
         });
         const data = await resp.json();
@@ -1941,7 +1955,7 @@
       try {
         const resp = await fetch('/api/classes/add', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ class_code: cleanCode })
         });
         const data = await resp.json();
@@ -2011,7 +2025,7 @@
       try {
         const res = await fetch('/api/teacher/fraud/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ id: logId })
         });
         const d = await res.json();
@@ -2036,7 +2050,7 @@
       if (!res.isConfirmed) return;
 
       try {
-        const resp = await fetch('/api/teacher/fraud/clear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const resp = await fetch('/api/teacher/fraud/clear', { method: 'POST', headers: getTeacherHeaders(), body: JSON.stringify({}) });
         const d = await resp.json();
         if (d.success) {
           Swal.fire('Thành công', d.message, 'success');
@@ -2082,7 +2096,7 @@
       try {
         const res = await fetch('/api/teacher/templates/save', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({
             doc_type: docType,
             is_body_blank: isBlank,
@@ -2138,7 +2152,7 @@
       try {
         const res = await fetch('/api/teacher/teachers/select', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ id: teacherId })
         });
         const d = await res.json();
@@ -2255,7 +2269,7 @@
       try {
         const res = await fetch('/api/teacher/teachers/save', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ id, name, title, department: dept, email, phone })
         });
         const d = await res.json();
@@ -2296,7 +2310,7 @@
       try {
         const res = await fetch('/api/teacher/teachers/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ id: teacherId })
         });
         const d = await res.json();
@@ -2478,7 +2492,7 @@
       try {
         const resp = await fetch('/api/teacher/quiz/delete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getTeacherHeaders(),
           body: JSON.stringify({ doc_type: docType, id: qId })
         });
         const d = await resp.json();

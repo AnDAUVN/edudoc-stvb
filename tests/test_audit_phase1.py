@@ -33,6 +33,7 @@ from engine.db import get_student_session, save_student_session
 
 class TestAuditPhase1(unittest.TestCase):
     def setUp(self):
+        app.testing = True
         self.client = app.test_client()
         self.original_roster = load_json_file(STUDENTS_ROSTER_FILE, {})
         self.original_state = load_json_file(SESSION_STATE_FILE, {"is_open": True, "enforce_roster": True})
