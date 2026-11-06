@@ -170,5 +170,15 @@ if __name__ == "__main__":
 
     try:
         app.run(host="0.0.0.0", port=5000, debug=False)
+    except OSError as e:
+        if "10048" in str(e) or "Address already in use" in str(e):
+            print("\n" + "=" * 78)
+            print("  [THONG BAO] He thong EDUDOC dang chay san tren cong 5000!")
+            print("  Ban co the mo trinh duyet va truy cap ngay:")
+            print("  - Ban lam viec Giang vien: http://127.0.0.1:5000/gv")
+            print(f"  - Ban lam bai Sinh vien:   http://{local_ip}:5000/thi")
+            print("=" * 78)
+        else:
+            raise e
     finally:
         shutdown_tunnel()
