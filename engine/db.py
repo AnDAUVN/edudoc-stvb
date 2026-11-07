@@ -3004,61 +3004,45 @@ def get_device_binding(class_code: str, mssv: str, db_path: Optional[str] = None
 
 
 def bind_device(class_code: str, mssv: str, device_id: str, device_name: str = "", user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> bool:
-
     """Đăng ký / liên kết thiết bị đầu tiên cho sinh viên (NT08) - Nguyên tử & Chống ghi đè đồng thời (V5 04, R6 07)"""
-
     conn = get_db_connection(db_path)
-
     try:
-
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         c_clean = str(class_code or "").strip().upper()
-
         m_clean = str(mssv or "").strip().lower()
-
         if not m_clean or not device_id:
-
             return False
-
         with conn:
-
-            # R6 07: Kiểm tra nguyên tử trước khi đăng ký, không cho phép ghi đè thiết bị đang hoạt động
-
             existing = conn.execute("""
-
-                SELECT id, device_id FROM device_bindings
-
-                WHERE LOWER(mssv) = ? AND status = 'ACTIVE' LIMIT 1;
-
+                SELECT id, class_code, device_id, status FROM device_bindings
+                WHERE LOWER(mssv) = ? LIMIT 1;
             """, (m_clean,)).fetchone()
-
             if existing:
-
-                return existing["device_id"] == device_id
-
-
+                if existing["status"] == "ACTIVE":
+                    return existing["device_id"] == device_id
+                # Thiết bị đang INACTIVE (đã được GV mở khóa): Kích hoạt liên kết máy mới ngay lập tức
+                conn.execute("""
+                    UPDATE device_bindings
+                    SET class_code = ?, device_id = ?, device_name = ?, user_agent = ?, ip_address = ?, status = 'ACTIVE', bound_at = ?, last_active_at = ?
+                    WHERE id = ?;
+                """, (c_clean or existing["class_code"], device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str, existing["id"]))
+                return True
 
             try:
-
                 cur = conn.execute("""
-
                     INSERT INTO device_bindings (class_code, mssv, device_id, device_name, user_agent, ip_address, status, bound_at, last_active_at)
-
                     VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?);
-
                 """, (c_clean, m_clean, device_id, device_name or "Thiết bị chính", user_agent, ip_address, now_str, now_str))
-
                 return cur.rowcount > 0
-
             except sqlite3.IntegrityError:
-
-                return False
-
+                conn.execute("""
+                    UPDATE device_bindings
+                    SET class_code = ?, device_id = ?, user_agent = ?, ip_address = ?, status = 'ACTIVE', bound_at = ?, last_active_at = ?
+                    WHERE LOWER(mssv) = ?;
+                """, (c_clean, device_id, user_agent, ip_address, now_str, now_str, m_clean))
+                return True
     finally:
-
         conn.close()
-
 
 
 def verify_or_bind_device(class_code: str, mssv: str, device_id: str, user_agent: str = "", ip_address: str = "", db_path: Optional[str] = None) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
