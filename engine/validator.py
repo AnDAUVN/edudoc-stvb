@@ -379,7 +379,7 @@ class Decree30Validator:
             else:
                 consecutive_empty = 0
 
-        if max_consecutive_empty >= 4:
+        if max_consecutive_empty >= 5:
             errors.append({
                 "issue": f"Lạm dụng phím Enter tạo {max_consecutive_empty} dòng trống liên tiếp ngoài bảng để dồn trang.",
                 "fix": "Xóa các dòng Enter trống thừa. Sử dụng định dạng Spacing Before/After trong Paragraph hoặc ngắt trang Page Break (Ctrl+Enter)."
@@ -737,12 +737,11 @@ class Decree30Validator:
         if bold:
             errors.append({"issue": "Địa danh, ngày tháng năm là chữ in thường, KHÔNG in đậm.", "fix": "Tắt in đậm (Ctrl + B)."})
 
-        # ĐỒNG NHẤT CỠ CHỮ: 13 if SO_TRUOC, 14 if SO_SAU
-        expected_dd_size = self.get_expected_size("dia_danh")
-        if size != expected_dd_size:
+        # Nghị định 30 Phụ lục I Mục II.4: Cỡ chữ từ 13 đến 14, kiểu chữ in thường, nghiêng
+        if not (12.8 <= size <= 14.2):
             errors.append({
-                "issue": f"Tính thống nhất cỡ chữ: Bạn chọn quy ước '{'Số trước' if self.font_profile=='SO_TRUOC' else 'Số sau'}', do đó Địa danh ngày tháng phải là cỡ {int(expected_dd_size)}pt (Hiện tại: {size}pt).",
-                "fix": f"Chỉnh cỡ chữ Địa danh ngày tháng về đúng {int(expected_dd_size)}pt."
+                "issue": f"Cỡ chữ Địa danh ngày tháng chưa đúng quy định Nghị định 30 (quy định cỡ 13-14pt, hiện tại: {size}pt).",
+                "fix": "Chỉnh cỡ chữ Địa danh ngày tháng về cỡ 13pt hoặc 14pt (in nghiêng)."
             })
         if p_dia_danh.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
             errors.append({"issue": "Địa danh, ngày tháng năm chưa được canh giữa.", "fix": "Nhấn Ctrl + E để canh giữa."})
@@ -821,11 +820,11 @@ class Decree30Validator:
                     })
 
                 font_5b, size_5b, bold_5b, italic_5b = self._get_dominant_font_and_size(p_5b_table)
-                expected_5b_size = self.get_expected_size("trich_yeu_5b")
-                if size_5b != expected_5b_size:
+                # Nghị định 30 Phụ lục I Mục II.5.b: Cỡ chữ từ 12 đến 13pt, in thường, đứng
+                if not (11.8 <= size_5b <= 13.2):
                     errors.append({
-                        "issue": f"Tính thống nhất cỡ chữ: Theo quy ước '{'Số trước' if self.font_profile=='SO_TRUOC' else 'Số sau'}', trích yếu công văn (V/v) phải là cỡ {int(expected_5b_size)}pt (Hiện tại: {size_5b}pt).",
-                        "fix": f"Chỉnh cỡ chữ trích yếu V/v về đúng {int(expected_5b_size)}pt."
+                        "issue": f"Cỡ chữ Trích yếu công văn (Ô 5b) chưa đúng quy định Nghị định 30 (quy định cỡ 12-13pt, hiện tại: {size_5b}pt).",
+                        "fix": "Chỉnh cỡ chữ trích yếu V/v về cỡ 12pt hoặc 13pt (in thường, đứng)."
                     })
 
                 if bold_5b:
@@ -1304,7 +1303,8 @@ class Decree30Validator:
                 font, size, bold, italic = self._get_dominant_font_and_size(p)
                 if font and "Times New Roman" not in font and "times new roman" not in font.lower():
                     wrong_font_count += 1
-                if size != expected_body_size:
+                # Nghị định 30 Phụ lục I Mục II.6: Cỡ chữ từ 13 đến 14pt, in thường, đứng
+                if not (12.8 <= size <= 14.2):
                     wrong_size_count += 1
 
                 # 4. Khoảng cách giữa các đoạn văn (tối thiểu 6pt)
@@ -1431,10 +1431,11 @@ class Decree30Validator:
             if italic_c:
                 errors.append({"issue": f"Chức vụ người ký ('{txt_cv}') là chữ đứng, KHÔNG in nghiêng.", "fix": "Tắt in nghiêng (Ctrl + I)."})
 
-            if size_c != expected_sign_size:
+            # Nghị định 30 Phụ lục I Mục II.7.a: Cỡ chữ từ 13 đến 14pt, in hoa, đứng, đậm
+            if not (12.8 <= size_c <= 14.2):
                 errors.append({
-                    "issue": f"Tính thống nhất cỡ chữ: Bạn chọn quy ước '{'Số trước' if self.font_profile=='SO_TRUOC' else 'Số sau'}', do đó Chức vụ người ký phải là cỡ {int(expected_sign_size)}pt (Hiện tại: {size_c}pt).",
-                    "fix": f"Chỉnh cỡ chữ chức vụ về đúng {int(expected_sign_size)}pt."
+                    "issue": f"Cỡ chữ Chức vụ người ký chưa đúng quy định Nghị định 30 (quy định cỡ 13-14pt, hiện tại: {size_c}pt).",
+                    "fix": "Chỉnh cỡ chữ chức vụ về cỡ 13pt hoặc 14pt (in hoa, đứng, đậm)."
                 })
             if p_cv.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
                 errors.append({"issue": f"Chức vụ người ký ('{txt_cv}') chưa được canh giữa.", "fix": "Nhấn Ctrl + E để canh giữa."})
@@ -1581,10 +1582,11 @@ class Decree30Validator:
             errors.append({"issue": "Họ và tên người ký phải IN ĐẬM.", "fix": "Nhấn Ctrl + B để in đậm họ tên người ký."})
         if italic_h:
             errors.append({"issue": "Họ và tên người ký là chữ đứng, KHÔNG in nghiêng.", "fix": "Tắt in nghiêng (Ctrl + I)."})
-        if size_h != expected_sign_size:
+        # Nghị định 30 Phụ lục I Mục II.7.b: Cỡ chữ từ 13 đến 14pt, in thường, đứng, đậm
+        if not (12.8 <= size_h <= 14.2):
             errors.append({
-                "issue": f"Tính thống nhất cỡ chữ: Họ tên người ký phải thống nhất cỡ {int(expected_sign_size)}pt (Hiện tại: {size_h}pt).",
-                "fix": f"Chỉnh cỡ chữ họ tên về {int(expected_sign_size)}pt."
+                "issue": f"Cỡ chữ Họ tên người ký chưa đúng quy định Nghị định 30 (quy định cỡ 13-14pt, hiện tại: {size_h}pt).",
+                "fix": "Chỉnh cỡ chữ họ tên về cỡ 13pt hoặc 14pt (in đậm)."
             })
         if p_ho_ten.alignment in [WD_ALIGN_PARAGRAPH.LEFT, WD_ALIGN_PARAGRAPH.RIGHT]:
             errors.append({"issue": "Họ và tên người ký chưa được canh giữa.", "fix": "Nhấn Ctrl + E để canh giữa."})
@@ -1653,13 +1655,13 @@ class Decree30Validator:
             if not re.search(r"Kính\s+gửi\s*:", t_kg, re.IGNORECASE):
                 errors.append({"issue": "Từ 'Kính gửi' phải có dấu hai chấm ':' ngay sau.", "fix": "Sửa thành 'Kính gửi: ...'."})
             font_k, size_k, bold_k, italic_k = self._get_dominant_font_and_size(p_kinh_gui)
-            if size_k != expected_kg_size:
+            # Nghị định 30 Phụ lục I Mục II.9.a: Cỡ chữ từ 13 đến 14, in thường, đứng hoặc đậm
+            if not (12.8 <= size_k <= 14.2):
                 errors.append({
-                    "issue": f"Tính thống nhất cỡ chữ: Dòng Kính gửi phải thống nhất cỡ {int(expected_kg_size)}pt (Hiện tại: {size_k}pt).",
-                    "fix": f"Chỉnh cỡ chữ về {int(expected_kg_size)}pt."
+                    "issue": f"Cỡ chữ dòng Kính gửi chưa đúng quy định Nghị định 30 (quy định cỡ 13-14pt, hiện tại: {size_k}pt).",
+                    "fix": "Chỉnh cỡ chữ dòng Kính gửi về cỡ 13pt hoặc 14pt."
                 })
-            if bold_k:
-                errors.append({"issue": "Dòng Kính gửi là chữ in thường đứng, KHÔNG in đậm.", "fix": "Tắt in đậm (Ctrl + B)."})
+            # Ghi chú: NĐ 30 cho phép Kính gửi đứng hoặc đậm, không phạt lỗi khi in đậm
 
             # Kiểm tra viết hoa tên cơ quan nhận sau Kính gửi
             org_after = re.sub(r"^Kính\s+gửi\s*:\s*", "", t_kg, flags=re.IGNORECASE).rstrip(".").strip()
@@ -1766,7 +1768,8 @@ class Decree30Validator:
             t_it = self._clean_text(item_p)
             last_item_text = t_it
             _, s_i, b_i, i_i = self._get_dominant_font_and_size(item_p)
-            if s_i != 11.0:
+            # Nghị định 30 Phụ lục I Mục II.9.b: Cỡ chữ 11 đến 12, in thường, đứng
+            if not (10.8 <= s_i <= 12.2):
                 wrong_item_size += 1
 
             if "Lưu:" in t_it or "Lưu :" in t_it or "VT" in t_it:

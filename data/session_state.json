@@ -1,14 +1,14 @@
 {
   "key": "current_session",
   "is_open": true,
-  "enforce_roster": false,
+  "enforce_roster": true,
   "enforce_quiz": false,
   "enable_anti_cheat": false,
   "max_previews": 3,
   "enforce_preview_limit": false,
   "active_doc_type": "cong_van_de_nghi",
   "message": "",
-  "active_teacher": "ThS. Nguyễn Văn A",
+  "active_teacher": "ThS. Cao Thành Trung",
   "active_teacher_id": "GV01",
   "updated_at": ""
 }
